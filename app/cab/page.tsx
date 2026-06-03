@@ -263,7 +263,7 @@ export default function CabAgendaPage() {
 
               <div className="metaGrid">
                 <div><span>Fecha deploy</span><b>{formatDate(change.proposed_deploy_date)}</b></div>
-                <div><span>Presentador</span><b>{change.presenter || change.created_by || 'No informado'}</b></div>
+                <div><span>Presentador</span><b>{change.presenter || 'No informado'}</b></div>
                 <div><span>Jira origen</span><b>{change.jira_origin || 'No informado'}</b></div>
                 <div><span>PAP Jira</span><b>{change.jira_key || 'Pendiente'}</b></div>
               </div>
