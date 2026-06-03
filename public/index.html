@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DORA · KLAP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#00C16E; --green-d:#00A85F; --green-soft:#e8faf1;
+  --navy:#02568C; --navy-d:#013356; --ink:#0c2236; --ink-soft:#5b7387;
+  --bg:#ffffff; --bg2:#f3f7fa; --line:#e4ecf2; --amber:#e29215;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg2);color:var(--ink);font-family:'Plus Jakarta Sans',sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 1}
+.topbar{height:5px;background:linear-gradient(90deg,var(--green),var(--navy))}
+.wrap{max-width:1040px;margin:0 auto;padding:34px 24px 80px}
+
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-bottom:26px}
+.brand{display:flex;align-items:center;gap:14px}
+.logo{font-size:30px;font-weight:800;letter-spacing:-.02em}
+.logo .k{color:var(--green)} .logo .rest{color:var(--navy)}
+.brand .sep{width:1px;height:30px;background:var(--line)}
+.brand .ctx{font-size:13px;color:var(--ink-soft);font-weight:600;line-height:1.3}
+.brand .ctx b{color:var(--ink);display:block;font-size:15px}
+.status{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--ink-soft);font-weight:600;background:#fff;border:1px solid var(--line);padding:8px 14px;border-radius:999px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ink-soft)}
+.dot.live{background:var(--green);box-shadow:0 0 0 0 rgba(0,193,110,.5);animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,193,110,.5)}70%{box-shadow:0 0 0 7px rgba(0,193,110,0)}100%{box-shadow:0 0 0 0 rgba(0,193,110,0)}}
+
+h1{font-size:clamp(26px,4vw,38px);font-weight:800;letter-spacing:-.02em;line-height:1.1;color:var(--navy-d)}
+.lede{font-size:16px;color:var(--ink-soft);max-width:64ch;margin-top:8px}
+.lede b{color:var(--ink);font-weight:600}
+
+.verdict{background:var(--navy-d);color:#fff;border-radius:16px;padding:24px 28px;margin-top:24px;display:flex;align-items:center;gap:26px;flex-wrap:wrap;
+  background-image:radial-gradient(circle at 90% -20%, rgba(0,193,110,.25), transparent 45%)}
+.verdict .vlabel{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#7fb3d6;font-weight:700;margin-bottom:4px}
+.verdict .big{font-size:34px;font-weight:800;line-height:1;color:var(--green)}
+.verdict .vmid{width:1px;align-self:stretch;background:rgba(255,255,255,.15)}
+.verdict p{flex:1;min-width:240px;font-size:15px;color:#cfe0ec}
+.verdict p b{color:#fff;font-weight:700}
+
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:20px}
+@media(max-width:880px){.grid{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.grid{grid-template-columns:1fr}}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px 20px;transition:transform .2s,box-shadow .2s}
+.card:hover{transform:translateY(-3px);box-shadow:0 14px 30px -18px rgba(2,53,86,.3)}
+.card .tag{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);font-weight:700}
+.card .q{font-size:14px;font-weight:600;color:var(--navy);margin-top:3px;min-height:38px}
+.metric{display:flex;align-items:baseline;gap:6px;margin:14px 0 0}
+.metric .num{font-size:46px;font-weight:800;line-height:.9;letter-spacing:-.03em;color:var(--navy-d)}
+.metric .unit{font-size:13px;color:var(--ink-soft);font-weight:600}
+.card p.exp{font-size:13px;color:var(--ink-soft);margin-top:10px;line-height:1.45}
+.card p.exp b{color:var(--ink);font-weight:600}
+.badge{display:inline-flex;align-items:center;gap:6px;margin-top:14px;font-size:11px;font-weight:700;letter-spacing:.03em;padding:5px 11px;border-radius:999px}
+.b-elite{background:var(--green-soft);color:var(--green-d)}
+.b-high{background:#e9f1f8;color:var(--navy)}
+.b-mid{background:#fdf2e0;color:var(--amber)}
+
+.panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:24px;margin-top:24px}
+.panel h2{font-size:18px;font-weight:700;color:var(--navy-d)}
+.panel .sub{color:var(--ink-soft);font-size:13.5px;margin:3px 0 20px}
+.bars{display:flex;align-items:flex-end;gap:7px;height:190px;padding-bottom:4px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;height:100%;justify-content:flex-end}
+.bar{width:100%;max-width:46px;background:linear-gradient(180deg,var(--green),var(--green-d));border-radius:5px 5px 0 0;position:relative;transition:height .8s cubic-bezier(.2,.8,.2,1)}
+.bar .v{position:absolute;top:-19px;left:0;right:0;text-align:center;font-size:11px;font-weight:700;color:var(--navy-d)}
+.bar-col .m{font-size:10.5px;color:var(--ink-soft);font-weight:600}
+
+.note{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-top:18px;font-size:13.5px;color:var(--ink-soft)}
+.note h3{font-size:15px;color:var(--navy-d);font-weight:700;margin-bottom:10px}
+.note ul{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:9px}
+@media(max-width:680px){.note ul{grid-template-columns:1fr}}
+.note li{padding-left:18px;position:relative}.note li::before{content:"";position:absolute;left:0;top:7px;width:7px;height:7px;border-radius:50%;background:var(--green)}
+.note b{color:var(--ink)}
+.foot{text-align:center;color:var(--ink-soft);font-size:12px;margin-top:30px}.foot b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="topbar"></div>
+<div class="wrap">
+
+  <div class="head">
+    <div class="brand">
+      <div class="logo"><span class="k">k</span><span class="rest">lap</span></div>
+      <div class="sep"></div>
+      <div class="ctx">Métricas <b>DORA</b><span>Gestión de Cambios</span></div>
+    </div>
+    <div class="status"><span class="dot" id="statusDot"></span><span id="statusTxt">Cargando…</span></div>
+  </div>
+
+  <h1>Salud de entregas a producción</h1>
+  <p class="lede">Las cuatro métricas DORA, calculadas con los pasos a producción reales de KLAP: <b>qué tan seguido</b> desplegamos, <b>cuánto demora</b> un cambio, <b>cuántas veces</b> sale mal y <b>qué tan rápido</b> nos recuperamos.</p>
+
+  <div class="verdict">
+    <div>
+      <div class="vlabel">Veredicto DORA</div>
+      <div class="big" id="vBig">—</div>
+    </div>
+    <div class="vmid"></div>
+    <p id="vTxt">Calculando…</p>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="tag">Frecuencia</div>
+      <div class="q">¿Qué tan seguido subimos a prod?</div>
+      <div class="metric"><span class="num" id="m1">—</span><span class="unit">/ semana</span></div>
+      <p class="exp" id="e1"></p>
+      <span class="badge" id="b1"></span>
+    </div>
+    <div class="card">
+      <div class="tag">Lead time</div>
+      <div class="q">¿Cuánto demora salir un cambio?</div>
+      <div class="metric"><span class="num" id="m2">—</span><span class="unit">días (mediana)</span></div>
+      <p class="exp" id="e2"></p>
+      <span class="badge" id="b2"></span>
+    </div>
+    <div class="card">
+      <div class="tag">Tasa de falla</div>
+      <div class="q">¿Cada cuánto algo sale mal?</div>
+      <div class="metric"><span class="num" id="m3">—</span><span class="unit">%</span></div>
+      <p class="exp" id="e3"></p>
+      <span class="badge" id="b3"></span>
+    </div>
+    <div class="card">
+      <div class="tag">Recuperación</div>
+      <div class="q">¿Cuánto tardamos en recuperarnos?</div>
+      <div class="metric"><span class="num" id="m4">—</span><span class="unit">días (mediana)</span></div>
+      <p class="exp" id="e4"></p>
+      <span class="badge" id="b4"></span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Despliegues mes a mes</h2>
+    <div class="sub">Volumen de pasos a producción en el período. Un ritmo parejo es señal de un pipeline sano.</div>
+    <div class="bars" id="bars"></div>
+  </div>
+
+  <div class="note">
+    <h3>Cómo se calcula cada métrica (directo desde Jira)</h3>
+    <ul>
+      <li><b>Frecuencia:</b> issues con Fecha Deploy en el período, sobre semanas.</li>
+      <li><b>Lead time:</b> Fecha Deploy − Fecha Inicio del cambio.</li>
+      <li><b>Tasa de falla:</b> Rollback / Fallido / Completado con errores, sobre los que llegaron a prod.</li>
+      <li><b>Recuperación:</b> proxy con Incidente / Hotfix / ECAB, Inicio → Deploy del fix.</li>
+    </ul>
+  </div>
+  <div class="foot" id="foot">—</div>
+</div>
+
+<script>
+const DORA_ENDPOINT = "/api/dora?months=12";
+const FALLBACK = {
+  source:"planilla", total:806,
+  deployFrequency:{perWeek:15.6, perMonth:68},
+  leadTime:{medianDays:0, p90Days:5, n:788},
+  changeFailureRate:{pct:8.8, fails:69, reached:787},
+  mttr:{medianDays:0, n:201},
+  byMonth:{"2025-01":63,"2025-02":54,"2025-03":81,"2025-04":60,"2025-05":63,"2025-06":82,"2025-07":77,"2025-08":70,"2025-09":56,"2025-10":88,"2025-11":61,"2025-12":51}
+};
+const MES=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const nf=n=>String(n).replace(".",",");
+const lt=d=>d<1?"&lt;1":nf(d);
+const tierFreq=w=>w>=7?["Elite","b-elite"]:w>=1?["Alto","b-high"]:["Medio","b-mid"];
+const tierLT=d=>d<=1?["Elite","b-elite"]:d<=7?["Alto","b-high"]:["Medio","b-mid"];
+const tierCFR=p=>p<=15?["Elite","b-elite"]:p<=30?["Alto","b-high"]:["Medio","b-mid"];
+const tierMTTR=d=>d<=1?["Alto","b-high"]:d<=7?["Medio","b-mid"]:["Bajo","b-mid"];
+
+function setBadge(id,arr){const el=document.getElementById(id);el.className="badge "+arr[1];el.innerHTML="● "+arr[0];}
+
+function render(d, live){
+  document.getElementById("statusDot").className="dot"+(live?" live":"");
+  document.getElementById("statusTxt").textContent = live
+    ? "En vivo · Jira · "+new Date(d.updatedAt||Date.now()).toLocaleDateString("es-CL")
+    : "Vista previa (datos de planilla)";
+
+  document.getElementById("m1").textContent=nf(d.deployFrequency.perWeek);
+  document.getElementById("e1").innerHTML="Unos <b>"+d.deployFrequency.perMonth+" al mes</b>. Cambios chicos y frecuentes = menos riesgo por despliegue.";
+  setBadge("b1",tierFreq(d.deployFrequency.perWeek));
+
+  document.getElementById("m2").innerHTML=lt(d.leadTime.medianDays);
+  document.getElementById("e2").innerHTML="Mitad sale "+(d.leadTime.medianDays<1?"el mismo día":"en "+nf(d.leadTime.medianDays)+" días")+"; 90% en <b>"+nf(d.leadTime.p90Days)+" días</b> o menos.";
+  setBadge("b2",tierLT(d.leadTime.medianDays));
+
+  document.getElementById("m3").textContent=nf(d.changeFailureRate.pct);
+  document.getElementById("e3").innerHTML="<b>"+d.changeFailureRate.fails+" de "+d.changeFailureRate.reached+"</b> requirieron arreglo. Bajo 15% es muy bueno.";
+  setBadge("b3",tierCFR(d.changeFailureRate.pct));
+
+  document.getElementById("m4").innerHTML=lt(d.mttr.medianDays);
+  document.getElementById("e4").innerHTML="Incidentes, hotfix y ECAB se resuelven <b>"+(d.mttr.medianDays<1?"el mismo día":"en "+nf(d.mttr.medianDays)+" días")+"</b>.";
+  setBadge("b4",tierMTTR(d.mttr.medianDays));
+
+  const tiers=[tierFreq(d.deployFrequency.perWeek)[0],tierLT(d.leadTime.medianDays)[0],tierCFR(d.changeFailureRate.pct)[0],tierMTTR(d.mttr.medianDays)[0]];
+  const elite=tiers.filter(x=>x==="Elite").length;
+  document.getElementById("vBig").textContent = elite>=3?"Liga elite":elite>=1?"Liga alta":"En camino";
+  document.getElementById("vTxt").innerHTML="Sobre <b>"+d.total+" despliegues</b> del período, el equipo despliega seguido, con baja tasa de falla y recuperación rápida. El foco de mejora está más en <b>medir mejor</b> que en correr más.";
+
+  const box=document.getElementById("bars"); box.innerHTML="";
+  const entries=Object.entries(d.byMonth).sort();
+  const max=Math.max.apply(null, entries.map(e=>e[1]).concat([1]));
+  entries.forEach(function(e,i){
+    const k=e[0], v=e[1];
+    const m=MES[parseInt(k.slice(5,7))-1]||k.slice(5,7);
+    const col=document.createElement("div");col.className="bar-col";
+    col.innerHTML='<div class="bar" style="height:0"><span class="v">'+v+'</span></div><div class="m">'+m+'</div>';
+    box.appendChild(col);
+    setTimeout(function(){col.querySelector(".bar").style.height=(v/max*100)+"%";},100+i*50);
+  });
+  document.getElementById("foot").innerHTML = live
+    ? "Calculado en vivo desde Jira · últimos 12 meses"
+    : "Fuente: PasosaProduccion.xlsx · conecta /api/dora para datos en vivo";
+}
+
+(async function(){
+  try{
+    const r=await fetch(DORA_ENDPOINT,{cache:"no-store"});
+    if(!r.ok) throw 0;
+    const d=await r.json(); if(d.error) throw 0;
+    render(d,true);
+  }catch(e){ render(FALLBACK,false); }
+})();
+</script>
+</body>
+</html>

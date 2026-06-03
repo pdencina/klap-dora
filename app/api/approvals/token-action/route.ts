@@ -1,0 +1,67 @@
+import { NextResponse } from 'next/server';
+import { createSupabaseAdmin } from '../../../../lib/supabase-admin';
+
+export const dynamic = 'force-dynamic';
+const VALID_ACTIONS = new Set(['APROBADO', 'OBSERVADO', 'RECHAZADO']);
+
+async function findApprovalByTokenOrId(supabase: any, token: string) {
+  const byToken = await supabase.from('approval_requests').select('*').eq('approval_token', token).maybeSingle();
+  if (byToken.data) return { data: byToken.data, error: null };
+  const byId = await supabase.from('approval_requests').select('*').eq('id', token).maybeSingle();
+  return { data: byId.data, error: byId.error || byToken.error };
+}
+
+function getClientIp(req: Request) {
+  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || null;
+}
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const token = String(body?.token || '').trim();
+    const action = String(body?.action || '').trim().toUpperCase();
+    const comment = String(body?.comment || '').trim();
+
+    if (!token) return NextResponse.json({ ok: false, error: 'Token requerido' }, { status: 400 });
+    if (!VALID_ACTIONS.has(action)) return NextResponse.json({ ok: false, error: 'Acción inválida' }, { status: 400 });
+
+    const supabase = createSupabaseAdmin();
+    const { data: currentApproval, error: currentError } = await findApprovalByTokenOrId(supabase, token);
+    if (currentError || !currentApproval) return NextResponse.json({ ok: false, error: 'Aprobación no encontrada o token inválido' }, { status: 404 });
+    if (currentApproval.status !== 'PENDIENTE') return NextResponse.json({ ok: false, error: `Esta aprobación ya fue procesada con estado ${currentApproval.status}` }, { status: 400 });
+    if (!currentApproval.approval_verified_at) return NextResponse.json({ ok: false, error: 'Debes validar el código enviado al correo antes de aprobar.' }, { status: 403 });
+
+    const now = new Date().toISOString();
+    const { data: approval, error: updateError } = await supabase
+      .from('approval_requests')
+      .update({
+        status: action,
+        comment: comment || null,
+        approved_at: now,
+        approved_by_name: currentApproval.approver_name || null,
+        approved_by_email: currentApproval.approver_email || null,
+        approved_ip: getClientIp(req),
+        approved_user_agent: req.headers.get('user-agent') || null,
+      })
+      .eq('id', currentApproval.id)
+      .select('*')
+      .single();
+
+    if (updateError) return NextResponse.json({ ok: false, error: updateError.message }, { status: 500 });
+
+    const { data: approvals, error: approvalsError } = await supabase.from('approval_requests').select('*').eq('rdc_id', approval.rdc_id);
+    if (approvalsError) return NextResponse.json({ ok: false, error: approvalsError.message }, { status: 500 });
+
+    let nextStatus = 'PENDIENTE_APROBACIONES';
+    if ((approvals || []).some((item) => item.status === 'RECHAZADO')) nextStatus = 'RECHAZADO';
+    else if ((approvals || []).some((item) => item.status === 'OBSERVADO')) nextStatus = 'OBSERVADO';
+    else if ((approvals || []).length > 0 && (approvals || []).every((item) => item.status === 'APROBADO')) nextStatus = 'APROBADO_PARA_EJECUCION';
+
+    const { error: rdcError } = await supabase.from('rdc').update({ status: nextStatus, updated_at: now }).eq('id', approval.rdc_id);
+    if (rdcError) return NextResponse.json({ ok: false, error: rdcError.message }, { status: 500 });
+
+    return NextResponse.json({ ok: true, approval, rdcStatus: nextStatus });
+  } catch (error: any) {
+    return NextResponse.json({ ok: false, error: error?.message || 'Error procesando aprobación' }, { status: 500 });
+  }
+}
