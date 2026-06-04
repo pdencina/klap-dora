@@ -65,6 +65,8 @@ export async function POST(req: Request) {
       requires_infra: Boolean(body?.requiresInfra),
       requires_monitoring: Boolean(body?.requiresMonitoring),
       dependent_rdc: String(body?.dependentRdc || '').trim(),
+      form_data: body?.formData && typeof body.formData === 'object' ? body.formData : {},
+      form_version: 'rdc_2_0',
     };
 
     const { data: details, error: detailsError } = await supabase
