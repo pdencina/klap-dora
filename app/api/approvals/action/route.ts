@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdmin } from '../../../../lib/supabase-admin';
+import { requireRM } from '../../../../lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,6 +8,9 @@ const VALID_ACTIONS = new Set(['APROBADO', 'OBSERVADO', 'RECHAZADO']);
 
 export async function POST(req: Request) {
   try {
+    const { deny } = await requireRM();
+    if (deny) return deny;
+
     const body = await req.json();
 
     const approvalId = String(body?.approvalId || '').trim();

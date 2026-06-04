@@ -1,11 +1,26 @@
-node_modules/
-.next/
-out/
-build/
+# dependencias
+/node_modules
+/.pnp
+.pnp.js
+
+# next.js
+/.next/
+/out/
+/build
 next-env.d.ts
+
+# producción / vercel
+/dist
 .vercel
+
+# variables de entorno (¡nunca subir secretos!)
 .env
 .env*.local
-*.tsbuildinfo
-.DS_Store
+
+# logs / misc
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+*.pem
+*.tsbuildinfo

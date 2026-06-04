@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { requireRM } from '../../../lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -165,6 +166,9 @@ async function fetchJiraIssues() {
 
 export async function GET(request: Request) {
   try {
+    const { deny } = await requireRM();
+    if (deny) return deny;
+
     const { issues, cfInicio, cfDeploy, cfResultado, cfTipo, cfCelula, cfSistema } = await fetchJiraIssues();
 
     const selectedYear = new URL(request.url).searchParams.get('year');

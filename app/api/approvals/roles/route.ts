@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdmin } from '../../../../lib/supabase-admin';
+import { requireUser } from '../../../../lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    const { deny } = await requireUser();
+    if (deny) return deny;
+
     const supabase = createSupabaseAdmin();
 
     const { data, error } = await supabase
