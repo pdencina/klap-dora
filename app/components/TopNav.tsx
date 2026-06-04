@@ -16,6 +16,7 @@ const RM_LINKS = [
   { href: '/release', label: 'Release' },
   { href: '/approvals', label: 'Aprobaciones' },
   { href: '/cab', label: 'Agenda CAB' },
+  { href: '/cierre', label: 'Cierre' },
   { href: '/dashboard', label: 'Dashboard DORA' },
 ];
 
