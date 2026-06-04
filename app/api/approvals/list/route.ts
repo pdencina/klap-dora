@@ -13,7 +13,7 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from('rdc')
-      .select('*, approval_requests(*)')
+      .select('*, rdc_details(*), approval_requests(*)')
       .order('created_at', { ascending: false })
       .limit(50);
 

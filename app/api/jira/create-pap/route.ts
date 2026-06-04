@@ -1,8 +1,29 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdmin } from '../../../../lib/supabase-admin';
 import { requireRM } from '../../../../lib/auth';
+import {
+  PAP_FIELDS,
+  adfText,
+  jiraSelect,
+  normalizeCategory,
+  normalizeSeverity,
+} from '../../../../lib/jira-pap-field-map';
 
 export const dynamic = 'force-dynamic';
+
+type RdcDetails = {
+  requirement_description?: string | null;
+  implemented_solution?: string | null;
+  affected_services?: string | null;
+  affected_users?: string | null;
+  consequence_not_implementing?: string | null;
+  validation_plan?: string | null;
+  deployment_plan?: string | null;
+  rollback_plan?: string | null;
+  impact?: string | null;
+  priority?: string | null;
+  form_data?: any;
+};
 
 function getEnv(name: string): string {
   const value = process.env[name];
@@ -16,18 +37,116 @@ function buildAuthHeader() {
   return `Basic ${Buffer.from(`${email}:${token}`).toString('base64')}`;
 }
 
-// La categoría del RDC se setea por VALUE (no por id de opción), y se normaliza
-// para que calce EXACTO con las opciones reales del campo "Categoría de Cambio"
-// (customfield_12321): Mantencion / Proyecto / Incidente / Hotfix / ECAB / Recurrente.
-const CATEGORY_VALUE_MAP: Record<string, string> = {
-  'Mantención': 'Mantencion',
-  'Mantencion': 'Mantencion',
-  'Proyecto': 'Proyecto',
-  'Incidente': 'Incidente',
-  'Hotfix': 'Hotfix',
-  'ECAB': 'ECAB',
-  'Recurrente': 'Recurrente',
-};
+function firstDetail(rdc: any): RdcDetails {
+  if (Array.isArray(rdc?.rdc_details)) return rdc.rdc_details[0] || {};
+  return rdc?.rdc_details || {};
+}
+
+function getFormValue(formData: any, path: string, fallback = ''): string {
+  const value = path.split('.').reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : undefined), formData || {});
+  return String(value ?? fallback ?? '').trim();
+}
+
+function clean(value?: string | null) {
+  return String(value || '').trim();
+}
+
+function buildDescriptionText(rdc: any, details: RdcDetails) {
+  const formData = details.form_data || {};
+  const deploymentPlan = clean(details.deployment_plan) || getFormValue(formData, 'deployment.productionPlan');
+  const rollbackPlan = clean(details.rollback_plan) || getFormValue(formData, 'deployment.rollback');
+  const mitigationPlan = getFormValue(formData, 'deployment.mitigationPlanCab20');
+  const validationPlan = clean(details.validation_plan) || getFormValue(formData, 'deployment.qaPlan');
+  const consequences = clean(details.consequence_not_implementing);
+
+  return [
+    'RDC generado desde Release Management Portal',
+    '',
+    `Título: ${rdc.title}`,
+    `Sistema / Producto: ${rdc.system || 'Sin sistema'}`,
+    `Célula: ${rdc.cell || 'Sin célula'}`,
+    `Categoría: ${rdc.category || 'Sin categoría'}`,
+    `Jira Origen: ${rdc.jira_origin || 'No informado'}`,
+    `RFC: ${rdc.rfc || 'No aplica'}`,
+    `Fecha Deploy: ${rdc.proposed_deploy_date || 'No informada'}`,
+    '',
+    'Descripción del requerimiento:',
+    clean(details.requirement_description) || rdc.description || 'Sin descripción',
+    '',
+    'Solución del requerimiento:',
+    clean(details.implemented_solution) || 'No informado',
+    '',
+    'Servicios / usuarios afectados:',
+    `Servicios: ${clean(details.affected_services) || 'No informado'}`,
+    `Usuarios: ${clean(details.affected_users) || 'No informado'}`,
+    '',
+    'Consecuencias si no se aprueba o se pospone:',
+    consequences || 'No informado',
+    '',
+    'Plan de validación:',
+    validationPlan || 'No informado',
+    '',
+    'Plan de despliegue producción:',
+    deploymentPlan || 'No informado',
+    '',
+    'Rollback / Mitigación:',
+    rollbackPlan || mitigationPlan || 'No informado',
+    '',
+    'Aprobaciones CAB:',
+    ...((rdc.approval_requests || []).map((a: any) => `- ${a.approver_role}: ${a.status}${a.comment ? ` (${a.comment})` : ''}`)),
+  ].join('\n');
+}
+
+function addAdfField(fields: any, fieldId: string | undefined, value?: string | null) {
+  const text = clean(value);
+  if (fieldId && text) fields[fieldId] = adfText(text);
+}
+
+function addSelectField(fields: any, fieldId: string | undefined, value?: string | null) {
+  const select = jiraSelect(value);
+  if (fieldId && select) fields[fieldId] = select;
+}
+
+function buildMappedFields(rdc: any, details: RdcDetails) {
+  const formData = details.form_data || {};
+  const fields: any = {};
+
+  addSelectField(fields, PAP_FIELDS.sistemaProducto, rdc.system);
+  addSelectField(fields, PAP_FIELDS.categoriaCambio, normalizeCategory(rdc.category));
+  addSelectField(fields, PAP_FIELDS.gradoSeveridad, normalizeSeverity(details.impact || details.priority));
+
+  addAdfField(fields, PAP_FIELDS.razonCambio, details.requirement_description || rdc.description);
+  addAdfField(fields, PAP_FIELDS.solucionRequerimiento, details.implemented_solution);
+  addAdfField(fields, PAP_FIELDS.consecuencias, details.consequence_not_implementing);
+  addAdfField(fields, PAP_FIELDS.planValidacion, details.validation_plan || getFormValue(formData, 'deployment.qaPlan'));
+  addAdfField(fields, PAP_FIELDS.planDespliegue, details.deployment_plan || getFormValue(formData, 'deployment.productionPlan'));
+
+  const rdcUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || ''}/rdc/${rdc.id}`;
+  if (PAP_FIELDS.adjuntarRdcDeployment && rdcUrl.startsWith('http')) {
+    fields[PAP_FIELDS.adjuntarRdcDeployment] = adfText(`RDC digital Klap DORA:\n${rdcUrl}`);
+  }
+
+  if (PAP_FIELDS.calendarioCambios && process.env.JIRA_CALENDARIO_CAMBIOS_URL) {
+    fields[PAP_FIELDS.calendarioCambios] = process.env.JIRA_CALENDARIO_CAMBIOS_URL;
+  }
+
+  return fields;
+}
+
+async function createJiraIssue(base: string, payload: any) {
+  const jiraResponse = await fetch(`${base}/rest/api/3/issue`, {
+    method: 'POST',
+    headers: {
+      Authorization: buildAuthHeader(),
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const jiraData = await jiraResponse.json().catch(() => null);
+  return { jiraResponse, jiraData };
+}
 
 export async function POST(req: Request) {
   try {
@@ -45,7 +164,7 @@ export async function POST(req: Request) {
 
     const { data: rdc, error: rdcError } = await supabase
       .from('rdc')
-      .select('*, approval_requests(*)')
+      .select('*, rdc_details(*), approval_requests(*)')
       .eq('id', rdcId)
       .single();
 
@@ -64,77 +183,41 @@ export async function POST(req: Request) {
       );
     }
 
+    const details = firstDetail(rdc);
     const base = getEnv('JIRA_BASE').replace(/\/$/, '');
     const projectKey = process.env.JIRA_PROJECT_KEY || process.env.JIRA_PROJECT || 'PAP';
-    // PAP (company-managed en español) usa el tipo "Tarea". Override con JIRA_ISSUE_TYPE.
     const issueType = process.env.JIRA_ISSUE_TYPE || 'Tarea';
+    const descriptionText = buildDescriptionText(rdc, details);
 
-    const descriptionLines = [
-      `RDC generado desde Release Management Portal`,
-      ``,
-      `Título: ${rdc.title}`,
-      `Sistema / Producto: ${rdc.system || 'Sin sistema'}`,
-      `Célula: ${rdc.cell || 'Sin célula'}`,
-      `Categoría: ${rdc.category || 'Sin categoría'}`,
-      ``,
-      `Descripción:`,
-      rdc.description || 'Sin descripción',
-      ``,
-      `Aprobaciones:`,
-      ...((rdc.approval_requests || []).map((a: any) => `- ${a.approver_role}: ${a.status}${a.comment ? ` (${a.comment})` : ''}`)),
-    ];
+    const baseFields: any = {
+      project: { key: projectKey },
+      summary: rdc.title,
+      description: adfText(descriptionText),
+      issuetype: { name: issueType },
+    };
+
+    const shouldMapCustomFields = process.env.JIRA_ENABLE_PAP_FIELD_MAPPING !== 'false';
+    const mappedFields = shouldMapCustomFields ? buildMappedFields(rdc, details) : {};
 
     const jiraPayload: any = {
       fields: {
-        project: { key: projectKey },
-        summary: rdc.title,
-        description: {
-          type: 'doc',
-          version: 1,
-          content: [
-            {
-              type: 'paragraph',
-              content: [{ type: 'text', text: descriptionLines.join('\n') }],
-            },
-          ],
-        },
-        issuetype: { name: issueType },
+        ...baseFields,
+        ...mappedFields,
       },
     };
 
-    // Campos personalizados (se cargan solo si la env existe, para no romper el alta).
-    const cfSistema = process.env.CF_SISTEMA;
-    const cfTipo = process.env.CF_TIPO;       // Categoría de Cambio (customfield_12321)
-    const cfFinicio = process.env.CF_FINICIO; // Fecha Inicio (customfield_10177) → base del lead time
+    let { jiraResponse, jiraData } = await createJiraIssue(base, jiraPayload);
+    let createdWithFallback = false;
 
-    if (cfSistema && rdc.system) {
-      jiraPayload.fields[cfSistema] = { value: rdc.system };
+    // Si Jira rechaza un custom field por contexto, pantalla o valor de select,
+    // no bloqueamos el proceso CAB/PAP: reintentamos con payload base.
+    if (!jiraResponse.ok && Object.keys(mappedFields).length > 0 && jiraResponse.status >= 400 && jiraResponse.status < 500) {
+      const retryPayload = { fields: baseFields };
+      const retry = await createJiraIssue(base, retryPayload);
+      jiraResponse = retry.jiraResponse;
+      jiraData = retry.jiraData;
+      createdWithFallback = true;
     }
-
-    if (cfTipo && rdc.category) {
-      const raw = String(rdc.category).trim();
-      const value = CATEGORY_VALUE_MAP[raw] || raw;
-      // Select de Jira: se setea por value, no por id.
-      jiraPayload.fields[cfTipo] = { value };
-    }
-
-    // Fecha Inicio: usamos la fecha de creación del RDC como punto de partida del lead time.
-    // (Fecha Deploy y Resultado Deploy NO se setean acá: son post-deploy, los llena el cierre RM.)
-    if (cfFinicio && rdc.created_at) {
-      jiraPayload.fields[cfFinicio] = String(rdc.created_at).slice(0, 10);
-    }
-
-    const jiraResponse = await fetch(`${base}/rest/api/3/issue`, {
-      method: 'POST',
-      headers: {
-        Authorization: buildAuthHeader(),
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(jiraPayload),
-    });
-
-    const jiraData = await jiraResponse.json().catch(() => null);
 
     if (!jiraResponse.ok) {
       return NextResponse.json(
@@ -158,7 +241,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: updateError.message, jiraKey }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true, jiraKey, jiraIssue: jiraData });
+    return NextResponse.json({
+      ok: true,
+      jiraKey,
+      jiraIssue: jiraData,
+      mappedFields: Object.keys(mappedFields),
+      createdWithFallback,
+    });
   } catch (error: any) {
     return NextResponse.json(
       { ok: false, error: error?.message || 'Error creando PAP Jira' },
