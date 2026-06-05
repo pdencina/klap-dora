@@ -4,15 +4,23 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createSupabaseBrowser } from '../../lib/supabase-browser';
 
-type Role = 'user' | 'rm';
+type Role = 'client' | 'approver' | 'rm';
 
-const USER_LINKS = [
+const CLIENT_LINKS = [
   { href: '/', label: 'Inicio' },
   { href: '/rdc', label: 'Nuevo RDC' },
   { href: '/mis-cambios', label: 'Mis Cambios' },
 ];
 
+const APPROVER_LINKS = [
+  { href: '/', label: 'Inicio' },
+  { href: '/mis-aprobaciones', label: 'Mis Aprobaciones' },
+];
+
 const RM_LINKS = [
+  { href: '/', label: 'Inicio' },
+  { href: '/rdc', label: 'Nuevo RDC' },
+  { href: '/mis-cambios', label: 'Mis Cambios' },
   { href: '/release', label: 'Release' },
   { href: '/approvals', label: 'Aprobaciones' },
   { href: '/cab', label: 'Agenda CAB' },
@@ -20,10 +28,17 @@ const RM_LINKS = [
   { href: '/dashboard', label: 'Dashboard DORA' },
 ];
 
+const ROLE_LABEL: Record<Role, string> = {
+  client: 'Cliente Interno',
+  approver: 'Aprobador',
+  rm: 'Release Manager',
+};
+
 export default function TopNav({ role, email }: { role: Role; email: string }) {
   const pathname = usePathname() || '/';
   const router = useRouter();
-  const links = role === 'rm' ? [...USER_LINKS, ...RM_LINKS] : USER_LINKS;
+
+  const links = role === 'rm' ? RM_LINKS : role === 'approver' ? APPROVER_LINKS : CLIENT_LINKS;
 
   const isActive = (href: string) => (href === '/' ? pathname === '/' : pathname.startsWith(href));
 
@@ -43,7 +58,7 @@ export default function TopNav({ role, email }: { role: Role; email: string }) {
 
       <nav className="nav-links" aria-label="Navegación principal">
         {links.map((l) => {
-          const rm = RM_LINKS.some((r) => r.href === l.href);
+          const rm = ['/release', '/approvals', '/cab', '/cierre', '/dashboard'].includes(l.href);
           return (
             <Link key={l.href} href={l.href} className={`${isActive(l.href) ? 'active' : ''} ${rm ? 'rm' : ''}`}>
               {l.label}
@@ -53,7 +68,7 @@ export default function TopNav({ role, email }: { role: Role; email: string }) {
       </nav>
 
       <div className="nav-right">
-        <span className={`nav-role ${role}`}>{role === 'rm' ? 'Release Manager' : 'Solicitante'}</span>
+        <span className={`nav-role ${role}`}>{ROLE_LABEL[role]}</span>
         {email ? <span className="nav-email" title={email}>{email}</span> : null}
         <button className="nav-logout" onClick={logout}>Salir</button>
       </div>

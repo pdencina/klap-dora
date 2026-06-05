@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdmin } from '../../../../lib/supabase-admin';
-import { requireUser } from '../../../../lib/auth';
+import { requireUser, roleOf } from '../../../../lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +10,10 @@ export async function POST(req: Request) {
   try {
     const { user, deny } = await requireUser();
     if (deny) return deny;
+
+    if (roleOf(user) === 'approver') {
+      return NextResponse.json({ ok: false, error: 'El rol aprobador no puede crear RDC' }, { status: 403 });
+    }
 
     const body = await req.json();
 
