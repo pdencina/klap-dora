@@ -149,9 +149,17 @@ function approvedCount(change: Change) {
   return `${approved}/${approvals.length || 0}`;
 }
 
+function statusClass(status: string) {
+  if (status === 'Completado') return 'ok';
+  if (status === 'Bloqueado') return 'bad';
+  if (status === 'En curso') return 'active';
+  return 'pending';
+}
+
 export default function PapPage() {
   const searchParams = useSearchParams();
   const targetRdcId = searchParams.get('rdcId') || '';
+
   const [changes, setChanges] = useState<Change[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [steps, setSteps] = useState<PapStep[]>([]);
@@ -162,7 +170,10 @@ export default function PapPage() {
 
   const selected = useMemo(() => changes.find((c) => c.id === selectedId) || null, [changes, selectedId]);
   const completed = steps.filter((s) => s.status === 'Completado').length;
+  const blocked = steps.filter((s) => s.status === 'Bloqueado').length;
+  const pending = steps.filter((s) => s.status !== 'Completado').length;
   const percent = steps.length ? Math.round((completed / steps.length) * 100) : 0;
+  const readyForDeploy = steps.length > 0 && completed === steps.length;
 
   async function load() {
     try {
@@ -171,8 +182,10 @@ export default function PapPage() {
       const response = await fetch('/api/pap/list', { cache: 'no-store' });
       const data = await response.json();
       if (!response.ok || !data.ok) throw new Error(data.error || 'No se pudo cargar PAP');
+
       const list: Change[] = data.changes || [];
       setChanges(list);
+
       if (list.length && !selectedId) {
         const target = targetRdcId ? list.find((item) => item.id === targetRdcId) : null;
         const initial = target || list[0];
@@ -236,8 +249,17 @@ export default function PapPage() {
     setSteps((current) => current.filter((_, i) => i !== index).map((s, i) => ({ ...s, step_order: i + 1 })));
   }
 
+  function markStepComplete(index: number) {
+    updateStep(index, 'status', 'Completado');
+  }
+
+  function markAllComplete() {
+    setSteps((current) => current.map((step) => ({ ...step, status: 'Completado' })));
+  }
+
   async function saveSteps() {
     if (!selected) return;
+
     setSaving(true);
     setMsg('');
     setError('');
@@ -248,8 +270,10 @@ export default function PapPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rdcId: selected.id, steps }),
       });
+
       const data = await response.json();
       if (!response.ok || !data.ok) throw new Error(data.error || 'No se pudo guardar el PAP');
+
       setMsg(`Plan PAP guardado con ${data.saved} actividades.`);
       await load();
     } catch (err: any) {
@@ -281,7 +305,9 @@ export default function PapPage() {
         <div>
           <p className="kicker">PASO A PRODUCCIÓN · PAP</p>
           <h1>Plan PAP</h1>
-          <p className="sub">Convierte el RDC aprobado en una planificación operativa: pasos, responsables, horarios, estados, evidencias y cierre.</p>
+          <p className="sub">
+            Ordena el paso a producción en actividades simples. Completa cada paso, guarda el plan y vuelve a Deploy Center para ejecutar Jenkins.
+          </p>
         </div>
         <button type="button" className="refresh" onClick={load}>Actualizar</button>
       </header>
@@ -301,18 +327,24 @@ export default function PapPage() {
               <p className="empty">No hay RDC aprobados para planificar PAP.</p>
             ) : (
               <div className="queueList">
-                {changes.map((change) => (
-                  <button
-                    type="button"
-                    key={change.id}
-                    className={change.id === selectedId ? 'queueItem active' : 'queueItem'}
-                    onClick={() => selectChange(change.id)}
-                  >
-                    <strong>{change.title}</strong>
-                    <small>{change.system || 'Sin sistema'} · {change.cell || 'Sin célula'}</small>
-                    <em>{change.status === 'PAP_CREADO' ? 'PAP creado' : 'Pendiente plan PAP'}</em>
-                  </button>
-                ))}
+                {changes.map((change) => {
+                  const currentSteps = change.pap_steps || [];
+                  const currentCompleted = currentSteps.filter((s) => s.status === 'Completado').length;
+                  const currentPercent = currentSteps.length ? Math.round((currentCompleted / currentSteps.length) * 100) : 0;
+
+                  return (
+                    <button
+                      type="button"
+                      key={change.id}
+                      className={change.id === selectedId ? 'queueItem active' : 'queueItem'}
+                      onClick={() => selectChange(change.id)}
+                    >
+                      <strong>{change.title}</strong>
+                      <small>{change.system || 'Sin sistema'} · {change.cell || 'Sin célula'}</small>
+                      <em>{currentPercent === 100 ? 'Listo para Deploy' : 'Pendiente Plan PAP'}</em>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </aside>
@@ -333,45 +365,107 @@ export default function PapPage() {
                   </div>
                 </div>
 
+                <section className={readyForDeploy ? 'readiness ready' : 'readiness pending'}>
+                  <div>
+                    <p className="kicker">Estado del Plan PAP</p>
+                    <h3>{readyForDeploy ? 'Plan PAP listo para Deploy' : 'Plan PAP pendiente de completar'}</h3>
+                    <p>
+                      {readyForDeploy
+                        ? 'Todas las actividades están completadas. Puedes volver a Deploy Center para ejecutar Jenkins.'
+                        : 'Completa las actividades del paso a producción antes de ejecutar Jenkins.'}
+                    </p>
+                  </div>
+                  <a href={`/deploy?rdcId=${selected.id}`}>Volver a Deploy Center →</a>
+                </section>
+
                 <div className="metrics">
                   <div><span>Fecha deploy</span><b>{formatDate(selected.proposed_deploy_date)}</b></div>
                   <div><span>Aprobaciones</span><b>{approvedCount(selected)}</b></div>
-                  <div><span>Actividades</span><b>{steps.length}</b></div>
+                  <div><span>Completadas</span><b>{completed}/{steps.length}</b></div>
                   <div><span>Avance PAP</span><b>{percent}%</b></div>
                 </div>
 
                 <div className="bar"><i style={{ width: `${percent}%` }} /></div>
 
-                <div className="stepsTable">
-                  <div className="tableHead">
-                    <span>#</span>
-                    <span>Actividad</span>
-                    <span>Responsable</span>
-                    <span>Hora</span>
-                    <span>Estado</span>
-                    <span>Evidencia</span>
-                    <span></span>
+                <div className="quickActions">
+                  <button type="button" className="secondary" onClick={addStep}>+ Agregar actividad</button>
+                  <button type="button" className="secondary" onClick={markAllComplete}>Marcar todo como completado</button>
+                  <button type="button" onClick={saveSteps} disabled={saving}>{saving ? 'Guardando…' : 'Guardar Plan PAP'}</button>
+                </div>
+
+                <section className="guide">
+                  <h3>Cómo completar este plan</h3>
+                  <div>
+                    <span>1</span>
+                    <p>Revisa cada actividad del paso a producción.</p>
+                  </div>
+                  <div>
+                    <span>2</span>
+                    <p>Marca como <b>Completado</b> lo que ya fue validado.</p>
+                  </div>
+                  <div>
+                    <span>3</span>
+                    <p>Guarda el Plan PAP y vuelve a Deploy Center.</p>
+                  </div>
+                </section>
+
+                <section className="cards">
+                  <div className="cardsHead">
+                    <div>
+                      <h3>Actividades del paso</h3>
+                      <p>{pending === 0 ? 'Todas completadas.' : `${pending} actividad(es) pendientes.`} {blocked > 0 ? `${blocked} bloqueada(s).` : ''}</p>
+                    </div>
+                    <span>{steps.length} actividades</span>
                   </div>
 
                   {steps.map((step, index) => (
-                    <div className="stepRow" key={index}>
-                      <input value={step.step_order} onChange={(e) => updateStep(index, 'step_order', Number(e.target.value))} />
-                      <textarea value={step.activity} onChange={(e) => updateStep(index, 'activity', e.target.value)} placeholder="Actividad del paso" rows={2} />
-                      <input value={step.responsible} onChange={(e) => updateStep(index, 'responsible', e.target.value)} placeholder="Responsable" />
-                      <input value={step.planned_time} onChange={(e) => updateStep(index, 'planned_time', e.target.value)} placeholder="22:00 / T+10" />
-                      <select value={step.status} onChange={(e) => updateStep(index, 'status', e.target.value)}>
-                        {STEP_STATUS.map((s) => <option key={s}>{s}</option>)}
-                      </select>
-                      <input value={step.evidence_url} onChange={(e) => updateStep(index, 'evidence_url', e.target.value)} placeholder="URL evidencia" />
-                      <button type="button" className="remove" onClick={() => removeStep(index)}>Quitar</button>
-                      <input className="notes" value={step.notes} onChange={(e) => updateStep(index, 'notes', e.target.value)} placeholder="Notas u observaciones del paso" />
-                    </div>
+                    <article className="stepCard" key={index}>
+                      <div className="stepTop">
+                        <div className="stepNumber">{index + 1}</div>
+                        <div className="stepTitle">
+                          <span className={`status ${statusClass(step.status)}`}>{step.status}</span>
+                          <textarea value={step.activity} onChange={(e) => updateStep(index, 'activity', e.target.value)} placeholder="Actividad del paso" rows={2} />
+                        </div>
+                      </div>
+
+                      <div className="stepFields">
+                        <label>
+                          Responsable
+                          <input value={step.responsible} onChange={(e) => updateStep(index, 'responsible', e.target.value)} placeholder="Responsable" />
+                        </label>
+                        <label>
+                          Hora estimada
+                          <input value={step.planned_time} onChange={(e) => updateStep(index, 'planned_time', e.target.value)} placeholder="22:00 / T+10" />
+                        </label>
+                        <label>
+                          Estado
+                          <select value={step.status} onChange={(e) => updateStep(index, 'status', e.target.value)}>
+                            {STEP_STATUS.map((s) => <option key={s}>{s}</option>)}
+                          </select>
+                        </label>
+                        <label>
+                          Evidencia
+                          <input value={step.evidence_url} onChange={(e) => updateStep(index, 'evidence_url', e.target.value)} placeholder="URL evidencia" />
+                        </label>
+                      </div>
+
+                      <label className="notes">
+                        Notas u observaciones
+                        <input value={step.notes} onChange={(e) => updateStep(index, 'notes', e.target.value)} placeholder="Notas del paso" />
+                      </label>
+
+                      <div className="stepActions">
+                        <button type="button" className="complete" onClick={() => markStepComplete(index)}>Marcar completado</button>
+                        <button type="button" className="remove" onClick={() => removeStep(index)}>Quitar</button>
+                      </div>
+                    </article>
                   ))}
-                </div>
+                </section>
 
                 <div className="footerActions">
-                  <button type="button" className="secondary" onClick={addStep}>+ Agregar paso</button>
+                  <button type="button" className="secondary" onClick={addStep}>+ Agregar actividad</button>
                   <button type="button" onClick={saveSteps} disabled={saving}>{saving ? 'Guardando…' : 'Guardar Plan PAP'}</button>
+                  <a href={`/deploy?rdcId=${selected.id}`} className="deployLink">Volver a Deploy Center →</a>
                 </div>
 
                 {msg ? <div className="msg">{msg}</div> : null}
@@ -388,15 +482,15 @@ export default function PapPage() {
         .papHead { display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; margin-bottom: 24px; }
         .kicker { color: var(--green-d); font-size: 13px; font-weight: 900; letter-spacing: .16em; margin: 0 0 8px; text-transform: uppercase; }
         h1 { font-size: clamp(36px, 5vw, 58px); line-height: .95; letter-spacing: -.06em; color: var(--navy-d); margin: 0; }
-        .sub, .summary p { color: var(--ink-soft); line-height: 1.5; max-width: 760px; margin: 12px 0 0; }
-        .refresh, .summaryActions a, .summaryActions button, .footerActions button { border: 0; background: var(--green); color: #fff; border-radius: 999px; padding: 12px 17px; font-weight: 900; cursor: pointer; }
+        .sub, .summary p, .readiness p, .guide p, .cardsHead p { color: var(--ink-soft); line-height: 1.5; margin: 8px 0 0; }
+        .refresh, .quickActions button, .footerActions button, .footerActions a, .summaryActions a, .summaryActions button, .readiness a { border: 0; background: var(--green); color: #fff; border-radius: 999px; padding: 12px 17px; font-weight: 900; cursor: pointer; text-align: center; }
         .state { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 30px; color: var(--ink-soft); }
         .state.err { color: #b42318; background: #fff1f0; }
-        .papLayout { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 18px; }
+        .papLayout { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 18px; }
         .queue, .planner { background: #fff; border: 1px solid var(--line); border-radius: 22px; padding: 20px; box-shadow: 0 18px 45px rgba(7,59,93,.06); }
-        .queueHead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-        .queueHead h2, .summary h2 { margin: 0; color: var(--navy-d); letter-spacing: -.03em; }
-        .queueHead span { background: var(--green-soft); color: var(--green-d); font-weight: 900; border-radius: 999px; padding: 8px 12px; }
+        .queueHead, .cardsHead { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 14px; }
+        .queueHead h2, .summary h2, .readiness h3, .guide h3, .cardsHead h3 { margin: 0; color: var(--navy-d); letter-spacing: -.03em; }
+        .queueHead span, .cardsHead span { background: var(--green-soft); color: var(--green-d); font-weight: 900; border-radius: 999px; padding: 8px 12px; white-space: nowrap; }
         .queueList { display: grid; gap: 10px; }
         .queueItem { text-align: left; background: var(--bg); border: 1px solid #dfeaf0; border-radius: 16px; padding: 14px; cursor: pointer; color: var(--ink); }
         .queueItem.active { border-color: #8fe7ba; background: #f0fff7; }
@@ -407,35 +501,57 @@ export default function PapPage() {
         .empty { color: var(--ink-soft); }
         .summary { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; background: var(--bg); border: 1px solid #dfeaf0; border-radius: 18px; padding: 18px; }
         .summaryActions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-        .summaryActions a, .summaryActions button, .footerActions .secondary { background: #fff; color: var(--navy); border: 1px solid var(--line); }
+        .summaryActions a, .summaryActions button, .quickActions .secondary, .footerActions .secondary { background: #fff; color: var(--navy); border: 1px solid var(--line); }
+        .readiness { display: flex; justify-content: space-between; align-items: center; gap: 18px; border-radius: 18px; padding: 18px; margin: 16px 0; border: 1px solid; }
+        .readiness.pending { background: #fff7e6; border-color: #fee7aa; }
+        .readiness.ready { background: #ecfdf4; border-color: #bbf7d0; }
+        .readiness.ready a { background: var(--green); }
+        .readiness.pending a { background: #fff; color: #7a4b00; border: 1px solid #f8d77a; }
         .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0; }
         .metrics div { background: var(--bg); border: 1px solid #dfeaf0; border-radius: 14px; padding: 14px; }
         .metrics span { display: block; color: var(--ink-soft); font-size: 12px; font-weight: 800; margin-bottom: 6px; }
         .metrics b { color: var(--navy-d); font-size: 19px; }
         .bar { height: 12px; background: #e6f0f6; border-radius: 999px; overflow: hidden; margin-bottom: 18px; }
         .bar i { display: block; height: 100%; background: var(--green); border-radius: inherit; }
-        .stepsTable { display: grid; gap: 8px; }
-        .tableHead, .stepRow { display: grid; grid-template-columns: 54px minmax(260px, 1.7fr) minmax(140px, .8fr) 105px 130px minmax(140px, .8fr) 80px; gap: 8px; align-items: start; }
-        .tableHead { color: var(--ink-soft); font-size: 12px; font-weight: 900; padding: 0 8px; }
-        .stepRow { background: var(--bg); border: 1px solid #dfeaf0; border-radius: 14px; padding: 10px; }
-        input, select, textarea { width: 100%; border: 1px solid #d9e7ef; border-radius: 10px; padding: 10px; font: inherit; color: var(--ink); outline: none; background: #fff; }
-        textarea { resize: vertical; min-height: 44px; }
+        .quickActions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+        .quickActions button:disabled, .footerActions button:disabled { opacity: .6; cursor: not-allowed; }
+        .guide { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 16px 0; }
+        .guide h3 { grid-column: 1 / -1; }
+        .guide div { display: flex; gap: 12px; background: #f8fbfd; border: 1px solid #dfeaf0; border-radius: 16px; padding: 14px; }
+        .guide span { width: 30px; height: 30px; border-radius: 999px; background: var(--green-soft); color: var(--green-d); display: flex; align-items: center; justify-content: center; font-weight: 900; flex: none; }
+        .guide p { margin: 0; }
+        .cards { display: grid; gap: 12px; }
+        .stepCard { background: #f8fbfd; border: 1px solid #dfeaf0; border-radius: 18px; padding: 16px; }
+        .stepTop { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 12px; align-items: start; }
+        .stepNumber { width: 38px; height: 38px; border-radius: 12px; background: #fff; border: 1px solid #d9e7ef; color: var(--navy-d); display: flex; align-items: center; justify-content: center; font-weight: 900; }
+        .stepTitle { display: grid; gap: 10px; }
+        .status { width: max-content; border-radius: 999px; padding: 7px 10px; font-size: 12px; font-weight: 900; }
+        .status.ok { background: #e8fff3; color: #008f57; }
+        .status.active { background: #ecf7ff; color: #02568c; }
+        .status.pending { background: #fff7e6; color: #9a6700; }
+        .status.bad { background: #fff1f0; color: #b42318; }
+        .stepFields { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
+        label { display: grid; gap: 7px; color: #315873; font-size: 12px; font-weight: 900; }
+        input, select, textarea { width: 100%; border: 1px solid #d9e7ef; border-radius: 12px; padding: 11px; font: inherit; color: var(--ink); outline: none; background: #fff; }
+        textarea { resize: vertical; min-height: 58px; }
         input:focus, select:focus, textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(0,193,110,.12); }
-        .remove { border: 0; border-radius: 999px; padding: 10px; background: #fff1f0; color: #b42318; font-weight: 900; cursor: pointer; }
-        .notes { grid-column: 2 / -1; }
-        .footerActions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
-        .footerActions button:disabled { opacity: .6; cursor: not-allowed; }
+        .notes { margin-top: 12px; }
+        .stepActions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; }
+        .complete, .remove { border: 0; border-radius: 999px; padding: 10px 13px; font-weight: 900; cursor: pointer; }
+        .complete { background: #e8fff3; color: #008f57; }
+        .remove { background: #fff1f0; color: #b42318; }
+        .footerActions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+        .footerActions .deployLink { background: var(--navy); color: #fff; }
         .msg { margin-top: 14px; background: #e8fff3; color: #008f57; border: 1px solid #bbf7d0; border-radius: 14px; padding: 12px 14px; font-weight: 900; }
         @media (max-width: 1180px) {
           .papLayout { grid-template-columns: 1fr; }
-          .tableHead { display: none; }
-          .stepRow { grid-template-columns: 1fr 1fr; }
-          .notes { grid-column: 1 / -1; }
+          .stepFields { grid-template-columns: repeat(2, 1fr); }
         }
         @media (max-width: 760px) {
-          .papHead, .summary { flex-direction: column; }
-          .metrics, .stepRow { grid-template-columns: 1fr; }
-          .footerActions { flex-direction: column; }
+          .papHead, .summary, .readiness { flex-direction: column; align-items: flex-start; }
+          .metrics, .stepFields, .guide { grid-template-columns: 1fr; }
+          .footerActions, .quickActions, .stepActions { flex-direction: column; }
+          .footerActions button, .footerActions a, .quickActions button, .stepActions button, .readiness a { width: 100%; }
         }
       `}</style>
     </main>
