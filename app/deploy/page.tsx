@@ -34,7 +34,14 @@ type Change = {
   deployment_runs?: DeploymentRun[];
 };
 
+type JenkinsJob = {
+  name: string;
+  url?: string;
+  color?: string;
+};
+
 const DEFAULT_JOB = 'deploy-ticketing-efe-prod';
+
 const STATUS_LABEL: Record<string, string> = {
   QUEUED: 'En cola',
   RUNNING: 'En ejecución',
@@ -44,6 +51,13 @@ const STATUS_LABEL: Record<string, string> = {
   FAILED_TO_TRIGGER: 'Error al iniciar',
 };
 
+const RDC_STATUS_LABEL: Record<string, string> = {
+  APROBADO_PARA_EJECUCION: 'Aprobado para ejecución',
+  PAP_CREADO: 'Plan PAP creado',
+  EN_IMPLEMENTACION: 'En implementación',
+  IMPLEMENTADO_EXITOSO: 'Implementado exitoso',
+};
+
 function formatDate(value?: string | null) {
   if (!value) return 'Sin fecha';
   try {
@@ -51,6 +65,11 @@ function formatDate(value?: string | null) {
   } catch {
     return value;
   }
+}
+
+function humanRdcStatus(status?: string) {
+  if (!status) return 'Sin estado';
+  return RDC_STATUS_LABEL[status] || status.replaceAll('_', ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
 }
 
 function approvedCount(change?: Change | null) {
@@ -72,9 +91,34 @@ function lastRun(change?: Change | null) {
   return runs.sort((a, b) => new Date(b.triggered_at || 0).getTime() - new Date(a.triggered_at || 0).getTime())[0];
 }
 
+function isRdcApproved(change?: Change | null) {
+  if (!change) return false;
+  const total = totalApprovals(change);
+  return total > 0 && approvedCount(change) === total;
+}
+
+function isPapReady(change?: Change | null) {
+  if (!change) return false;
+  const steps = change.pap_steps || [];
+  if (steps.length === 0) return false;
+  return completedPap(change) === steps.length;
+}
+
+function jobColorLabel(color?: string) {
+  if (!color) return 'Sin estado';
+  if (color.includes('blue')) return 'OK';
+  if (color.includes('red')) return 'Fallando';
+  if (color.includes('yellow')) return 'Inestable';
+  if (color.includes('notbuilt')) return 'Sin build';
+  return color;
+}
+
 export default function DeployCenterPage() {
   const [changes, setChanges] = useState<Change[]>([]);
   const [selectedId, setSelectedId] = useState('');
+  const [jobs, setJobs] = useState<JenkinsJob[]>([]);
+  const [jobsLoading, setJobsLoading] = useState(false);
+  const [jobsWarning, setJobsWarning] = useState('');
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
   const [message, setMessage] = useState('');
@@ -87,7 +131,13 @@ export default function DeployCenterPage() {
   const selected = useMemo(() => changes.find((c) => c.id === selectedId) || null, [changes, selectedId]);
   const selectedLastRun = lastRun(selected);
 
-  const ready = Boolean(selected && ['APROBADO_PARA_EJECUCION', 'PAP_CREADO', 'EN_IMPLEMENTACION'].includes(selected.status));
+  const cabReady = isRdcApproved(selected);
+  const papReady = isPapReady(selected);
+  const roleReady = true;
+  const jobReady = Boolean(jobName.trim());
+  const rdcExecutable = Boolean(selected && ['APROBADO_PARA_EJECUCION', 'PAP_CREADO', 'EN_IMPLEMENTACION'].includes(selected.status));
+
+  const canExecute = Boolean(cabReady && papReady && roleReady && jobReady && rdcExecutable);
   const papSteps = selected?.pap_steps || [];
   const papPercent = papSteps.length ? Math.round((completedPap(selected) / papSteps.length) * 100) : 0;
 
@@ -115,8 +165,27 @@ export default function DeployCenterPage() {
     }
   }
 
+  async function loadJobs() {
+    try {
+      setJobsLoading(true);
+      setJobsWarning('');
+      const response = await fetch('/api/deploy/jobs', { cache: 'no-store' });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || 'No se pudo cargar jobs Jenkins');
+      const list = data.jobs || [];
+      setJobs(list);
+      if (data.warning) setJobsWarning(data.warning);
+      if (list.length && !jobName) setJobName(list[0].name);
+    } catch (err: any) {
+      setJobsWarning(err?.message || 'No se pudo consultar Jenkins. Puedes escribir el job manualmente.');
+    } finally {
+      setJobsLoading(false);
+    }
+  }
+
   useEffect(() => {
     load();
+    loadJobs();
   }, []);
 
   function selectChange(id: string) {
@@ -130,8 +199,22 @@ export default function DeployCenterPage() {
     }
   }
 
+  function executionBlockReason() {
+    if (!rdcExecutable) return 'El cambio aún no está en estado ejecutable.';
+    if (!cabReady) return 'Faltan aprobaciones CAB para ejecutar.';
+    if (!papReady) return 'Completa el Plan PAP antes de ejecutar Jenkins.';
+    if (!jobReady) return 'Selecciona o escribe un Job Jenkins.';
+    return '';
+  }
+
   async function triggerPipeline() {
     if (!selected) return;
+
+    const blockedReason = executionBlockReason();
+    if (blockedReason) {
+      setError(blockedReason);
+      return;
+    }
 
     const confirmed = window.confirm(
       `Vas a ejecutar un pipeline productivo.\n\nRDC: ${selected.title}\nJob: ${jobName}\nAmbiente: ${environment}\n\nEsta acción quedará registrada como evidencia. ¿Continuar?`,
@@ -173,10 +256,13 @@ export default function DeployCenterPage() {
           <p className="kicker">RELEASE EXECUTION</p>
           <h1>Deploy Center</h1>
           <p className="sub">
-            Ejecuta y monitorea pipelines Jenkins asociados a cambios aprobados, sin mezclar la operación técnica con el RDC.
+            Ejecuta y monitorea pipelines Jenkins asociados a cambios aprobados, con controles claros antes de producción.
           </p>
         </div>
-        <button className="ghostBtn" type="button" onClick={load}>Actualizar</button>
+        <div className="headActions">
+          <button className="ghostBtn" type="button" onClick={loadJobs}>Actualizar Jobs</button>
+          <button className="ghostBtn" type="button" onClick={load}>Actualizar</button>
+        </div>
       </header>
 
       {loading ? <div className="state">Cargando cambios listos para ejecución…</div> : null}
@@ -186,7 +272,7 @@ export default function DeployCenterPage() {
         <section className="layout">
           <aside className="queue">
             <div className="queueHead">
-              <h2>Cambios listos</h2>
+              <h2>Listos para ejecución</h2>
               <span>{changes.length}</span>
             </div>
 
@@ -222,15 +308,34 @@ export default function DeployCenterPage() {
                     <h2>{selected.title}</h2>
                     <p>{selected.system || 'Sin sistema'} · {selected.cell || 'Sin célula'} · {selected.category || 'Sin categoría'}</p>
                   </div>
-                  <span className={ready ? 'readyBadge' : 'blockedBadge'}>{ready ? 'Listo para ejecutar' : 'No disponible'}</span>
+                  <span className={canExecute ? 'readyBadge' : 'blockedBadge'}>{canExecute ? 'Listo para Deploy' : 'Pendiente de condiciones'}</span>
                 </div>
 
                 <div className="summaryGrid">
                   <div><span>Aprobaciones CAB</span><b>{approvedCount(selected)}/{totalApprovals(selected)}</b></div>
                   <div><span>Plan PAP</span><b>{papPercent}%</b></div>
-                  <div><span>Estado RDC</span><b>{selected.status}</b></div>
+                  <div><span>Estado RDC</span><b>{humanRdcStatus(selected.status)}</b></div>
                   <div><span>Última ejecución</span><b>{selectedLastRun ? (STATUS_LABEL[selectedLastRun.status] || selectedLastRun.status) : 'Sin run'}</b></div>
                 </div>
+
+                <section className="conditionsCard">
+                  <div className="conditionsHead">
+                    <div>
+                      <p className="kicker">Control previo</p>
+                      <h3>Condiciones para ejecutar</h3>
+                    </div>
+                    <span className={canExecute ? 'okPill' : 'warnPill'}>{canExecute ? 'Todo listo' : 'Revisión requerida'}</span>
+                  </div>
+
+                  <div className="conditions">
+                    <Condition ok={cabReady} title={`CAB aprobado ${approvedCount(selected)}/${totalApprovals(selected)}`} help="Todas las áreas aprobadoras deben estar en APROBADO." />
+                    <Condition ok={papReady} title={papReady ? 'Plan PAP completo' : 'Plan PAP pendiente'} help={papReady ? 'Todas las actividades PAP están completadas.' : 'Completa las actividades del Plan PAP antes de ejecutar.'} />
+                    <Condition ok={roleReady} title="Rol Release Manager" help="Solo RM puede ejecutar pipelines desde el portal." />
+                    <Condition ok={jobReady} title="Job Jenkins configurado" help={jobReady ? jobName : 'Selecciona o escribe un job.'} />
+                  </div>
+
+                  {!canExecute ? <p className="blockReason">{executionBlockReason()}</p> : null}
+                </section>
 
                 <section className="pipelineCard">
                   <div className="pipelineHead">
@@ -240,9 +345,9 @@ export default function DeployCenterPage() {
                       <p>La ejecución queda asociada al RDC, usuario ejecutor, parámetros y resultado.</p>
                     </div>
                     <div className="stageFlow">
-                      <span className="done">CAB</span>
+                      <span className={cabReady ? 'done' : ''}>CAB</span>
                       <i />
-                      <span className={papPercent > 0 ? 'done' : ''}>PAP</span>
+                      <span className={papReady ? 'done' : ''}>PAP</span>
                       <i />
                       <span className={selectedLastRun ? 'done' : ''}>Jenkins</span>
                       <i />
@@ -250,10 +355,20 @@ export default function DeployCenterPage() {
                     </div>
                   </div>
 
+                  {jobsWarning ? <div className="jobsWarning">{jobsWarning}</div> : null}
+
                   <div className="deployForm">
                     <label>
                       Job Jenkins
-                      <input value={jobName} onChange={(e) => setJobName(e.target.value)} placeholder="deploy-pos-prod" />
+                      <select value={jobName} onChange={(e) => setJobName(e.target.value)} disabled={jobsLoading && jobs.length === 0}>
+                        <option value="">{jobsLoading ? 'Cargando jobs…' : 'Selecciona job Jenkins'}</option>
+                        {jobs.map((job) => (
+                          <option key={job.name} value={job.name}>
+                            {job.name} {job.color ? `· ${jobColorLabel(job.color)}` : ''}
+                          </option>
+                        ))}
+                        {!jobs.some((job) => job.name === jobName) && jobName ? <option value={jobName}>{jobName}</option> : null}
+                      </select>
                     </label>
                     <label>
                       Ambiente
@@ -273,11 +388,16 @@ export default function DeployCenterPage() {
                     </label>
                   </div>
 
-                  <button className="primary" type="button" disabled={!ready || triggering} onClick={triggerPipeline}>
-                    {triggering ? 'Enviando a Jenkins…' : 'Ejecutar Pipeline Jenkins'}
+                  <label className="manualJob">
+                    Job manual, si no aparece en el listado
+                    <input value={jobName} onChange={(e) => setJobName(e.target.value)} placeholder="Nombre exacto del job Jenkins" />
+                  </label>
+
+                  <button className="primary" type="button" disabled={!canExecute || triggering} onClick={triggerPipeline}>
+                    {triggering ? 'Enviando a Jenkins…' : canExecute ? 'Ejecutar Pipeline Jenkins' : 'Completa condiciones antes de ejecutar'}
                   </button>
 
-                  <p className="helper">Solo disponible para cambios aprobados por CAB y con rol Release Manager.</p>
+                  <p className="helper">Solo disponible para cambios aprobados por CAB, con Plan PAP completo y rol Release Manager.</p>
                 </section>
 
                 <section className="runs">
@@ -320,14 +440,15 @@ export default function DeployCenterPage() {
       <style jsx>{`
         .deploy { max-width: 1360px; margin: 0 auto; padding: 32px 5vw 64px; }
         .head { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:24px; }
+        .headActions { display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
         .kicker { color:var(--green-d); font-size:13px; font-weight:900; letter-spacing:.16em; margin:0 0 8px; }
         h1 { font-size:clamp(36px,5vw,58px); line-height:.98; letter-spacing:-.06em; margin:0; color:var(--navy-d); }
         .sub { color:var(--ink-soft); line-height:1.5; max-width:760px; margin:12px 0 0; }
         .layout { display:grid; grid-template-columns:360px minmax(0,1fr); gap:18px; }
         .queue, .content > section, .heroCard, .state { background:#fff; border:1px solid var(--line); border-radius:22px; box-shadow:0 18px 45px rgba(7,59,93,.06); }
         .queue { padding:20px; }
-        .queueHead, .runsHead { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
-        .queueHead h2, .runsHead h3, .pipelineCard h3 { margin:0; color:var(--navy-d); letter-spacing:-.03em; }
+        .queueHead, .runsHead, .conditionsHead { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:14px; }
+        .queueHead h2, .runsHead h3, .pipelineCard h3, .conditionsCard h3 { margin:0; color:var(--navy-d); letter-spacing:-.03em; }
         .queueHead span, .runsHead span { background:var(--green-soft); color:var(--green-d); font-weight:900; border-radius:999px; padding:8px 12px; }
         .queueList { display:grid; gap:10px; }
         .queueItem { text-align:left; background:var(--bg); border:1px solid #dfeaf0; border-radius:16px; padding:14px; color:var(--ink); cursor:pointer; }
@@ -340,14 +461,25 @@ export default function DeployCenterPage() {
         .heroCard { padding:20px; display:flex; justify-content:space-between; gap:18px; align-items:flex-start; }
         .heroCard h2 { margin:0 0 8px; font-size:28px; color:var(--navy-d); letter-spacing:-.04em; }
         .heroCard p { margin:0; color:var(--ink-soft); }
-        .readyBadge, .blockedBadge { border-radius:999px; padding:10px 13px; font-weight:900; white-space:nowrap; }
-        .readyBadge { background:#e8fff3; color:#008f57; }
-        .blockedBadge { background:#fff1f0; color:#b42318; }
+        .readyBadge, .blockedBadge, .okPill, .warnPill { border-radius:999px; padding:10px 13px; font-weight:900; white-space:nowrap; }
+        .readyBadge, .okPill { background:#e8fff3; color:#008f57; }
+        .blockedBadge, .warnPill { background:#fff7e6; color:#9a6700; }
         .summaryGrid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
         .summaryGrid div { background:#fff; border:1px solid var(--line); border-radius:18px; padding:16px; }
         .summaryGrid span { display:block; color:var(--ink-soft); font-weight:800; font-size:12px; margin-bottom:6px; }
         .summaryGrid b { color:var(--navy-d); font-size:18px; word-break:break-word; }
-        .pipelineCard, .runs { padding:20px; }
+        .pipelineCard, .runs, .conditionsCard { padding:20px; }
+        .conditions { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
+        .condition { display:flex; gap:12px; align-items:flex-start; background:var(--bg); border:1px solid #dfeaf0; border-radius:16px; padding:13px; }
+        .condition.ok { border-color:#bbf7d0; background:#f0fff7; }
+        .condition.warn { border-color:#fee7aa; background:#fffaf0; }
+        .conditionIcon { width:30px; height:30px; border-radius:999px; display:flex; align-items:center; justify-content:center; flex:none; font-weight:900; }
+        .condition.ok .conditionIcon { background:#e8fff3; color:#008f57; }
+        .condition.warn .conditionIcon { background:#fff7e6; color:#9a6700; }
+        .condition b, .condition small { display:block; }
+        .condition b { color:var(--navy-d); margin-bottom:3px; }
+        .condition small { color:var(--ink-soft); line-height:1.35; }
+        .blockReason, .jobsWarning { background:#fff7e6; color:#9a6700; border:1px solid #fee7aa; border-radius:14px; padding:12px 14px; font-weight:800; margin:14px 0 0; }
         .pipelineHead { display:flex; justify-content:space-between; gap:16px; margin-bottom:16px; }
         .pipelineHead p { color:var(--ink-soft); margin:8px 0 0; }
         .stageFlow { display:flex; align-items:center; gap:8px; flex:none; }
@@ -356,6 +488,7 @@ export default function DeployCenterPage() {
         .stageFlow i { width:24px; height:2px; background:#d8e4eb; }
         .deployForm { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:14px; }
         label { display:grid; gap:7px; color:#315873; font-weight:900; font-size:13px; }
+        .manualJob { margin-bottom:14px; }
         input, select { width:100%; border:1px solid #d9e7ef; background:#fff; border-radius:12px; padding:12px 13px; font:inherit; color:var(--ink); outline:none; min-height:48px; }
         input:focus, select:focus { border-color:var(--green); box-shadow:0 0 0 3px rgba(0,193,110,.12); }
         button, .primary, .ghostBtn { border:0; background:var(--green); color:#fff; border-radius:999px; padding:13px 18px; font-weight:900; cursor:pointer; }
@@ -378,8 +511,20 @@ export default function DeployCenterPage() {
         .empty { color:var(--ink-soft); }
         .msg { background:#e8fff3; color:#008f57; border:1px solid #bbf7d0; border-radius:14px; padding:12px 14px; font-weight:900; }
         @media(max-width:1120px){ .layout{grid-template-columns:1fr;} .pipelineHead{flex-direction:column;} }
-        @media(max-width:760px){ .head,.heroCard{flex-direction:column;} .summaryGrid,.deployForm{grid-template-columns:1fr;} .run{grid-template-columns:1fr;} }
+        @media(max-width:760px){ .head,.heroCard,.conditionsHead{flex-direction:column;} .summaryGrid,.deployForm,.conditions{grid-template-columns:1fr;} .run{grid-template-columns:1fr;} }
       `}</style>
     </main>
+  );
+}
+
+function Condition({ ok, title, help }: { ok: boolean; title: string; help: string }) {
+  return (
+    <div className={ok ? 'condition ok' : 'condition warn'}>
+      <span className="conditionIcon">{ok ? '✓' : '!'}</span>
+      <span>
+        <b>{title}</b>
+        <small>{help}</small>
+      </span>
+    </div>
   );
 }
