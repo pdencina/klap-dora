@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 type Approval = {
   id: string;
@@ -149,6 +150,8 @@ function approvedCount(change: Change) {
 }
 
 export default function PapPage() {
+  const searchParams = useSearchParams();
+  const targetRdcId = searchParams.get('rdcId') || '';
   const [changes, setChanges] = useState<Change[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [steps, setSteps] = useState<PapStep[]>([]);
@@ -171,8 +174,10 @@ export default function PapPage() {
       const list: Change[] = data.changes || [];
       setChanges(list);
       if (list.length && !selectedId) {
-        setSelectedId(list[0].id);
-        setSteps(list[0].pap_steps?.length ? normalizeSteps(list[0].pap_steps) : defaultSteps(list[0]));
+        const target = targetRdcId ? list.find((item) => item.id === targetRdcId) : null;
+        const initial = target || list[0];
+        setSelectedId(initial.id);
+        setSteps(initial.pap_steps?.length ? normalizeSteps(initial.pap_steps) : defaultSteps(initial));
       }
     } catch (err: any) {
       setError(err?.message || 'Error cargando módulo PAP');
@@ -198,7 +203,7 @@ export default function PapPage() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [targetRdcId]);
 
   function selectChange(id: string) {
     const change = changes.find((c) => c.id === id);

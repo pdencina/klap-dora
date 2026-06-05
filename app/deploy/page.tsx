@@ -308,7 +308,7 @@ export default function DeployCenterPage() {
                     <h2>{selected.title}</h2>
                     <p>{selected.system || 'Sin sistema'} · {selected.cell || 'Sin célula'} · {selected.category || 'Sin categoría'}</p>
                   </div>
-                  <span className={canExecute ? 'readyBadge' : 'blockedBadge'}>{canExecute ? 'Listo para Deploy' : 'Pendiente de condiciones'}</span>
+                  <span className={canExecute ? 'readyBadge' : 'blockedBadge'}>{canExecute ? 'Listo para Deploy' : 'No ejecutable todavía'}</span>
                 </div>
 
                 <div className="summaryGrid">
@@ -334,7 +334,15 @@ export default function DeployCenterPage() {
                     <Condition ok={jobReady} title="Job Jenkins configurado" help={jobReady ? jobName : 'Selecciona o escribe un job.'} />
                   </div>
 
-                  {!canExecute ? <p className="blockReason">{executionBlockReason()}</p> : null}
+                  {!canExecute ? (
+                    <div className="blockReasonBox">
+                      <div>
+                        <b>{!papReady ? 'Falta completar Plan PAP' : 'Ejecución bloqueada'}</b>
+                        <span>{executionBlockReason()}</span>
+                      </div>
+                      {!papReady ? <a href={`/pap?rdcId=${selected.id}`}>Ir a Plan PAP →</a> : null}
+                    </div>
+                  ) : null}
                 </section>
 
                 <section className="pipelineCard">
@@ -479,7 +487,12 @@ export default function DeployCenterPage() {
         .condition b, .condition small { display:block; }
         .condition b { color:var(--navy-d); margin-bottom:3px; }
         .condition small { color:var(--ink-soft); line-height:1.35; }
-        .blockReason, .jobsWarning { background:#fff7e6; color:#9a6700; border:1px solid #fee7aa; border-radius:14px; padding:12px 14px; font-weight:800; margin:14px 0 0; }
+        .jobsWarning { background:#fff7e6; color:#9a6700; border:1px solid #fee7aa; border-radius:14px; padding:12px 14px; font-weight:800; margin:14px 0 0; }
+        .blockReasonBox { display:flex; justify-content:space-between; align-items:center; gap:14px; background:#fff7e6; color:#9a6700; border:1px solid #fee7aa; border-radius:14px; padding:13px 14px; margin:14px 0 0; }
+        .blockReasonBox b, .blockReasonBox span { display:block; }
+        .blockReasonBox b { color:#7a4b00; margin-bottom:3px; }
+        .blockReasonBox span { font-weight:700; line-height:1.35; }
+        .blockReasonBox a { flex:none; background:#fff; border:1px solid #f8d77a; color:#7a4b00; border-radius:999px; padding:10px 13px; font-weight:900; }
         .pipelineHead { display:flex; justify-content:space-between; gap:16px; margin-bottom:16px; }
         .pipelineHead p { color:var(--ink-soft); margin:8px 0 0; }
         .stageFlow { display:flex; align-items:center; gap:8px; flex:none; }
@@ -511,7 +524,7 @@ export default function DeployCenterPage() {
         .empty { color:var(--ink-soft); }
         .msg { background:#e8fff3; color:#008f57; border:1px solid #bbf7d0; border-radius:14px; padding:12px 14px; font-weight:900; }
         @media(max-width:1120px){ .layout{grid-template-columns:1fr;} .pipelineHead{flex-direction:column;} }
-        @media(max-width:760px){ .head,.heroCard,.conditionsHead{flex-direction:column;} .summaryGrid,.deployForm,.conditions{grid-template-columns:1fr;} .run{grid-template-columns:1fr;} }
+        @media(max-width:760px){ .head,.heroCard,.conditionsHead,.blockReasonBox{flex-direction:column; align-items:flex-start;} .summaryGrid,.deployForm,.conditions{grid-template-columns:1fr;} .run{grid-template-columns:1fr;} .blockReasonBox a{width:100%; text-align:center;} }
       `}</style>
     </main>
   );
