@@ -202,7 +202,7 @@ export default function DeployCenterPage() {
   function executionBlockReason() {
     if (!rdcExecutable) return 'El cambio aún no está en estado ejecutable.';
     if (!cabReady) return 'Faltan aprobaciones CAB para ejecutar.';
-    if (!papReady) return 'Completa el Plan PAP antes de ejecutar Jenkins.';
+    if (!papReady) return 'Antes de ejecutar Jenkins, completa y valida las actividades del paso a producción.';
     if (!jobReady) return 'Selecciona o escribe un Job Jenkins.';
     return '';
   }
@@ -477,19 +477,19 @@ export default function DeployCenterPage() {
         .summaryGrid span { display:block; color:var(--ink-soft); font-weight:800; font-size:12px; margin-bottom:6px; }
         .summaryGrid b { color:var(--navy-d); font-size:18px; word-break:break-word; }
         .pipelineCard, .runs, .conditionsCard { padding:20px; }
-        .conditions { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:14px; }
-        .condition { display:flex; gap:14px; align-items:flex-start; background:var(--bg); border:1px solid #dfeaf0; border-radius:18px; padding:16px; min-height:94px; }
+        .conditions { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; }
+        .condition { display:flex; gap:15px; align-items:flex-start; background:var(--bg); border:1px solid #dfeaf0; border-radius:18px; padding:16px; min-height:96px; }
         .condition.ok { border-color:#bbf7d0; background:#f0fff7; }
         .condition.warn { border-color:#fee7aa; background:#fffaf0; }
         .conditionIcon { width:34px; height:34px; border-radius:999px; display:flex; align-items:center; justify-content:center; flex:none; font-weight:900; font-size:15px; margin-top:1px; }
-        .condition.ok .conditionIcon { background:#e8fff3; color:#008f57; }
-        .condition.warn .conditionIcon { background:#fff7e6; color:#9a6700; }
-        .condition b, .condition small { display:block; }
-        .condition b { color:var(--navy-d); margin-bottom:7px; font-size:15px; letter-spacing:-.01em; line-height:1.15; }
+        .condition.ok .conditionIcon { width:34px; height:34px; border-radius:999px; display:flex; align-items:center; justify-content:center; flex:none; font-weight:900; font-size:15px; margin-top:1px; }
+        .condition.warn .conditionIcon { width:34px; height:34px; border-radius:999px; display:flex; align-items:center; justify-content:center; flex:none; font-weight:900; font-size:15px; margin-top:1px; }
+        .condition b, .condition small { color:var(--ink-soft); line-height:1.45; font-weight:700; }
+        .condition b { color:var(--navy-d); margin-bottom:8px; font-size:15px; letter-spacing:-.01em; line-height:1.18; }
         .condition small { color:var(--ink-soft); line-height:1.45; font-weight:700; }
         .jobsWarning { background:#fff7e6; color:#9a6700; border:1px solid #fee7aa; border-radius:14px; padding:12px 14px; font-weight:800; margin:14px 0 0; }
         .blockReasonBox { display:flex; justify-content:space-between; align-items:center; gap:18px; background:#fff7e6; color:#9a6700; border:1px solid #fee7aa; border-radius:18px; padding:16px; margin:16px 0 0; }
-        .blockReasonBox b, .blockReasonBox span { display:block; }
+        .blockReasonBox b, .blockReasonBox span { font-weight:700; line-height:1.45; }
         .blockReasonBox b { color:#7a4b00; margin-bottom:6px; font-size:15px; }
         .blockReasonBox span { font-weight:700; line-height:1.45; }
         .blockReasonBox a { flex:none; background:#fff; border:1px solid #f8d77a; color:#7a4b00; border-radius:999px; padding:11px 15px; font-weight:900; box-shadow:0 8px 20px rgba(154,103,0,.08); }
@@ -524,7 +524,7 @@ export default function DeployCenterPage() {
         .empty { color:var(--ink-soft); }
         .msg { background:#e8fff3; color:#008f57; border:1px solid #bbf7d0; border-radius:14px; padding:12px 14px; font-weight:900; }
         @media(max-width:1120px){ .layout{grid-template-columns:1fr;} .pipelineHead{flex-direction:column;} }
-        @media(max-width:760px){ .head,.heroCard,.conditionsHead,.blockReasonBox{flex-direction:column; align-items:flex-start;} .summaryGrid,.deployForm,.conditions{grid-template-columns:1fr;} .run{grid-template-columns:1fr;} .blockReasonBox a{width:100%; text-align:center;} }
+        @media(max-width:760px){ .head,.heroCard,.conditionsHead,.blockReasonBox { display:flex; justify-content:space-between; align-items:center; gap:18px; background:#fff7e6; color:#9a6700; border:1px solid #fee7aa; border-radius:18px; padding:16px; margin:16px 0 0; } .summaryGrid,.deployForm,.conditions { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; } .run{grid-template-columns:1fr;} .blockReasonBox a { flex:none; background:#fff; border:1px solid #f8d77a; color:#7a4b00; border-radius:999px; padding:11px 15px; font-weight:900; box-shadow:0 8px 20px rgba(154,103,0,.08); } }
       `}</style>
     </main>
   );
