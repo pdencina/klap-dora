@@ -48,7 +48,7 @@ type Change = {
   pap_steps?: PapStep[];
 };
 
-const STEP_STATUS = ['Pendiente', 'En curso', 'Completado', 'Bloqueado', 'No aplica'];
+const STEP_STATUS = ['Pendiente definir', 'Planificado', 'Validado', 'Bloqueado', 'No aplica'];
 const JIRA_BROWSE = 'https://multicaja-cloud.atlassian.net/browse/';
 
 function detailOf(change: Change): RdcDetail {
@@ -88,7 +88,7 @@ function defaultSteps(change: Change): PapStep[] {
       activity: 'Revisar precondiciones del cambio y confirmar ventana de implementación',
       responsible: 'Release Management',
       planned_time: '21:30',
-      status: 'Pendiente',
+      status: 'Pendiente definir',
       evidence_url: '',
       notes: '',
     },
@@ -100,7 +100,7 @@ function defaultSteps(change: Change): PapStep[] {
       activity,
       responsible: change.technical_lead || 'Líder técnico',
       planned_time: `${String(22 + Math.floor((index * 10) / 60)).padStart(2, '0')}:${String((index * 10) % 60).padStart(2, '0')}`,
-      status: 'Pendiente',
+      status: 'Pendiente definir',
       evidence_url: '',
       notes: '',
     });
@@ -112,7 +112,7 @@ function defaultSteps(change: Change): PapStep[] {
       activity: 'Ejecutar validación funcional/técnica post deploy',
       responsible: change.qa_analyst || 'QA',
       planned_time: '23:30',
-      status: 'Pendiente',
+      status: 'Pendiente definir',
       evidence_url: '',
       notes: validationPlan,
     });
@@ -124,7 +124,7 @@ function defaultSteps(change: Change): PapStep[] {
       activity: 'Validar plan de rollback disponible antes del GO / NO GO',
       responsible: 'Release Management',
       planned_time: '21:45',
-      status: 'Pendiente',
+      status: 'Pendiente definir',
       evidence_url: '',
       notes: rollback,
     });
@@ -135,7 +135,7 @@ function defaultSteps(change: Change): PapStep[] {
     activity: 'Registrar resultado del paso y preparar cierre',
     responsible: 'Release Management',
     planned_time: '23:30',
-    status: 'Pendiente',
+    status: 'Pendiente definir',
     evidence_url: '',
     notes: '',
   });
@@ -150,9 +150,9 @@ function approvedCount(change: Change) {
 }
 
 function statusClass(status: string) {
-  if (status === 'Completado') return 'ok';
+  if (status === 'Validado') return 'ok';
   if (status === 'Bloqueado') return 'bad';
-  if (status === 'En curso') return 'active';
+  if (status === 'Planificado') return 'active';
   return 'pending';
 }
 
@@ -169,9 +169,9 @@ export default function PapPage() {
   const [error, setError] = useState('');
 
   const selected = useMemo(() => changes.find((c) => c.id === selectedId) || null, [changes, selectedId]);
-  const completed = steps.filter((s) => s.status === 'Completado').length;
+  const completed = steps.filter((s) => s.status === 'Validado').length;
   const blocked = steps.filter((s) => s.status === 'Bloqueado').length;
-  const pending = steps.filter((s) => s.status !== 'Completado').length;
+  const pending = steps.filter((s) => s.status !== 'Validado').length;
   const percent = steps.length ? Math.round((completed / steps.length) * 100) : 0;
   const readyForDeploy = steps.length > 0 && completed === steps.length;
 
@@ -208,7 +208,7 @@ export default function PapPage() {
         activity: s.activity || '',
         responsible: s.responsible || '',
         planned_time: s.planned_time || '',
-        status: s.status || 'Pendiente',
+        status: s.status || 'Pendiente definir',
         evidence_url: s.evidence_url || '',
         notes: s.notes || '',
       }));
@@ -238,7 +238,7 @@ export default function PapPage() {
         activity: '',
         responsible: '',
         planned_time: '',
-        status: 'Pendiente',
+        status: 'Pendiente definir',
         evidence_url: '',
         notes: '',
       },
@@ -250,7 +250,7 @@ export default function PapPage() {
   }
 
   function markAllComplete() {
-    setSteps((current) => current.map((step) => ({ ...step, status: 'Completado' })));
+    setSteps((current) => current.map((step) => ({ ...step, status: 'Validado' })));
   }
 
   async function saveSteps() {
@@ -302,7 +302,7 @@ export default function PapPage() {
           <p className="kicker">PASO A PRODUCCIÓN · PAP</p>
           <h1>Plan PAP</h1>
           <p className="sub">
-            Ordena el paso a producción en actividades simples. Completa cada paso, guarda el plan y vuelve a Deploy Center para ejecutar Jenkins.
+            Ordena el paso a producción en actividades simples. Valida cada paso, guarda el plan y vuelve a Deploy Center para ejecutar Jenkins.
           </p>
         </div>
         <button type="button" className="refresh" onClick={load}>Actualizar</button>
@@ -325,7 +325,7 @@ export default function PapPage() {
               <div className="queueList">
                 {changes.map((change) => {
                   const currentSteps = change.pap_steps || [];
-                  const currentCompleted = currentSteps.filter((s) => s.status === 'Completado').length;
+                  const currentCompleted = currentSteps.filter((s) => s.status === 'Validado').length;
                   const currentPercent = currentSteps.length ? Math.round((currentCompleted / currentSteps.length) * 100) : 0;
 
                   return (
@@ -364,11 +364,11 @@ export default function PapPage() {
                 <section className={readyForDeploy ? 'readiness ready' : 'readiness pending'}>
                   <div>
                     <p className="kicker">Estado del Plan PAP</p>
-                    <h3>{readyForDeploy ? 'Plan PAP listo para Deploy' : 'Plan PAP pendiente de completar'}</h3>
+                    <h3>{readyForDeploy ? 'Plan PAP listo para Deploy' : 'Plan PAP pendiente de validación'}</h3>
                     <p>
                       {readyForDeploy
-                        ? 'Todas las actividades están completadas. Puedes volver a Deploy Center para ejecutar Jenkins.'
-                        : 'Completa las actividades del paso a producción antes de ejecutar Jenkins.'}
+                        ? 'La planificación está validada. Puedes volver a Deploy Center para ejecutar Jenkins.'
+                        : 'Valida la planificación del paso a producción antes de ejecutar Jenkins.'}
                     </p>
                   </div>
                   <a href={`/deploy?rdcId=${selected.id}`}>Volver a Deploy Center →</a>
@@ -377,7 +377,7 @@ export default function PapPage() {
                 <div className="metrics">
                   <div><span>Fecha deploy</span><b>{formatDate(selected.proposed_deploy_date)}</b></div>
                   <div><span>Aprobaciones</span><b>{approvedCount(selected)}</b></div>
-                  <div><span>Completadas</span><b>{completed}/{steps.length}</b></div>
+                  <div><span>Actividades validadas</span><b>{completed}/{steps.length}</b></div>
                   <div><span>Avance PAP</span><b>{percent}%</b></div>
                 </div>
 
@@ -385,20 +385,20 @@ export default function PapPage() {
 
                 <div className="quickActions">
                   <button type="button" className="secondary" onClick={addStep}>+ Agregar actividad</button>
-                  <button type="button" className="secondary" onClick={markAllComplete}>Completar todo</button>
+                  <button type="button" className="secondary" onClick={markAllComplete}>Validar todo</button>
                   <button type="button" onClick={saveSteps} disabled={saving}>{saving ? 'Guardando…' : 'Guardar Plan PAP'}</button>
                 </div>
-                <p className="saveHint">Cambia el estado de cada actividad y luego presiona <b>Guardar Plan PAP</b>.</p>
+                <p className="saveHint">Cambia el estado de cada actividad de planificación y luego presiona <b>Guardar Plan PAP</b>.</p>
 
                 <section className="guide">
-                  <h3>Cómo completar este plan</h3>
+                  <h3>Cómo validar este plan</h3>
                   <div>
                     <span>1</span>
-                    <p>Revisa cada actividad del paso a producción.</p>
+                    <p>Revisa cada actividad antes del paso a producción.</p>
                   </div>
                   <div>
                     <span>2</span>
-                    <p>Cambia el estado cuando la actividad esté validada.</p>
+                    <p>Cambia el estado a Validado cuando la actividad quede planificada y revisada.</p>
                   </div>
                   <div>
                     <span>3</span>
@@ -410,7 +410,7 @@ export default function PapPage() {
                   <div className="cardsHead">
                     <div>
                       <h3>Actividades del paso</h3>
-                      <p>{pending === 0 ? 'Todas completadas.' : `${pending} actividad(es) pendientes.`} {blocked > 0 ? `${blocked} bloqueada(s).` : ''}</p>
+                      <p>{pending === 0 ? 'Planificación validada.' : `${pending} actividad(es) por validar.`} {blocked > 0 ? `${blocked} bloqueada(s).` : ''}</p>
                     </div>
                     <span>{steps.length} actividades</span>
                   </div>
@@ -435,20 +435,16 @@ export default function PapPage() {
                           <input type="time" value={step.planned_time} onChange={(e) => updateStep(index, 'planned_time', e.target.value)} />
                         </label>
                         <label>
-                          Estado
+                          Estado de planificación
                           <select value={step.status} onChange={(e) => updateStep(index, 'status', e.target.value)}>
                             {STEP_STATUS.map((s) => <option key={s}>{s}</option>)}
                           </select>
                         </label>
-                        <label>
-                          Evidencia
-                          <input value={step.evidence_url} onChange={(e) => updateStep(index, 'evidence_url', e.target.value)} placeholder="URL evidencia" />
-                        </label>
                       </div>
 
                       <label className="notes">
-                        Notas u observaciones
-                        <input value={step.notes} onChange={(e) => updateStep(index, 'notes', e.target.value)} placeholder="Notas del paso" />
+                        Criterio de validación / instrucción
+                        <input value={step.notes} onChange={(e) => updateStep(index, 'notes', e.target.value)} placeholder="Ej: validar logs, confirmar transacciones, revisar monitoreo, responsable del GO/NO GO" />
                       </label>
 
                       <div className="stepActions">
@@ -528,7 +524,7 @@ export default function PapPage() {
         .status.active { background: #ecf7ff; color: #02568c; }
         .status.pending { background: #fff7e6; color: #9a6700; }
         .status.bad { background: #fff1f0; color: #b42318; }
-        .stepFields { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
+        .stepFields { display: grid; grid-template-columns: 1.2fr .8fr 1fr; gap: 10px; margin-top: 12px; }
         label { display: grid; gap: 7px; color: #315873; font-size: 12px; font-weight: 900; }
         input, select, textarea { width: 100%; border: 1px solid #d9e7ef; border-radius: 12px; padding: 11px; font: inherit; color: var(--ink); outline: none; background: #fff; }
         textarea { resize: vertical; min-height: 58px; }
