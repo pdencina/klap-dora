@@ -87,7 +87,7 @@ function defaultSteps(change: Change): PapStep[] {
       step_order: 1,
       activity: 'Revisar precondiciones del cambio y confirmar ventana de implementación',
       responsible: 'Release Management',
-      planned_time: 'T-30 min',
+      planned_time: '21:30',
       status: 'Pendiente',
       evidence_url: '',
       notes: '',
@@ -99,7 +99,7 @@ function defaultSteps(change: Change): PapStep[] {
       step_order: base.length + 1,
       activity,
       responsible: change.technical_lead || 'Líder técnico',
-      planned_time: `T+${index * 10} min`,
+      planned_time: `${String(22 + Math.floor((index * 10) / 60)).padStart(2, '0')}:${String((index * 10) % 60).padStart(2, '0')}`,
       status: 'Pendiente',
       evidence_url: '',
       notes: '',
@@ -111,7 +111,7 @@ function defaultSteps(change: Change): PapStep[] {
       step_order: base.length + 1,
       activity: 'Ejecutar validación funcional/técnica post deploy',
       responsible: change.qa_analyst || 'QA',
-      planned_time: 'Post deploy',
+      planned_time: '23:30',
       status: 'Pendiente',
       evidence_url: '',
       notes: validationPlan,
@@ -123,7 +123,7 @@ function defaultSteps(change: Change): PapStep[] {
       step_order: base.length + 1,
       activity: 'Validar plan de rollback disponible antes del GO / NO GO',
       responsible: 'Release Management',
-      planned_time: 'Antes del inicio',
+      planned_time: '21:45',
       status: 'Pendiente',
       evidence_url: '',
       notes: rollback,
@@ -134,7 +134,7 @@ function defaultSteps(change: Change): PapStep[] {
     step_order: base.length + 1,
     activity: 'Registrar resultado del paso y preparar cierre',
     responsible: 'Release Management',
-    planned_time: 'Post deploy',
+    planned_time: '23:30',
     status: 'Pendiente',
     evidence_url: '',
     notes: '',
@@ -249,10 +249,6 @@ export default function PapPage() {
     setSteps((current) => current.filter((_, i) => i !== index).map((s, i) => ({ ...s, step_order: i + 1 })));
   }
 
-  function markStepComplete(index: number) {
-    updateStep(index, 'status', 'Completado');
-  }
-
   function markAllComplete() {
     setSteps((current) => current.map((step) => ({ ...step, status: 'Completado' })));
   }
@@ -292,7 +288,7 @@ export default function PapPage() {
       `Fecha deploy: ${formatDate(selected.proposed_deploy_date)}`,
       `Aprobaciones: ${approvedCount(selected)}`,
       '',
-      ...steps.map((s) => `${s.step_order}. [${s.status}] ${s.activity} | Responsable: ${s.responsible || 'No informado'} | Hora: ${s.planned_time || 'No informado'}`),
+      ...steps.map((s) => `${s.step_order}. [${s.status}] ${s.activity} | Responsable: ${s.responsible || 'No informado'} | Hora estimada: ${s.planned_time || 'No informado'}`),
     ].join('\n');
 
     navigator.clipboard?.writeText(text);
@@ -389,9 +385,10 @@ export default function PapPage() {
 
                 <div className="quickActions">
                   <button type="button" className="secondary" onClick={addStep}>+ Agregar actividad</button>
-                  <button type="button" className="secondary" onClick={markAllComplete}>Marcar todo como completado</button>
+                  <button type="button" className="secondary" onClick={markAllComplete}>Completar todo</button>
                   <button type="button" onClick={saveSteps} disabled={saving}>{saving ? 'Guardando…' : 'Guardar Plan PAP'}</button>
                 </div>
+                <p className="saveHint">Cambia el estado de cada actividad y luego presiona <b>Guardar Plan PAP</b>.</p>
 
                 <section className="guide">
                   <h3>Cómo completar este plan</h3>
@@ -401,11 +398,11 @@ export default function PapPage() {
                   </div>
                   <div>
                     <span>2</span>
-                    <p>Marca como <b>Completado</b> lo que ya fue validado.</p>
+                    <p>Cambia el estado cuando la actividad esté validada.</p>
                   </div>
                   <div>
                     <span>3</span>
-                    <p>Guarda el Plan PAP y vuelve a Deploy Center.</p>
+                    <p>Guarda los cambios y vuelve a Deploy Center.</p>
                   </div>
                 </section>
 
@@ -434,8 +431,8 @@ export default function PapPage() {
                           <input value={step.responsible} onChange={(e) => updateStep(index, 'responsible', e.target.value)} placeholder="Responsable" />
                         </label>
                         <label>
-                          Hora estimada
-                          <input value={step.planned_time} onChange={(e) => updateStep(index, 'planned_time', e.target.value)} placeholder="22:00 / T+10" />
+                          Hora estimada (HH:MM)
+                          <input type="time" value={step.planned_time} onChange={(e) => updateStep(index, 'planned_time', e.target.value)} />
                         </label>
                         <label>
                           Estado
@@ -455,8 +452,7 @@ export default function PapPage() {
                       </label>
 
                       <div className="stepActions">
-                        <button type="button" className="complete" onClick={() => markStepComplete(index)}>Marcar completado</button>
-                        <button type="button" className="remove" onClick={() => removeStep(index)}>Quitar</button>
+                        <button type="button" className="remove" onClick={() => removeStep(index)}>Quitar actividad</button>
                       </div>
                     </article>
                   ))}
@@ -515,6 +511,8 @@ export default function PapPage() {
         .bar i { display: block; height: 100%; background: var(--green); border-radius: inherit; }
         .quickActions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
         .quickActions button:disabled, .footerActions button:disabled { opacity: .6; cursor: not-allowed; }
+        .saveHint { margin: -6px 0 16px; color: var(--ink-soft); font-size: 13px; text-align: right; }
+        .saveHint b { color: var(--navy-d); }
         .guide { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 16px 0; }
         .guide h3 { grid-column: 1 / -1; }
         .guide div { display: flex; gap: 12px; background: #f8fbfd; border: 1px solid #dfeaf0; border-radius: 16px; padding: 14px; }
@@ -537,9 +535,7 @@ export default function PapPage() {
         input:focus, select:focus, textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(0,193,110,.12); }
         .notes { margin-top: 12px; }
         .stepActions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; }
-        .complete, .remove { border: 0; border-radius: 999px; padding: 10px 13px; font-weight: 900; cursor: pointer; }
-        .complete { background: #e8fff3; color: #008f57; }
-        .remove { background: #fff1f0; color: #b42318; }
+        .remove { border: 0; border-radius: 999px; padding: 10px 13px; font-weight: 900; cursor: pointer; background: #fff1f0; color: #b42318; }
         .footerActions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
         .footerActions .deployLink { background: var(--navy); color: #fff; }
         .msg { margin-top: 14px; background: #e8fff3; color: #008f57; border: 1px solid #bbf7d0; border-radius: 14px; padding: 12px 14px; font-weight: 900; }
