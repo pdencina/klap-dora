@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
-const RM_PREFIXES = ['/release', '/approvals', '/cab', '/pap', '/cierre', '/dashboard'];
+const RM_PREFIXES = ['/release', '/approvals', '/cab', '/pap', '/deploy', '/cierre', '/dashboard'];
 const CLIENT_PREFIXES = ['/rdc', '/mis-cambios'];
 const APPROVER_PREFIXES = ['/mis-aprobaciones'];
 

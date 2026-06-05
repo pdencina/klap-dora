@@ -55,6 +55,12 @@ const cardsByRole: Record<Role, Array<{ title: string; description: string; href
       cta: 'Planificar PAP',
     },
     {
+      title: 'Deploy Center',
+      description: 'Ejecuta y monitorea pipelines Jenkins asociados a cambios aprobados, sin mezclarlo con el RDC.',
+      href: '/deploy',
+      cta: 'Abrir Deploy Center',
+    },
+    {
       title: 'Dashboard DORA',
       description: 'Consulta métricas de despliegue, lead time, fallos y recuperación.',
       href: '/dashboard',
