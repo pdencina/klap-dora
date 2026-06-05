@@ -308,7 +308,7 @@ export default function DeployCenterPage() {
                     <h2>{selected.title}</h2>
                     <p>{selected.system || 'Sin sistema'} · {selected.cell || 'Sin célula'} · {selected.category || 'Sin categoría'}</p>
                   </div>
-                  <span className={canExecute ? 'readyBadge' : 'blockedBadge'}>{canExecute ? 'Listo para Deploy' : 'No ejecutable todavía'}</span>
+                  <span className={canExecute ? 'readyBadge' : 'blockedBadge'}>{canExecute ? 'Listo para Deploy' : !papReady ? 'Pendiente Plan PAP' : 'No ejecutable todavía'}</span>
                 </div>
 
                 <div className="summaryGrid">
@@ -329,7 +329,7 @@ export default function DeployCenterPage() {
 
                   <div className="conditions">
                     <Condition ok={cabReady} title={`CAB aprobado ${approvedCount(selected)}/${totalApprovals(selected)}`} help="Todas las áreas aprobadoras deben estar en APROBADO." />
-                    <Condition ok={papReady} title={papReady ? 'Plan PAP completo' : 'Plan PAP pendiente'} help={papReady ? 'Todas las actividades PAP están completadas.' : 'Completa las actividades del Plan PAP antes de ejecutar.'} />
+                    <Condition ok={papReady} title={papReady ? 'Plan PAP completo' : 'Plan PAP pendiente'} help={papReady ? 'Todas las actividades PAP están completadas y listas para ejecución.' : 'Completa y valida las actividades del paso a producción antes de ejecutar Jenkins.'} />
                     <Condition ok={roleReady} title="Rol Release Manager" help="Solo RM puede ejecutar pipelines desde el portal." />
                     <Condition ok={jobReady} title="Job Jenkins configurado" help={jobReady ? jobName : 'Selecciona o escribe un job.'} />
                   </div>
@@ -337,8 +337,8 @@ export default function DeployCenterPage() {
                   {!canExecute ? (
                     <div className="blockReasonBox">
                       <div>
-                        <b>{!papReady ? 'Falta completar Plan PAP' : 'Ejecución bloqueada'}</b>
-                        <span>{executionBlockReason()}</span>
+                        <b>{!papReady ? 'Plan PAP requerido para ejecución' : 'Ejecución bloqueada'}</b>
+                        <span>{!papReady ? 'Antes de ejecutar Jenkins, completa y valida las actividades del paso a producción.' : executionBlockReason()}</span>
                       </div>
                       {!papReady ? <a href={`/pap?rdcId=${selected.id}`}>Ir a Plan PAP →</a> : null}
                     </div>
@@ -455,7 +455,7 @@ export default function DeployCenterPage() {
         .layout { display:grid; grid-template-columns:360px minmax(0,1fr); gap:18px; }
         .queue, .content > section, .heroCard, .state { background:#fff; border:1px solid var(--line); border-radius:22px; box-shadow:0 18px 45px rgba(7,59,93,.06); }
         .queue { padding:20px; }
-        .queueHead, .runsHead, .conditionsHead { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:14px; }
+        .queueHead, .runsHead, .conditionsHead { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; gap:14px; }
         .queueHead h2, .runsHead h3, .pipelineCard h3, .conditionsCard h3 { margin:0; color:var(--navy-d); letter-spacing:-.03em; }
         .queueHead span, .runsHead span { background:var(--green-soft); color:var(--green-d); font-weight:900; border-radius:999px; padding:8px 12px; }
         .queueList { display:grid; gap:10px; }
@@ -477,22 +477,22 @@ export default function DeployCenterPage() {
         .summaryGrid span { display:block; color:var(--ink-soft); font-weight:800; font-size:12px; margin-bottom:6px; }
         .summaryGrid b { color:var(--navy-d); font-size:18px; word-break:break-word; }
         .pipelineCard, .runs, .conditionsCard { padding:20px; }
-        .conditions { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
-        .condition { display:flex; gap:12px; align-items:flex-start; background:var(--bg); border:1px solid #dfeaf0; border-radius:16px; padding:13px; }
+        .conditions { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:14px; }
+        .condition { display:flex; gap:14px; align-items:flex-start; background:var(--bg); border:1px solid #dfeaf0; border-radius:18px; padding:16px; min-height:94px; }
         .condition.ok { border-color:#bbf7d0; background:#f0fff7; }
         .condition.warn { border-color:#fee7aa; background:#fffaf0; }
-        .conditionIcon { width:30px; height:30px; border-radius:999px; display:flex; align-items:center; justify-content:center; flex:none; font-weight:900; }
+        .conditionIcon { width:34px; height:34px; border-radius:999px; display:flex; align-items:center; justify-content:center; flex:none; font-weight:900; font-size:15px; margin-top:1px; }
         .condition.ok .conditionIcon { background:#e8fff3; color:#008f57; }
         .condition.warn .conditionIcon { background:#fff7e6; color:#9a6700; }
         .condition b, .condition small { display:block; }
-        .condition b { color:var(--navy-d); margin-bottom:3px; }
-        .condition small { color:var(--ink-soft); line-height:1.35; }
+        .condition b { color:var(--navy-d); margin-bottom:7px; font-size:15px; letter-spacing:-.01em; line-height:1.15; }
+        .condition small { color:var(--ink-soft); line-height:1.45; font-weight:700; }
         .jobsWarning { background:#fff7e6; color:#9a6700; border:1px solid #fee7aa; border-radius:14px; padding:12px 14px; font-weight:800; margin:14px 0 0; }
-        .blockReasonBox { display:flex; justify-content:space-between; align-items:center; gap:14px; background:#fff7e6; color:#9a6700; border:1px solid #fee7aa; border-radius:14px; padding:13px 14px; margin:14px 0 0; }
+        .blockReasonBox { display:flex; justify-content:space-between; align-items:center; gap:18px; background:#fff7e6; color:#9a6700; border:1px solid #fee7aa; border-radius:18px; padding:16px; margin:16px 0 0; }
         .blockReasonBox b, .blockReasonBox span { display:block; }
-        .blockReasonBox b { color:#7a4b00; margin-bottom:3px; }
-        .blockReasonBox span { font-weight:700; line-height:1.35; }
-        .blockReasonBox a { flex:none; background:#fff; border:1px solid #f8d77a; color:#7a4b00; border-radius:999px; padding:10px 13px; font-weight:900; }
+        .blockReasonBox b { color:#7a4b00; margin-bottom:6px; font-size:15px; }
+        .blockReasonBox span { font-weight:700; line-height:1.45; }
+        .blockReasonBox a { flex:none; background:#fff; border:1px solid #f8d77a; color:#7a4b00; border-radius:999px; padding:11px 15px; font-weight:900; box-shadow:0 8px 20px rgba(154,103,0,.08); }
         .pipelineHead { display:flex; justify-content:space-between; gap:16px; margin-bottom:16px; }
         .pipelineHead p { color:var(--ink-soft); margin:8px 0 0; }
         .stageFlow { display:flex; align-items:center; gap:8px; flex:none; }
@@ -533,7 +533,7 @@ export default function DeployCenterPage() {
 function Condition({ ok, title, help }: { ok: boolean; title: string; help: string }) {
   return (
     <div className={ok ? 'condition ok' : 'condition warn'}>
-      <span className="conditionIcon">{ok ? '✓' : '!'}</span>
+      <span className="conditionIcon">{ok ? '✓' : '⚠'}</span>
       <span>
         <b>{title}</b>
         <small>{help}</small>
