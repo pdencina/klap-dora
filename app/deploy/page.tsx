@@ -336,7 +336,7 @@ export default function DeployCenterPage() {
 
                   {!canExecute ? (
                     <div className="blockReasonBox">
-                      <div>
+                      <div className="blockReasonText">
                         <b>{!papReady ? 'Plan PAP requerido para ejecución' : 'Ejecución bloqueada'}</b>
                         <span>{!papReady ? 'Antes de ejecutar Jenkins, completa y valida las actividades del paso a producción.' : executionBlockReason()}</span>
                       </div>
@@ -490,8 +490,12 @@ export default function DeployCenterPage() {
         .jobsWarning { background:#fff7e6; color:#9a6700; border:1px solid #fee7aa; border-radius:14px; padding:12px 14px; font-weight:800; margin:14px 0 0; }
         .blockReasonBox { display:flex; justify-content:space-between; align-items:center; gap:18px; background:#fff7e6; color:#9a6700; border:1px solid #fee7aa; border-radius:18px; padding:16px; margin:16px 0 0; }
         .blockReasonBox b, .blockReasonBox span { font-weight:700; line-height:1.45; }
-        .blockReasonBox b { color:#7a4b00; margin-bottom:6px; font-size:15px; }
+        .blockReasonBox b { color:#7a4b00; margin-bottom:0; font-size:15px; line-height:1.25; }
         .blockReasonBox span { font-weight:700; line-height:1.45; }
+
+        .blockReasonText { display:grid; gap:6px; min-width:0; }
+        .blockReasonText b { display:block; color:#7a4b00; font-size:15px; line-height:1.25; }
+        .blockReasonText span { display:block; color:#8a5a00; font-weight:700; line-height:1.45; }
         .blockReasonBox a { flex:none; background:#fff; border:1px solid #f8d77a; color:#7a4b00; border-radius:999px; padding:11px 15px; font-weight:900; box-shadow:0 8px 20px rgba(154,103,0,.08); }
         .pipelineHead { display:flex; justify-content:space-between; gap:16px; margin-bottom:16px; }
         .pipelineHead p { color:var(--ink-soft); margin:8px 0 0; }
