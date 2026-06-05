@@ -49,6 +49,12 @@ const cardsByRole: Record<Role, Array<{ title: string; description: string; href
       cta: 'Ver aprobaciones',
     },
     {
+      title: 'Plan PAP',
+      description: 'Construye el paso a producción desde el RDC aprobado: actividades, responsables, horarios, estados y evidencias.',
+      href: '/pap',
+      cta: 'Planificar PAP',
+    },
+    {
       title: 'Dashboard DORA',
       description: 'Consulta métricas de despliegue, lead time, fallos y recuperación.',
       href: '/dashboard',

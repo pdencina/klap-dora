@@ -24,6 +24,7 @@ const RM_LINKS = [
   { href: '/release', label: 'Release' },
   { href: '/approvals', label: 'Aprobaciones' },
   { href: '/cab', label: 'Agenda CAB' },
+  { href: '/pap', label: 'Plan PAP' },
   { href: '/cierre', label: 'Cierre' },
   { href: '/dashboard', label: 'Dashboard DORA' },
 ];
@@ -58,7 +59,7 @@ export default function TopNav({ role, email }: { role: Role; email: string }) {
 
       <nav className="nav-links" aria-label="Navegación principal">
         {links.map((l) => {
-          const rm = ['/release', '/approvals', '/cab', '/cierre', '/dashboard'].includes(l.href);
+          const rm = ['/release', '/approvals', '/cab', '/pap', '/cierre', '/dashboard'].includes(l.href);
           return (
             <Link key={l.href} href={l.href} className={`${isActive(l.href) ? 'active' : ''} ${rm ? 'rm' : ''}`}>
               {l.label}
