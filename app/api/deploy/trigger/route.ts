@@ -8,6 +8,71 @@ function basicAuth(user: string, token: string) {
   return Buffer.from(`${user}:${token}`).toString('base64');
 }
 
+function stripHtml(value: string) {
+  return String(value || '')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function friendlyJenkinsError(status: number, body: string) {
+  const clean = stripHtml(body);
+  const lower = clean.toLowerCase();
+
+  if (lower.includes('no valid crumb') || lower.includes('crumb')) {
+    return 'Jenkins rechazó la ejecución por CSRF/Crumb. Se intentó obtener Crumb automáticamente, pero Jenkins lo rechazó. Revisa configuración CSRF o permisos del usuario/token.';
+  }
+
+  if (lower.includes('authentication') || lower.includes('unauthorized') || status === 401) {
+    return 'Jenkins rechazó la autenticación. Revisa JENKINS_USER y JENKINS_API_TOKEN en Vercel.';
+  }
+
+  if (status === 403) {
+    return 'Jenkins rechazó la ejecución por permisos. El usuario configurado necesita permisos Job/Build sobre este pipeline.';
+  }
+
+  if (status === 404) {
+    return 'Jenkins no encontró el job indicado. Revisa que el nombre del job sea exacto.';
+  }
+
+  if (clean) {
+    return `Jenkins respondió ${status}: ${clean.slice(0, 700)}`;
+  }
+
+  return `Jenkins respondió ${status} sin detalle.`;
+}
+
+async function getJenkinsCrumb(baseUrl: string, authHeader: string) {
+  try {
+    const response = await fetch(`${baseUrl.replace(/\/$/, '')}/crumbIssuer/api/json`, {
+      method: 'GET',
+      headers: {
+        Authorization: authHeader,
+        Accept: 'application/json',
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const field = String(data?.crumbRequestField || 'Jenkins-Crumb');
+    const crumb = String(data?.crumb || '');
+
+    if (!crumb) return null;
+
+    return { field, crumb };
+  } catch {
+    return null;
+  }
+}
+
 async function triggerJenkins(jobName: string, parameters: Record<string, string>) {
   const baseUrl = process.env.JENKINS_BASE_URL;
   const user = process.env.JENKINS_USER;
@@ -23,24 +88,36 @@ async function triggerJenkins(jobName: string, parameters: Record<string, string
     };
   }
 
+  const cleanBaseUrl = baseUrl.replace(/\/$/, '');
+  const authHeader = `Basic ${basicAuth(user, token)}`;
+  const crumb = await getJenkinsCrumb(cleanBaseUrl, authHeader);
+
   const encodedJob = jobName.split('/').map(encodeURIComponent).join('/job/');
-  const url = `${baseUrl.replace(/\/$/, '')}/job/${encodedJob}/buildWithParameters`;
+  const url = `${cleanBaseUrl}/job/${encodedJob}/buildWithParameters`;
 
   const body = new URLSearchParams();
-  Object.entries(parameters).forEach(([key, value]) => body.set(key, value));
+  Object.entries(parameters).forEach(([key, value]) => body.set(key, value || ''));
+
+  const headers: Record<string, string> = {
+    Authorization: authHeader,
+    'Content-Type': 'application/x-www-form-urlencoded',
+    Accept: 'application/json,text/plain,*/*',
+  };
+
+  if (crumb) {
+    headers[crumb.field] = crumb.crumb;
+  }
 
   const response = await fetch(url, {
     method: 'POST',
-    headers: {
-      Authorization: `Basic ${basicAuth(user, token)}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
+    headers,
     body,
+    cache: 'no-store',
   });
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`Jenkins respondió ${response.status}: ${text.slice(0, 500)}`);
+    throw new Error(friendlyJenkinsError(response.status, text));
   }
 
   const queueUrl = response.headers.get('location') || '';
@@ -53,6 +130,8 @@ async function triggerJenkins(jobName: string, parameters: Record<string, string
     raw: {
       status: response.status,
       queueUrl,
+      crumbUsed: Boolean(crumb),
+      crumbField: crumb?.field || null,
     },
   };
 }
@@ -133,6 +212,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, run, jenkins });
   } catch (error: any) {
+    const cleanError = error?.message || 'No se pudo ejecutar Jenkins';
+
     await supabase
       .from('deployment_runs')
       .insert({
@@ -146,9 +227,9 @@ export async function POST(req: Request) {
         result: 'FAILURE',
         triggered_by: user?.email || null,
         parameters,
-        raw_response: { error: error?.message || 'Error desconocido' },
+        raw_response: { error: cleanError },
       });
 
-    return NextResponse.json({ ok: false, error: error?.message || 'No se pudo ejecutar Jenkins' }, { status: 500 });
+    return NextResponse.json({ ok: false, error: cleanError }, { status: 500 });
   }
 }
