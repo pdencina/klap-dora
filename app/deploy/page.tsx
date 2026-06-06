@@ -852,7 +852,7 @@ export default function DeployCenterPage() {
         .modalActions button { min-width:150px; }
         @media(max-width:1120px){ .layout{grid-template-columns:1fr;} .pipelineHead{flex-direction:column;} }
         @media(max-width:760px){ .head,.heroCard,.conditionsHead,.blockReasonBox,.pipelineHead{flex-direction:column; align-items:flex-start;} .heroActions{align-items:flex-start; width:100%;} .heroActions a{width:100%; text-align:center;} .pipelineHeadActions{align-items:flex-start; width:100%;} .pipelineLink{width:100%; text-align:center;} .summaryGrid,.deployForm,.conditions,.modalSummary,.analysisGrid{grid-template-columns:1fr;} .run{grid-template-columns:1fr; align-items:flex-start;} .runTop{display:block;} .runInfo{margin-bottom:8px;} .runActions{justify-content:flex-start; width:100%;} .runActions a,.runActions button{flex:1; text-align:center;} .modalActions{flex-direction:column;} .modalActions button{width:100%;} .analysisModalHead{flex-direction:column;} .closeBtn{width:100%;} } .runActions a,.runActions button{flex:1; text-align:center;} .modalActions{flex-direction:column;} .modalActions button{width:100%;} .analysisModalHead{flex-direction:column;} .closeBtn{width:100%;} } .runActions a,.runActions button{flex:1; text-align:center;}  .head,.heroCard,.conditionsHead,.blockReasonBox,.pipelineHead { display:flex; justify-content:space-between; align-items:center; gap:18px; background:#fff; color:#9a6700; border:1px solid #bbf7d0; border-radius:18px; padding:16px; margin:16px 0 0; } .summaryGrid,.deployForm,.conditions { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; } .run{flex-direction:column; align-items:flex-start;} .blockReasonBox a { flex:none; background:#fff; border:1px solid #f8d77a; color:#008f57; border-radius:999px; padding:11px 15px; font-weight:900; box-shadow:0 8px 20px rgba(154,103,0,.08); } }
-      `}
+      
         /* KLAP palette cleanup */
         .hero, .heroCard, .selectedCard, .conditionsCard, .controlCard, .deployHero, .changeHero {
           background:#fff !important;
@@ -870,8 +870,6 @@ export default function DeployCenterPage() {
         .analysisCard, .deployCard, .historyCard {
           background:#fff !important;
         }
-
-      
         .heroActions a, .heroActions span,
         .conditionsHead span,
         .heroCard .pill,
@@ -879,7 +877,8 @@ export default function DeployCenterPage() {
           border-color:#bbf7d0;
         }
 
-      </style>
+      `}
+</style>
     </main>
   );
 }
