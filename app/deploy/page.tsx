@@ -793,7 +793,7 @@ const [changes, setChanges] = useState<Change[]>([]);
         </section>
       ) : null}
 
-      <style jsx>{`
+      <style jsx global>{`
         .deploy { max-width: 1360px; margin: 0 auto; padding: 32px 5vw 64px; }
         .head { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:24px; }
         .headActions { display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
@@ -1673,6 +1673,58 @@ const [changes, setChanges] = useState<Change[]>([]);
             margin-left:0;
             width:100%;
           }
+        }
+
+      
+        /* Deploy page shell fix: hide old top menu and force sidebar styling */
+        body:has(.deployShell) > header,
+        body:has(.deployShell) .topbar,
+        body:has(.deployShell) .navbar,
+        body:has(.deployShell) .mainNav,
+        body:has(.deployShell) nav[aria-label="Principal"],
+        body:has(.deployShell) nav[aria-label="principal"],
+        body:has(.deployShell) header:has(a[href="/deploy"]) {
+          display:none !important;
+        }
+
+        body:has(.deployShell) {
+          background:#f4f8fb !important;
+        }
+
+        .deployShell {
+          display:block !important;
+          min-height:100vh !important;
+          background:#f4f8fb !important;
+        }
+
+        .deploySidebar {
+          position:fixed !important;
+          left:0 !important;
+          top:0 !important;
+          bottom:0 !important;
+          width:280px !important;
+          background:#fff !important;
+          border-right:1px solid #dfeaf0 !important;
+          box-shadow:12px 0 34px rgba(7,59,93,.04) !important;
+          z-index:999 !important;
+          display:flex !important;
+          flex-direction:column !important;
+          padding:18px 14px !important;
+        }
+
+        .deployShell.sidebarCollapsed .deploySidebar {
+          width:86px !important;
+        }
+
+        .deployShell .deploy {
+          margin-left:280px !important;
+          width:calc(100% - 280px) !important;
+          max-width:none !important;
+        }
+
+        .deployShell.sidebarCollapsed .deploy {
+          margin-left:86px !important;
+          width:calc(100% - 86px) !important;
         }
 
       `}</style>

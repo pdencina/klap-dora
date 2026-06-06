@@ -1,6 +1,0 @@
-VERSION: DEPLOY_CENTER_1_3_POLISH
-Generated: 2026-06-05T23:12:43.486995+00:00
-
-Changed files:
-- app/deploy/page.tsx
-- README_DEPLOY_CENTER_1_3_POLISH.md

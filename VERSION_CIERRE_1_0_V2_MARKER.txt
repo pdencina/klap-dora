@@ -1,9 +1,0 @@
-VERSION: CIERRE_1_0_V2_REAL_CHANGES
-Generated: 2026-06-05T23:02:02.856761Z
-
-Changed files:
-- app/api/cierre/list/route.ts
-- app/api/cierre/save/route.ts
-- app/cierre/page.tsx
-- SPRINT_CIERRE_1_0.sql
-- README_CIERRE_1_0_V2.md
