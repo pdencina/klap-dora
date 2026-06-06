@@ -581,6 +581,7 @@ export default function DeployCenterPage() {
                             </span>
                             <div className="runActions">
                               {run.build_url ? <a href={run.build_url} target="_blank" rel="noreferrer">Revisar log Jenkins ↗</a> : run.queue_url ? <a href={run.queue_url} target="_blank" rel="noreferrer">Ver cola ↗</a> : null}
+                              {pipelineUrl ? <a className="pipelineMiniLink" href={pipelineUrl} target="_blank" rel="noreferrer">Abrir pipeline ↗</a> : null}
                               {run.build_url && (run.status === 'FAILURE' || run.result === 'FAILURE' || run.result === 'UNSTABLE') ? (
                                 <button
                                   type="button"
@@ -777,6 +778,7 @@ export default function DeployCenterPage() {
         .runStatus.pending { background:#fff7e6; color:#9a6700; }
         .runActions { display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-wrap:wrap; }
         .run a { color:var(--green-d); font-weight:900; }
+        .pipelineMiniLink { color:var(--navy) !important; background:#fff; border:1px solid var(--line); border-radius:999px; padding:9px 11px; font-size:12px; font-weight:900; white-space:nowrap; }
         .syncBtn { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:999px; padding:9px 11px; font-size:12px; font-weight:900; }
         .analyzeBtn { background:#fff7e6; border-color:#fee7aa; color:#7a4b00; }
         .analysisCard { background:#fff; border:1px solid var(--line); border-radius:22px; padding:20px; box-shadow:0 18px 45px rgba(7,59,93,.06); }
