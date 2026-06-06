@@ -117,3 +117,280 @@ a { color: inherit; text-decoration: none; }
   .nav { height: auto; flex-wrap: wrap; padding: 10px 18px; gap: 12px; }
   .nav-links { order: 3; width: 100%; }
 }
+
+
+/* ===== Global left sidebar ===== */
+.has-sidebar {
+  background: var(--bg);
+}
+
+.has-sidebar .app-shell {
+  min-height: 100vh;
+  margin-left: 280px;
+  transition: margin-left 0.2s ease;
+}
+
+.has-sidebar.sidebar-collapsed .app-shell {
+  margin-left: 86px;
+}
+
+.app-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 280px;
+  background: #fff;
+  border-right: 1px solid var(--line);
+  box-shadow: 12px 0 34px rgba(7, 59, 93, 0.04);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 14px;
+  transition: width 0.2s ease;
+}
+
+.app-sidebar-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 4px 18px;
+  border-bottom: 1px solid #edf3f7;
+  margin-bottom: 14px;
+}
+
+.app-sidebar-toggle {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.app-sidebar-toggle span {
+  width: 16px;
+  height: 2px;
+  background: var(--ink);
+  border-radius: 999px;
+  display: block;
+}
+
+.app-sidebar-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.app-sidebar-brand strong {
+  color: var(--green-d);
+  font-size: 26px;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.app-sidebar-brand span {
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+}
+
+.app-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 0;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.app-sidebar-link {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  border-radius: 14px;
+  color: var(--ink-soft);
+  font-weight: 800;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.app-sidebar-link:hover {
+  background: #f4f8fb;
+  color: var(--ink);
+}
+
+.app-sidebar-link.active {
+  background: var(--green-soft);
+  border-color: #bbf7d0;
+  color: var(--green-d);
+}
+
+.app-sidebar-icon {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: currentColor;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.app-sidebar-link b {
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.app-sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(7, 59, 93, 0.03);
+  margin-top: 12px;
+}
+
+.app-sidebar-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: var(--green-d);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.app-sidebar-user-text b {
+  display: block;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.2;
+  text-transform: capitalize;
+}
+
+.app-sidebar-user-text span {
+  display: block;
+  color: var(--ink-soft);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.app-sidebar-logout {
+  margin-top: 10px;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--navy);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.app-sidebar-logout:hover {
+  background: #eef4f8;
+}
+
+.sidebar-collapsed .app-sidebar {
+  width: 86px;
+  align-items: center;
+}
+
+.sidebar-collapsed .app-sidebar-top {
+  flex-direction: column;
+}
+
+.sidebar-collapsed .app-sidebar-brand span,
+.sidebar-collapsed .app-sidebar-link b,
+.sidebar-collapsed .app-sidebar-user-text,
+.sidebar-collapsed .app-sidebar-logout span {
+  display: none;
+}
+
+.sidebar-collapsed .app-sidebar-link {
+  width: 52px;
+  padding: 0;
+  justify-content: center;
+}
+
+.sidebar-collapsed .app-sidebar-user {
+  justify-content: center;
+  padding: 10px;
+}
+
+.sidebar-collapsed .app-sidebar-logout {
+  width: 52px;
+}
+
+.sidebar-collapsed .app-sidebar-logout::before {
+  content: "↩";
+}
+
+@media (max-width: 980px) {
+  .has-sidebar .app-shell {
+    margin-left: 86px;
+  }
+
+  .app-sidebar {
+    width: 86px;
+    align-items: center;
+  }
+
+  .app-sidebar-top {
+    flex-direction: column;
+  }
+
+  .app-sidebar-brand span,
+  .app-sidebar-link b,
+  .app-sidebar-user-text,
+  .app-sidebar-logout span {
+    display: none;
+  }
+
+  .app-sidebar-link {
+    width: 52px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .app-sidebar-user {
+    justify-content: center;
+    padding: 10px;
+  }
+
+  .app-sidebar-logout {
+    width: 52px;
+  }
+
+  .app-sidebar-logout::before {
+    content: "↩";
+  }
+}
+
+@media (max-width: 720px) {
+  .app-sidebar {
+    width: 76px;
+  }
+
+  .has-sidebar .app-shell,
+  .has-sidebar.sidebar-collapsed .app-shell {
+    margin-left: 76px;
+  }
+}

@@ -22,7 +22,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
 
   return (
     <html lang="es" className={jakarta.variable}>
-      <body>
+      <body className={user ? 'has-sidebar' : ''}>
         {/* La nav solo se muestra con sesión. En /login no hay usuario -> sin nav. */}
         {user ? <TopNav role={role} email={user.email ?? ''} /> : null}
         <div className="app-shell">{children}</div>
