@@ -870,6 +870,42 @@ export default function DeployCenterPage() {
           .primaryAction { width:100%; }
         }
 
+      
+        /* Local Deploy palette cleanup - scoped only to this page */
+        .heroCard,
+        .selectedCard,
+        .conditionsCard,
+        .deployCard {
+          background:#fff !important;
+          border-color:#dfeaf0 !important;
+        }
+
+        .readyBadge,
+        .okBadge,
+        .successBadge,
+        .conditionsHead .okBadge,
+        .heroCard .okBadge,
+        .selectedCard .okBadge {
+          background:#e8fff3 !important;
+          color:#008f57 !important;
+          border-color:#bbf7d0 !important;
+        }
+
+        .pendingBadge,
+        .warningBadge,
+        .reviewBadge,
+        .blockReasonBox {
+          background:#fff7e6 !important;
+          color:#7a4b00 !important;
+          border-color:#fee7aa !important;
+        }
+
+        .analyzeBtn {
+          background:#fffaf0 !important;
+          border-color:#f8df9a !important;
+          color:#7a4b00 !important;
+        }
+
       `}</style>
     </main>
   );
