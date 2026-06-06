@@ -220,8 +220,13 @@ export default function DeployCenterPage() {
       return;
     }
 
+    const executionContext =
+      environment === 'Producción'
+        ? 'Vas a ejecutar un pipeline productivo.'
+        : `Vas a ejecutar un pipeline en ambiente ${environment}.`;
+
     const confirmed = window.confirm(
-      `Vas a ejecutar un pipeline productivo.\n\nRDC: ${selected.title}\nJob: ${jobName}\nAmbiente: ${environment}\n\nEsta acción quedará registrada como evidencia. ¿Continuar?`,
+      `Confirmación de ejecución Jenkins\n\n${executionContext}\n\nRDC: ${selected.title}\nJob: ${jobName}\nAmbiente: ${environment}\n\nEsta acción quedará registrada como evidencia técnica del cambio.\n\n¿Deseas continuar?`,
     );
 
     if (!confirmed) return;
