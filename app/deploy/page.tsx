@@ -589,14 +589,14 @@ export default function DeployCenterPage() {
                         .sort((a, b) => new Date(b.triggered_at || 0).getTime() - new Date(a.triggered_at || 0).getTime())
                         .map((run) => (
                           <article className="run" key={run.id}>
-                            <div className="runMain">
-                              <div className="runTitleRow">
+                            <div className="runTop">
+                              <div className="runInfo">
                                 <b>{run.job_name}</b>
-                                <span className={`runStatus ${run.result === 'FAILURE' || run.status === 'FAILED_TO_TRIGGER' ? 'bad' : run.status === 'SUCCESS' || run.result === 'SUCCESS' ? 'ok' : 'pending'}`}>
-                                  {STATUS_LABEL[run.status] || run.status}
-                                </span>
+                                <small>{formatDate(run.triggered_at)} · {run.triggered_by || 'No informado'}</small>
                               </div>
-                              <small className="runMeta">{formatDate(run.triggered_at)} · {run.triggered_by || 'No informado'}</small>
+                              <span className={`runStatus ${run.result === 'FAILURE' || run.status === 'FAILED_TO_TRIGGER' ? 'bad' : run.status === 'SUCCESS' || run.result === 'SUCCESS' ? 'ok' : 'pending'}`}>
+                                {STATUS_LABEL[run.status] || run.status}
+                              </span>
                             </div>
                             <div className="runActions">
                               {run.build_url ? <a href={run.build_url} target="_blank" rel="noreferrer">Revisar log Jenkins ↗</a> : run.queue_url ? <a href={run.queue_url} target="_blank" rel="noreferrer">Ver cola ↗</a> : null}
@@ -789,23 +789,25 @@ export default function DeployCenterPage() {
         .ghostBtn { background:#fff; color:var(--navy); border:1px solid var(--line); }
         .helper { color:var(--ink-soft); margin:12px 0 0; font-size:13px; }
         .runList { display:grid; gap:10px; }
-        .run { display:flex; align-items:center; justify-content:space-between; gap:16px; background:var(--bg); border:1px solid #dfeaf0; border-radius:16px; padding:14px 16px; }
-        .runMain { min-width:0; flex:1; display:flex; flex-direction:column; gap:7px; }
-        .runTitleRow { display:flex; align-items:center; gap:10px; flex-wrap:wrap; min-width:0; }
-        .runTitleRow b { color:var(--navy-d); font-size:15px; line-height:1.2; word-break:break-word; }
-        .runMeta { color:var(--ink-soft); font-size:13px; line-height:1.35; word-break:break-word; }
-
+.runTitleRow b { color:var(--navy-d); font-size:15px; line-height:1.2; word-break:break-word; }
 .run b,
-        .runStatus { display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:7px 10px; font-size:12px; font-weight:900; white-space:nowrap; }
+
+        .run { background:var(--bg); border:1px solid #dfeaf0; border-radius:16px; padding:16px 18px; display:flex; flex-direction:column; gap:14px; }
+        .runTop { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+        .runInfo { min-width:0; display:flex; flex-direction:column; gap:5px; }
+        .runInfo b { color:var(--navy-d); font-size:16px; line-height:1.25; word-break:break-word; }
+        .runInfo small { color:var(--ink-soft); font-size:13px; line-height:1.35; word-break:break-word; }
+        .runActions { display:flex; align-items:center; justify-content:flex-start; gap:10px; flex-wrap:wrap; }
+        .runActions a, .runActions button { white-space:nowrap; }
+        .runStatus { display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:7px 11px; font-size:12px; font-weight:900; white-space:nowrap; flex-shrink:0; }
 .runStatus.ok { background:#e8fff3; color:#008f57; }
         .runStatus.bad { background:#fff1f0; color:#b42318; }
         .runStatus.pending { background:#fff7e6; color:#9a6700; }
-        .runActions { display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-wrap:wrap; flex-shrink:0; }
-        .runActions a, .runActions button { white-space:nowrap; }
+.runActions a, .runActions button { white-space:nowrap; }
 .run a { color:var(--green-d); font-weight:900; }
-        .pipelineMiniLink { color:var(--navy) !important; background:#fff; border:1px solid var(--line); border-radius:999px; padding:9px 11px; font-size:12px; font-weight:900; white-space:nowrap; }
-        .syncBtn { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:999px; padding:9px 11px; font-size:12px; font-weight:900; }
-        .analyzeBtn { background:#fff7e6; border-color:#fee7aa; color:#7a4b00; }
+        .pipelineMiniLink { color:var(--navy) !important; background:#fff; border:1px solid var(--line); border-radius:999px; padding:10px 12px; font-size:12px; font-weight:900; white-space:nowrap; }
+        .syncBtn { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:999px; padding:10px 12px; font-size:12px; font-weight:900; }
+.analyzeBtn { background:#fff7e6; border-color:#fee7aa; color:#7a4b00; }
         .analysisCard { background:#fff; border:1px solid var(--line); border-radius:22px; padding:20px; box-shadow:0 18px 45px rgba(7,59,93,.06); }
         .analysisHead { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:16px; }
         .analysisHead h3 { margin:0; color:var(--navy-d); font-size:24px; letter-spacing:-.04em; }
@@ -840,7 +842,7 @@ export default function DeployCenterPage() {
         .modalActions { display:flex; justify-content:flex-end; gap:10px; margin-top:20px; }
         .modalActions button { min-width:150px; }
         @media(max-width:1120px){ .layout{grid-template-columns:1fr;} .pipelineHead{flex-direction:column;} }
-        @media(max-width:760px){ .run{flex-direction:column; align-items:flex-start;} .runActions{justify-content:flex-start; width:100%;} .runActions a,.runActions button{flex:1; text-align:center;}  .head,.heroCard,.conditionsHead,.blockReasonBox,.pipelineHead { display:flex; justify-content:space-between; align-items:center; gap:18px; background:#fff7e6; color:#9a6700; border:1px solid #fee7aa; border-radius:18px; padding:16px; margin:16px 0 0; } .summaryGrid,.deployForm,.conditions { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; } .run{flex-direction:column; align-items:flex-start;} .blockReasonBox a { flex:none; background:#fff; border:1px solid #f8d77a; color:#7a4b00; border-radius:999px; padding:11px 15px; font-weight:900; box-shadow:0 8px 20px rgba(154,103,0,.08); } }
+        @media(max-width:760px){ .head,.heroCard,.conditionsHead,.blockReasonBox,.pipelineHead{flex-direction:column; align-items:flex-start;} .heroActions{align-items:flex-start; width:100%;} .heroActions a{width:100%; text-align:center;} .pipelineHeadActions{align-items:flex-start; width:100%;} .pipelineLink{width:100%; text-align:center;} .summaryGrid,.deployForm,.conditions,.modalSummary,.analysisGrid{grid-template-columns:1fr;} .runTop{flex-direction:column; align-items:flex-start;} .runActions{width:100%;} .runActions a,.runActions button{flex:1; text-align:center;} .modalActions{flex-direction:column;} .modalActions button{width:100%;} .analysisModalHead{flex-direction:column;} .closeBtn{width:100%;} } .runActions a,.runActions button{flex:1; text-align:center;}  .head,.heroCard,.conditionsHead,.blockReasonBox,.pipelineHead { display:flex; justify-content:space-between; align-items:center; gap:18px; background:#fff7e6; color:#9a6700; border:1px solid #fee7aa; border-radius:18px; padding:16px; margin:16px 0 0; } .summaryGrid,.deployForm,.conditions { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; } .run{flex-direction:column; align-items:flex-start;} .blockReasonBox a { flex:none; background:#fff; border:1px solid #f8d77a; color:#7a4b00; border-radius:999px; padding:11px 15px; font-weight:900; box-shadow:0 8px 20px rgba(154,103,0,.08); } }
       `}</style>
     </main>
   );
