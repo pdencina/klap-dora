@@ -616,7 +616,7 @@ export default function DeployCenterPage() {
                                   {analyzingRunId === run.id ? 'Analizando log…' : 'Analizar fallo'}
                                 </button>
                               ) : null}
-                              </div>
+                            </div>
 
                               <div className="runActionGroup runActionOps">
                               <button
@@ -627,7 +627,7 @@ export default function DeployCenterPage() {
                               >
                                 {syncingRunId === run.id ? 'Actualizando…' : 'Actualizar estado'}
                               </button>
-                              </div>
+                            </div>
                             </div>
                           </article>
                         ))}
@@ -951,14 +951,14 @@ export default function DeployCenterPage() {
         }
 
       
-        /* Historial Jenkins: acciones agrupadas y alineadas */
+        /* Historial de ejecución - layout local únicamente */
         .run {
           background:#fff;
           border:1px solid #dfeaf0;
           border-radius:16px;
           padding:14px 16px;
           display:grid;
-          grid-template-columns:minmax(220px, 1fr) 150px minmax(360px, 430px);
+          grid-template-columns:minmax(220px,1fr) 150px minmax(380px,440px);
           align-items:center;
           gap:16px;
           box-shadow:0 10px 24px rgba(7,59,93,.03);
@@ -996,7 +996,6 @@ export default function DeployCenterPage() {
           grid-template-columns:1fr 1fr;
           gap:8px;
           align-items:center;
-          justify-content:end;
         }
 
         .runActionGroup {
@@ -1017,8 +1016,7 @@ export default function DeployCenterPage() {
           text-align:center;
         }
 
-        .runActionLinks > a:first-child,
-        .runActionsPanel > a:first-child {
+        .runActionLinks a:first-child {
           color:var(--green-d);
           background:#fff;
           border:1px solid transparent;
