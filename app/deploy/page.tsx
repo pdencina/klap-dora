@@ -81,9 +81,13 @@ function totalApprovals(change?: Change | null) {
   return change?.approval_requests?.length || 0;
 }
 
+function isPapStepReady(status?: string) {
+  return status === 'Validado' || status === 'Completado' || status === 'No aplica';
+}
+
 function completedPap(change?: Change | null) {
   const steps = change?.pap_steps || [];
-  return steps.filter((s) => s.status === 'Completado').length;
+  return steps.filter((s) => isPapStepReady(s.status)).length;
 }
 
 function lastRun(change?: Change | null) {
@@ -101,7 +105,7 @@ function isPapReady(change?: Change | null) {
   if (!change) return false;
   const steps = change.pap_steps || [];
   if (steps.length === 0) return false;
-  return completedPap(change) === steps.length;
+  return steps.every((step) => isPapStepReady(step.status));
 }
 
 function jobColorLabel(color?: string) {
@@ -329,7 +333,7 @@ export default function DeployCenterPage() {
 
                   <div className="conditions">
                     <Condition ok={cabReady} title={`CAB aprobado ${approvedCount(selected)}/${totalApprovals(selected)}`} help="Todas las áreas aprobadoras deben estar en APROBADO." />
-                    <Condition ok={papReady} title={papReady ? 'Plan PAP completo' : 'Plan PAP pendiente'} help={papReady ? 'Todas las actividades PAP están completadas y listas para ejecución.' : 'Completa y valida las actividades del paso a producción antes de ejecutar Jenkins.'} />
+                    <Condition ok={papReady} title={papReady ? 'Plan PAP completo' : 'Plan PAP pendiente'} help={papReady ? 'Todas las actividades PAP están validadas y listas para ejecución.' : 'Valida la planificación del paso a producción antes de ejecutar Jenkins.'} />
                     <Condition ok={roleReady} title="Rol Release Manager" help="Solo RM puede ejecutar pipelines desde el portal." />
                     <Condition ok={jobReady} title="Job Jenkins configurado" help={jobReady ? jobName : 'Selecciona o escribe un job.'} />
                   </div>
@@ -402,10 +406,10 @@ export default function DeployCenterPage() {
                   </label>
 
                   <button className="primary" type="button" disabled={!canExecute || triggering} onClick={triggerPipeline}>
-                    {triggering ? 'Enviando a Jenkins…' : canExecute ? 'Ejecutar Pipeline Jenkins' : 'Completa condiciones antes de ejecutar'}
+                    {triggering ? 'Enviando a Jenkins…' : canExecute ? 'Ejecutar Pipeline Jenkins' : 'Valida condiciones antes de ejecutar'}
                   </button>
 
-                  <p className="helper">Solo disponible para cambios aprobados por CAB, con Plan PAP completo y rol Release Manager.</p>
+                  <p className="helper">Solo disponible para cambios aprobados por CAB, con Plan PAP validado y rol Release Manager.</p>
                 </section>
 
                 <section className="runs">
