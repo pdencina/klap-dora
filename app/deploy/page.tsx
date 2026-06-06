@@ -127,6 +127,7 @@ export default function DeployCenterPage() {
   const [triggering, setTriggering] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [jobName, setJobName] = useState(DEFAULT_JOB);
   const [version, setVersion] = useState('');
   const [branchOrTag, setBranchOrTag] = useState('');
@@ -211,25 +212,22 @@ export default function DeployCenterPage() {
     return '';
   }
 
-  async function triggerPipeline() {
-    if (!selected) return;
-
+  function requestPipelineExecution() {
     const blockedReason = executionBlockReason();
     if (blockedReason) {
       setError(blockedReason);
       return;
     }
 
-    const executionContext =
-      environment === 'Producción'
-        ? 'Vas a ejecutar un pipeline productivo.'
-        : `Vas a ejecutar un pipeline en ambiente ${environment}.`;
+    setError('');
+    setMessage('');
+    setConfirmOpen(true);
+  }
 
-    const confirmed = window.confirm(
-      `Confirmación de ejecución Jenkins\n\n${executionContext}\n\nRDC: ${selected.title}\nJob: ${jobName}\nAmbiente: ${environment}\n\nEsta acción quedará registrada como evidencia técnica del cambio.\n\n¿Deseas continuar?`,
-    );
+  async function triggerPipeline() {
+    if (!selected) return;
 
-    if (!confirmed) return;
+    setConfirmOpen(false);
 
     try {
       setTriggering(true);
@@ -414,7 +412,7 @@ export default function DeployCenterPage() {
                     <input value={jobName} onChange={(e) => setJobName(e.target.value)} placeholder="Nombre exacto del job Jenkins" />
                   </label>
 
-                  <button className="primary" type="button" disabled={!canExecute || triggering} onClick={triggerPipeline}>
+                  <button className="primary" type="button" disabled={!canExecute || triggering} onClick={requestPipelineExecution}>
                     {triggering ? 'Enviando a Jenkins…' : canExecute ? 'Ejecutar Pipeline Jenkins' : 'Valida condiciones antes de ejecutar'}
                   </button>
 
@@ -450,6 +448,39 @@ export default function DeployCenterPage() {
                 </section>
 
                 {message ? <div className="msg">{message}</div> : null}
+
+                {confirmOpen ? (
+                  <div className="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+                    <div className="confirmModal">
+                      <div className="modalIcon">⚙</div>
+                      <p className="kicker">Confirmación Jenkins</p>
+                      <h3 id="confirm-title">Confirmar ejecución del pipeline</h3>
+                      <p className="modalLead">
+                        {environment === 'Producción'
+                          ? 'Vas a ejecutar un pipeline productivo.'
+                          : `Vas a ejecutar un pipeline en ambiente ${environment}.`}
+                      </p>
+
+                      <div className="modalSummary">
+                        <div><span>RDC</span><b>{selected.title}</b></div>
+                        <div><span>Job Jenkins</span><b>{jobName}</b></div>
+                        <div><span>Ambiente</span><b>{environment}</b></div>
+                        <div><span>Versión</span><b>{version || 'No informada'}</b></div>
+                      </div>
+
+                      <p className="modalWarning">
+                        Esta acción quedará registrada como evidencia técnica del cambio.
+                      </p>
+
+                      <div className="modalActions">
+                        <button type="button" className="ghostBtn" onClick={() => setConfirmOpen(false)}>Cancelar</button>
+                        <button type="button" onClick={triggerPipeline} disabled={triggering}>
+                          {triggering ? 'Ejecutando…' : 'Ejecutar pipeline'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
               </>
             ) : (
               <div className="state">Selecciona un cambio para ver su ejecución.</div>
@@ -542,6 +573,18 @@ export default function DeployCenterPage() {
         .state.error { background:#fff1f0; color:#b42318; }
         .empty { color:var(--ink-soft); }
         .msg { background:#e8fff3; color:#008f57; border:1px solid #bbf7d0; border-radius:14px; padding:12px 14px; font-weight:900; }
+        .modalOverlay { position:fixed; inset:0; z-index:80; background:rgba(5,24,38,.58); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:24px; }
+        .confirmModal { width:min(620px, 100%); background:#fff; border:1px solid var(--line); border-radius:28px; box-shadow:0 30px 90px rgba(5,24,38,.28); padding:28px; }
+        .modalIcon { width:48px; height:48px; border-radius:16px; background:#e8fff3; color:#008f57; display:flex; align-items:center; justify-content:center; font-size:24px; margin-bottom:14px; }
+        .confirmModal h3 { margin:0; color:var(--navy-d); font-size:28px; letter-spacing:-.04em; }
+        .modalLead { color:var(--ink); font-weight:800; margin:10px 0 18px; line-height:1.45; }
+        .modalSummary { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:16px 0; }
+        .modalSummary div { background:var(--bg); border:1px solid #dfeaf0; border-radius:14px; padding:12px; }
+        .modalSummary span { display:block; color:var(--ink-soft); font-size:12px; font-weight:900; margin-bottom:5px; }
+        .modalSummary b { display:block; color:var(--navy-d); line-height:1.3; word-break:break-word; }
+        .modalWarning { background:#fff7e6; border:1px solid #fee7aa; color:#7a4b00; border-radius:16px; padding:13px 14px; font-weight:800; line-height:1.45; }
+        .modalActions { display:flex; justify-content:flex-end; gap:10px; margin-top:20px; }
+        .modalActions button { min-width:150px; }
         @media(max-width:1120px){ .layout{grid-template-columns:1fr;} .pipelineHead{flex-direction:column;} }
         @media(max-width:760px){ .head,.heroCard,.conditionsHead,.blockReasonBox { display:flex; justify-content:space-between; align-items:center; gap:18px; background:#fff7e6; color:#9a6700; border:1px solid #fee7aa; border-radius:18px; padding:16px; margin:16px 0 0; } .summaryGrid,.deployForm,.conditions { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; } .run{grid-template-columns:1fr;} .blockReasonBox a { flex:none; background:#fff; border:1px solid #f8d77a; color:#7a4b00; border-radius:999px; padding:11px 15px; font-weight:900; box-shadow:0 8px 20px rgba(154,103,0,.08); } }
       `}</style>
