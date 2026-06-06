@@ -154,6 +154,7 @@ export default function DeployCenterPage() {
   const [syncingRunId, setSyncingRunId] = useState('');
   const [analyzingRunId, setAnalyzingRunId] = useState('');
   const [analysis, setAnalysis] = useState<any>(null);
+  const [pipelineUrl, setPipelineUrl] = useState('');
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -165,7 +166,6 @@ export default function DeployCenterPage() {
 
   const selected = useMemo(() => changes.find((c) => c.id === selectedId) || null, [changes, selectedId]);
   const selectedLastRun = lastRun(selected);
-  const pipelineUrl = buildJenkinsPipelineUrl(process.env.NEXT_PUBLIC_JENKINS_BASE_URL, jobName);
 
   const cabReady = isRdcApproved(selected);
   const papReady = isPapReady(selected);
@@ -242,6 +242,35 @@ export default function DeployCenterPage() {
     if (!jobReady) return 'Selecciona o escribe un Job Jenkins.';
     return '';
   }
+
+
+  useEffect(() => {
+    async function loadPipelineUrl() {
+      try {
+        const cleanJob = String(jobName || '').trim();
+        if (!cleanJob) {
+          setPipelineUrl('');
+          return;
+        }
+
+        const response = await fetch(`/api/deploy/pipeline-url?jobName=${encodeURIComponent(cleanJob)}`, {
+          cache: 'no-store',
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data.ok) {
+          setPipelineUrl('');
+          return;
+        }
+
+        setPipelineUrl(data.pipelineUrl || '');
+      } catch {
+        setPipelineUrl('');
+      }
+    }
+
+    loadPipelineUrl();
+  }, [jobName]);
 
   function requestPipelineExecution() {
     const blockedReason = executionBlockReason();
