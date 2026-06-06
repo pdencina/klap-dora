@@ -749,7 +749,7 @@ export default function DeployCenterPage() {
         .heroActions a { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:999px; padding:10px 13px; font-weight:900; white-space:nowrap; box-shadow:0 8px 20px rgba(7,59,93,.04); }
         .readyBadge, .blockedBadge, .okPill, .warnPill { border-radius:999px; padding:10px 13px; font-weight:900; white-space:nowrap; }
         .readyBadge, .okPill { background:#e8fff3; color:#008f57; }
-        .blockedBadge, .warnPill { background:#fff7e6; color:#9a6700; }
+        .blockedBadge, .warnPill { background:#fff; color:#9a6700; }
         .summaryGrid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
         .summaryGrid div { background:#fff; border:1px solid var(--line); border-radius:18px; padding:16px; }
         .summaryGrid span { display:block; color:var(--ink-soft); font-weight:800; font-size:12px; margin-bottom:6px; }
@@ -758,15 +758,15 @@ export default function DeployCenterPage() {
         .conditions { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; }
         .condition { display:flex; gap:15px; align-items:flex-start; background:var(--bg); border:1px solid #dfeaf0; border-radius:18px; padding:16px; min-height:96px; }
         .condition.ok { border-color:#bbf7d0; background:#f0fff7; }
-        .condition.warn { border-color:#fee7aa; background:#fffaf0; }
+        .condition.warn { border-color:#dfeaf0; background:#fff; }
         .conditionIcon { width:34px; height:34px; border-radius:999px; display:flex; align-items:center; justify-content:center; flex:none; font-weight:900; font-size:15px; margin-top:1px; }
         .condition.ok .conditionIcon { width:34px; height:34px; border-radius:999px; display:flex; align-items:center; justify-content:center; flex:none; font-weight:900; font-size:15px; margin-top:1px; }
         .condition.warn .conditionIcon { width:34px; height:34px; border-radius:999px; display:flex; align-items:center; justify-content:center; flex:none; font-weight:900; font-size:15px; margin-top:1px; }
         .condition b, .condition small { color:var(--ink-soft); line-height:1.45; font-weight:700; }
         .condition b { color:var(--navy-d); margin-bottom:8px; font-size:15px; letter-spacing:-.01em; line-height:1.18; }
         .condition small { color:var(--ink-soft); line-height:1.45; font-weight:700; }
-        .jobsWarning { background:#fff7e6; color:#9a6700; border:1px solid #fee7aa; border-radius:14px; padding:12px 14px; font-weight:800; margin:14px 0 0; }
-        .blockReasonBox { display:flex; justify-content:space-between; align-items:center; gap:18px; background:#fff7e6; color:#9a6700; border:1px solid #fee7aa; border-radius:18px; padding:16px; margin:16px 0 0; }
+        .jobsWarning { background:#fff; color:#9a6700; border:1px solid #dfeaf0; border-radius:14px; padding:12px 14px; font-weight:800; margin:14px 0 0; }
+        .blockReasonBox { display:flex; justify-content:space-between; align-items:center; gap:18px; background:#fff; color:#9a6700; border:1px solid #dfeaf0; border-radius:18px; padding:16px; margin:16px 0 0; }
         .blockReasonBox b, .blockReasonBox span { font-weight:700; line-height:1.45; }
         .blockReasonBox b { color:#7a4b00; margin-bottom:0; font-size:15px; line-height:1.25; }
         .blockReasonBox span { font-weight:700; line-height:1.45; }
@@ -805,7 +805,7 @@ export default function DeployCenterPage() {
         .runInfo small { color:var(--ink-soft); font-size:13px; line-height:1.35; word-break:break-word; }
 .runActions a, .runActions button { white-space:nowrap; }
         .runStatus { display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:7px 11px; font-size:12px; font-weight:900; white-space:nowrap; flex-shrink:0; }
-.analyzeBtn { background:#fffaf0; border-color:#f8df9a; color:#7a4b00; }
+.analyzeBtn { background:#fff; border-color:#dfeaf0; color:#7a4b00; }
         .runActions a:first-child { color:var(--green-d); font-weight:900; }
 
 
@@ -821,11 +821,11 @@ export default function DeployCenterPage() {
         .pipelineMiniLink { color:var(--navy) !important; background:#fff; border:1px solid var(--line); border-radius:999px; padding:9px 11px; font-size:12px; font-weight:900; white-space:nowrap; }
         .syncBtn { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:999px; padding:9px 12px; font-size:12px; font-weight:900; min-height:36px; }
         .primaryAction { background:#fff; border-color:var(--line); min-width:132px; }
-        .analyzeBtn { background:#fffaf0; border-color:#f8df9a; color:#7a4b00; }
+        .analyzeBtn { background:#fff; border-color:#dfeaf0; color:#7a4b00; }
         .runStatus { display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:7px 11px; font-size:12px; font-weight:900; white-space:nowrap; flex-shrink:0; }
 
         .runStatus.bad { background:#fff1f0; color:#b42318; }
-        .runStatus.pending { background:#fff7e6; color:#9a6700; }
+        .runStatus.pending { background:#fff; color:#9a6700; }
 .runActions a, .runActions button { white-space:nowrap; }
 .analysisCard { background:#fff; border:1px solid var(--line); border-radius:22px; padding:20px; box-shadow:0 18px 45px rgba(7,59,93,.06); }
         .analysisHead { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:16px; }
@@ -857,11 +857,11 @@ export default function DeployCenterPage() {
         .modalSummary div { background:var(--bg); border:1px solid #dfeaf0; border-radius:14px; padding:12px; }
         .modalSummary span { display:block; color:var(--ink-soft); font-size:12px; font-weight:900; margin-bottom:5px; }
         .modalSummary b { display:block; color:var(--navy-d); line-height:1.3; word-break:break-word; }
-        .modalWarning { background:#fff7e6; border:1px solid #fee7aa; color:#7a4b00; border-radius:16px; padding:13px 14px; font-weight:800; line-height:1.45; }
+        .modalWarning { background:#fff; border:1px solid #dfeaf0; color:#7a4b00; border-radius:16px; padding:13px 14px; font-weight:800; line-height:1.45; }
         .modalActions { display:flex; justify-content:flex-end; gap:10px; margin-top:20px; }
         .modalActions button { min-width:150px; }
         @media(max-width:1120px){ .layout{grid-template-columns:1fr;} .pipelineHead{flex-direction:column;} }
-        @media(max-width:760px){ .head,.heroCard,.conditionsHead,.blockReasonBox,.pipelineHead{flex-direction:column; align-items:flex-start;} .heroActions{align-items:flex-start; width:100%;} .heroActions a{width:100%; text-align:center;} .pipelineHeadActions{align-items:flex-start; width:100%;} .pipelineLink{width:100%; text-align:center;} .summaryGrid,.deployForm,.conditions,.modalSummary,.analysisGrid{grid-template-columns:1fr;} .run{grid-template-columns:1fr; align-items:flex-start;} .runTop{display:block;} .runInfo{margin-bottom:8px;} .runActions{justify-content:flex-start; width:100%;} .runActions a,.runActions button{flex:1; text-align:center;} .modalActions{flex-direction:column;} .modalActions button{width:100%;} .analysisModalHead{flex-direction:column;} .closeBtn{width:100%;} } .runActions a,.runActions button{flex:1; text-align:center;} .modalActions{flex-direction:column;} .modalActions button{width:100%;} .analysisModalHead{flex-direction:column;} .closeBtn{width:100%;} } .runActions a,.runActions button{flex:1; text-align:center;}  .head,.heroCard,.conditionsHead,.blockReasonBox,.pipelineHead { display:flex; justify-content:space-between; align-items:center; gap:18px; background:#fff7e6; color:#9a6700; border:1px solid #fee7aa; border-radius:18px; padding:16px; margin:16px 0 0; } .summaryGrid,.deployForm,.conditions { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; } .run{flex-direction:column; align-items:flex-start;} .blockReasonBox a { flex:none; background:#fff; border:1px solid #f8d77a; color:#7a4b00; border-radius:999px; padding:11px 15px; font-weight:900; box-shadow:0 8px 20px rgba(154,103,0,.08); } }
+        @media(max-width:760px){ .head,.heroCard,.conditionsHead,.blockReasonBox,.pipelineHead{flex-direction:column; align-items:flex-start;} .heroActions{align-items:flex-start; width:100%;} .heroActions a{width:100%; text-align:center;} .pipelineHeadActions{align-items:flex-start; width:100%;} .pipelineLink{width:100%; text-align:center;} .summaryGrid,.deployForm,.conditions,.modalSummary,.analysisGrid{grid-template-columns:1fr;} .run{grid-template-columns:1fr; align-items:flex-start;} .runTop{display:block;} .runInfo{margin-bottom:8px;} .runActions{justify-content:flex-start; width:100%;} .runActions a,.runActions button{flex:1; text-align:center;} .modalActions{flex-direction:column;} .modalActions button{width:100%;} .analysisModalHead{flex-direction:column;} .closeBtn{width:100%;} } .runActions a,.runActions button{flex:1; text-align:center;} .modalActions{flex-direction:column;} .modalActions button{width:100%;} .analysisModalHead{flex-direction:column;} .closeBtn{width:100%;} } .runActions a,.runActions button{flex:1; text-align:center;}  .head,.heroCard,.conditionsHead,.blockReasonBox,.pipelineHead { display:flex; justify-content:space-between; align-items:center; gap:18px; background:#fff; color:#9a6700; border:1px solid #dfeaf0; border-radius:18px; padding:16px; margin:16px 0 0; } .summaryGrid,.deployForm,.conditions { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; } .run{flex-direction:column; align-items:flex-start;} .blockReasonBox a { flex:none; background:#fff; border:1px solid #f8d77a; color:#7a4b00; border-radius:999px; padding:11px 15px; font-weight:900; box-shadow:0 8px 20px rgba(154,103,0,.08); } }
       
         @media(max-width:980px){
           .run { grid-template-columns:1fr; align-items:flex-start; }
@@ -946,6 +946,45 @@ export default function DeployCenterPage() {
           background:#fffaf0 !important;
           border-color:#f8df9a !important;
           color:#7a4b00 !important;
+        }
+
+      
+        /* Warning colors restored only for real warning actions */
+        .analyzeBtn {
+          background:#fffaf0 !important;
+          border-color:#f8df9a !important;
+          color:#7a4b00 !important;
+        }
+
+        .blockReasonBox,
+        .pendingBox,
+        .warningBox,
+        .reviewBox {
+          background:#fff7e6 !important;
+          border-color:#fee7aa !important;
+          color:#7a4b00 !important;
+        }
+
+        /* Force white cards only in Deploy Center */
+        .deploy > section,
+        .deploy .heroCard,
+        .deploy .selectedCard,
+        .deploy .conditionsCard,
+        .deploy .deployCard,
+        .deploy .historyCard,
+        .deploy .summaryCard,
+        .deploy .run {
+          background:#fff !important;
+          border-color:#dfeaf0 !important;
+        }
+
+        .deploy .readyBadge,
+        .deploy .okBadge,
+        .deploy .successBadge,
+        .deploy .pill {
+          background:#e8fff3 !important;
+          color:#008f57 !important;
+          border-color:#bbf7d0 !important;
         }
 
       `}</style>
