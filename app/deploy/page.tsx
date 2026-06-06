@@ -600,7 +600,8 @@ export default function DeployCenterPage() {
                               </span>
                             </div>
 
-                            <div className="runLinks">
+                            <div className="runActionsPanel">
+                              <div className="runActionGroup runActionLinks">
                               {run.build_url ? <a href={run.build_url} target="_blank" rel="noreferrer">Revisar log Jenkins ↗</a> : run.queue_url ? <a href={run.queue_url} target="_blank" rel="noreferrer">Ver cola ↗</a> : null}
                               {getPipelineUrlFromBuildUrl(run.build_url) ? (
                                 <a className="pipelineMiniLink" href={getPipelineUrlFromBuildUrl(run.build_url)} target="_blank" rel="noreferrer">Abrir pipeline ↗</a>
@@ -615,9 +616,9 @@ export default function DeployCenterPage() {
                                   {analyzingRunId === run.id ? 'Analizando log…' : 'Analizar fallo'}
                                 </button>
                               ) : null}
-                            </div>
+                              </div>
 
-                            <div className="runPrimary">
+                              <div className="runActionGroup runActionOps">
                               <button
                                 type="button"
                                 className="syncBtn primaryAction"
@@ -626,6 +627,7 @@ export default function DeployCenterPage() {
                               >
                                 {syncingRunId === run.id ? 'Actualizando…' : 'Actualizar estado'}
                               </button>
+                              </div>
                             </div>
                           </article>
                         ))}
@@ -805,24 +807,11 @@ export default function DeployCenterPage() {
         .runInfo small { color:var(--ink-soft); font-size:13px; line-height:1.35; word-break:break-word; }
 .runActions a, .runActions button { white-space:nowrap; }
         .runStatus { display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:7px 11px; font-size:12px; font-weight:900; white-space:nowrap; flex-shrink:0; }
-.analyzeBtn { background:#fff; border-color:#dfeaf0; color:#7a4b00; }
-        .runActions a:first-child { color:var(--green-d); font-weight:900; }
-
-
-        .run { background:#fff; border:1px solid #dfeaf0; border-radius:16px; padding:14px 16px; display:grid; grid-template-columns:minmax(230px,1fr) 150px minmax(280px,auto) 150px; align-items:center; gap:14px; box-shadow:0 10px 24px rgba(7,59,93,.03); }
-        .runInfo { min-width:0; display:flex; flex-direction:column; gap:4px; }
-        .runInfo b { color:var(--navy-d); font-size:15px; line-height:1.25; word-break:break-word; }
+.runActions a:first-child { color:var(--green-d); font-weight:900; }
+.runInfo b { color:var(--navy-d); font-size:15px; line-height:1.25; word-break:break-word; }
         .runInfo small { color:var(--ink-soft); font-size:13px; line-height:1.35; word-break:break-word; }
-        .runState { display:flex; align-items:center; justify-content:flex-start; }
-        .runLinks { display:flex; align-items:center; justify-content:flex-start; gap:8px; flex-wrap:wrap; min-width:0; }
-        .runPrimary { display:flex; align-items:center; justify-content:flex-end; }
-        .runLinks a, .runLinks button, .runPrimary button { white-space:nowrap; }
-        .runLinks > a { color:var(--green-d); font-weight:900; }
-        .pipelineMiniLink { color:var(--navy) !important; background:#fff; border:1px solid var(--line); border-radius:999px; padding:9px 11px; font-size:12px; font-weight:900; white-space:nowrap; }
-        .syncBtn { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:999px; padding:9px 12px; font-size:12px; font-weight:900; min-height:36px; }
-        .primaryAction { background:#fff; border-color:var(--line); min-width:132px; }
-        .analyzeBtn { background:#fff; border-color:#dfeaf0; color:#7a4b00; }
-        .runStatus { display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:7px 11px; font-size:12px; font-weight:900; white-space:nowrap; flex-shrink:0; }
+.runLinks a, .runLinks button,
+.runStatus { display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:7px 11px; font-size:12px; font-weight:900; white-space:nowrap; flex-shrink:0; }
 
         .runStatus.bad { background:#fff1f0; color:#b42318; }
         .runStatus.pending { background:#fff; color:#9a6700; }
@@ -864,11 +853,9 @@ export default function DeployCenterPage() {
         @media(max-width:760px){ .head,.heroCard,.conditionsHead,.blockReasonBox,.pipelineHead{flex-direction:column; align-items:flex-start;} .heroActions{align-items:flex-start; width:100%;} .heroActions a{width:100%; text-align:center;} .pipelineHeadActions{align-items:flex-start; width:100%;} .pipelineLink{width:100%; text-align:center;} .summaryGrid,.deployForm,.conditions,.modalSummary,.analysisGrid{grid-template-columns:1fr;} .run{grid-template-columns:1fr; align-items:flex-start;} .runTop{display:block;} .runInfo{margin-bottom:8px;} .runActions{justify-content:flex-start; width:100%;} .runActions a,.runActions button{flex:1; text-align:center;} .modalActions{flex-direction:column;} .modalActions button{width:100%;} .analysisModalHead{flex-direction:column;} .closeBtn{width:100%;} } .runActions a,.runActions button{flex:1; text-align:center;} .modalActions{flex-direction:column;} .modalActions button{width:100%;} .analysisModalHead{flex-direction:column;} .closeBtn{width:100%;} } .runActions a,.runActions button{flex:1; text-align:center;}  .head,.heroCard,.conditionsHead,.blockReasonBox,.pipelineHead { display:flex; justify-content:space-between; align-items:center; gap:18px; background:#fff; color:#9a6700; border:1px solid #dfeaf0; border-radius:18px; padding:16px; margin:16px 0 0; } .summaryGrid,.deployForm,.conditions { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; } .run{flex-direction:column; align-items:flex-start;} .blockReasonBox a { flex:none; background:#fff; border:1px solid #f8d77a; color:#7a4b00; border-radius:999px; padding:11px 15px; font-weight:900; box-shadow:0 8px 20px rgba(154,103,0,.08); } }
       
         @media(max-width:980px){
-          .run { grid-template-columns:1fr; align-items:flex-start; }
-          .runState, .runLinks, .runPrimary { justify-content:flex-start; width:100%; }
-          .runLinks a, .runLinks button, .runPrimary button { flex:1; text-align:center; }
-          .primaryAction { width:100%; }
-        }
+.runState, .runLinks,
+.runLinks a, .runLinks button,
+}
 
       
         /* Local Deploy palette cleanup - scoped only to this page */
@@ -899,15 +886,7 @@ export default function DeployCenterPage() {
           color:#7a4b00 !important;
           border-color:#fee7aa !important;
         }
-
-        .analyzeBtn {
-          background:#fffaf0 !important;
-          border-color:#f8df9a !important;
-          color:#7a4b00 !important;
-        }
-
-      
-        /* Final local palette override - Deploy Center only */
+/* Final local palette override - Deploy Center only */
         .deploy .heroCard,
         .deploy .hero,
         .deploy .selectedCard,
@@ -942,21 +921,9 @@ export default function DeployCenterPage() {
           border-color:#bbf7d0 !important;
         }
 
-        .deploy .analyzeBtn {
-          background:#fffaf0 !important;
-          border-color:#f8df9a !important;
-          color:#7a4b00 !important;
-        }
-
-      
-        /* Warning colors restored only for real warning actions */
-        .analyzeBtn {
-          background:#fffaf0 !important;
-          border-color:#f8df9a !important;
-          color:#7a4b00 !important;
-        }
-
-        .blockReasonBox,
+        .deploy
+/* Warning colors restored only for real warning actions */
+.blockReasonBox,
         .pendingBox,
         .warningBox,
         .reviewBox {
@@ -973,18 +940,144 @@ export default function DeployCenterPage() {
         .deploy .deployCard,
         .deploy .historyCard,
         .deploy .summaryCard,
-        .deploy .run {
-          background:#fff !important;
-          border-color:#dfeaf0 !important;
-        }
-
-        .deploy .readyBadge,
+        .deploy
+.deploy .readyBadge,
         .deploy .okBadge,
         .deploy .successBadge,
         .deploy .pill {
           background:#e8fff3 !important;
           color:#008f57 !important;
           border-color:#bbf7d0 !important;
+        }
+
+      
+        /* Historial Jenkins: acciones agrupadas y alineadas */
+        .run {
+          background:#fff;
+          border:1px solid #dfeaf0;
+          border-radius:16px;
+          padding:14px 16px;
+          display:grid;
+          grid-template-columns:minmax(220px, 1fr) 150px minmax(360px, 430px);
+          align-items:center;
+          gap:16px;
+          box-shadow:0 10px 24px rgba(7,59,93,.03);
+        }
+
+        .runInfo {
+          min-width:0;
+          display:flex;
+          flex-direction:column;
+          gap:4px;
+        }
+
+        .runInfo b {
+          color:var(--navy-d);
+          font-size:15px;
+          line-height:1.25;
+          word-break:break-word;
+        }
+
+        .runInfo small {
+          color:var(--ink-soft);
+          font-size:13px;
+          line-height:1.35;
+          word-break:break-word;
+        }
+
+        .runState {
+          display:flex;
+          align-items:center;
+          justify-content:flex-start;
+        }
+
+        .runActionsPanel {
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          gap:8px;
+          align-items:center;
+          justify-content:end;
+        }
+
+        .runActionGroup {
+          display:contents;
+        }
+
+        .runActionsPanel a,
+        .runActionsPanel button {
+          min-height:36px;
+          border-radius:999px;
+          padding:9px 12px;
+          font-size:12px;
+          font-weight:900;
+          white-space:nowrap;
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          text-align:center;
+        }
+
+        .runActionLinks > a:first-child,
+        .runActionsPanel > a:first-child {
+          color:var(--green-d);
+          background:#fff;
+          border:1px solid transparent;
+        }
+
+        .pipelineMiniLink {
+          color:var(--navy) !important;
+          background:#fff;
+          border:1px solid var(--line);
+        }
+
+        .analyzeBtn {
+          background:#fffaf0 !important;
+          border:1px solid #f8df9a !important;
+          color:#7a4b00 !important;
+        }
+
+        .syncBtn {
+          background:#fff;
+          border:1px solid var(--line);
+          color:var(--navy);
+        }
+
+        .primaryAction {
+          min-width:132px;
+        }
+
+        .runStatus {
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          border-radius:999px;
+          padding:7px 11px;
+          font-size:12px;
+          font-weight:900;
+          white-space:nowrap;
+          flex-shrink:0;
+        }
+
+        @media(max-width:980px){
+          .run {
+            grid-template-columns:1fr;
+            align-items:flex-start;
+          }
+
+          .runState,
+          .runActionsPanel {
+            width:100%;
+          }
+
+          .runActionsPanel {
+            grid-template-columns:1fr 1fr;
+          }
+        }
+
+        @media(max-width:560px){
+          .runActionsPanel {
+            grid-template-columns:1fr;
+          }
         }
 
       `}</style>
