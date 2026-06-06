@@ -25,8 +25,12 @@ function friendlyJenkinsError(status: number, body: string) {
   const clean = stripHtml(body);
   const lower = clean.toLowerCase();
 
+  if (lower.includes('oops') || lower.includes('a problem occurred while processing the request')) {
+    return `Jenkins respondió ${status}: ocurrió un error interno al procesar la ejecución. Revisa el Log ID en Jenkins y valida si el job acepta parámetros o debe ejecutarse sin parámetros. Detalle: ${clean.slice(0, 500)}`;
+  }
+
   if (lower.includes('no valid crumb') || lower.includes('crumb')) {
-    return 'Jenkins rechazó la ejecución por CSRF/Crumb. Se intentó obtener Crumb automáticamente, pero Jenkins lo rechazó. Revisa configuración CSRF o permisos del usuario/token.';
+    return 'Jenkins rechazó la ejecución por CSRF/Crumb. Revisa configuración CSRF o permisos del usuario/token.';
   }
 
   if (lower.includes('authentication') || lower.includes('unauthorized') || status === 401) {
@@ -46,6 +50,23 @@ function friendlyJenkinsError(status: number, body: string) {
   }
 
   return `Jenkins respondió ${status} sin detalle.`;
+}
+
+function buildJobPath(baseUrl: string, jobName: string) {
+  const cleanBaseUrl = baseUrl.replace(/\/$/, '');
+  const cleanJob = jobName.replace(/\s+·\s+.*$/, '').replace(/\s+-\s+OK$/, '').trim();
+
+  if (cleanJob.includes('/job/')) {
+    const raw = cleanJob.startsWith('http') ? cleanJob : `${cleanBaseUrl}/${cleanJob.replace(/^\//, '')}`;
+    return raw.replace(/\/$/, '');
+  }
+
+  if (cleanJob.includes('/')) {
+    const encoded = cleanJob.split('/').map(encodeURIComponent).join('/job/');
+    return `${cleanBaseUrl}/job/${encoded}`;
+  }
+
+  return `${cleanBaseUrl}/job/${encodeURIComponent(cleanJob)}`;
 }
 
 async function getJenkinsCrumb(baseUrl: string, authHeader: string) {
@@ -73,6 +94,34 @@ async function getJenkinsCrumb(baseUrl: string, authHeader: string) {
   }
 }
 
+async function getJobInfo(jobUrl: string, authHeader: string) {
+  try {
+    const response = await fetch(`${jobUrl}/api/json?tree=name,url,property[parameterDefinitions[name,type,defaultParameterValue[value]]]`, {
+      method: 'GET',
+      headers: {
+        Authorization: authHeader,
+        Accept: 'application/json',
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) return { ok: false, hasParameters: true, raw: null };
+
+    const data = await response.json();
+    const properties = Array.isArray(data?.property) ? data.property : [];
+    const params = properties.flatMap((p: any) => Array.isArray(p?.parameterDefinitions) ? p.parameterDefinitions : []);
+
+    return {
+      ok: true,
+      hasParameters: params.length > 0,
+      parameters: params.map((p: any) => String(p?.name || '')).filter(Boolean),
+      raw: data,
+    };
+  } catch {
+    return { ok: false, hasParameters: true, raw: null };
+  }
+}
+
 async function triggerJenkins(jobName: string, parameters: Record<string, string>) {
   const baseUrl = process.env.JENKINS_BASE_URL;
   const user = process.env.JENKINS_USER;
@@ -91,16 +140,14 @@ async function triggerJenkins(jobName: string, parameters: Record<string, string
   const cleanBaseUrl = baseUrl.replace(/\/$/, '');
   const authHeader = `Basic ${basicAuth(user, token)}`;
   const crumb = await getJenkinsCrumb(cleanBaseUrl, authHeader);
+  const jobUrl = buildJobPath(cleanBaseUrl, jobName);
+  const jobInfo = await getJobInfo(jobUrl, authHeader);
 
-  const encodedJob = jobName.split('/').map(encodeURIComponent).join('/job/');
-  const url = `${cleanBaseUrl}/job/${encodedJob}/buildWithParameters`;
-
-  const body = new URLSearchParams();
-  Object.entries(parameters).forEach(([key, value]) => body.set(key, value || ''));
+  const useParameters = jobInfo.hasParameters;
+  const triggerUrl = useParameters ? `${jobUrl}/buildWithParameters` : `${jobUrl}/build`;
 
   const headers: Record<string, string> = {
     Authorization: authHeader,
-    'Content-Type': 'application/x-www-form-urlencoded',
     Accept: 'application/json,text/plain,*/*',
   };
 
@@ -108,7 +155,22 @@ async function triggerJenkins(jobName: string, parameters: Record<string, string
     headers[crumb.field] = crumb.crumb;
   }
 
-  const response = await fetch(url, {
+  let body: URLSearchParams | undefined = undefined;
+
+  if (useParameters) {
+    body = new URLSearchParams();
+    const acceptedParams = Array.isArray((jobInfo as any).parameters) ? (jobInfo as any).parameters : [];
+
+    Object.entries(parameters).forEach(([key, value]) => {
+      if (acceptedParams.length === 0 || acceptedParams.includes(key)) {
+        body!.set(key, value || '');
+      }
+    });
+
+    headers['Content-Type'] = 'application/x-www-form-urlencoded';
+  }
+
+  const response = await fetch(triggerUrl, {
     method: 'POST',
     headers,
     body,
@@ -132,6 +194,11 @@ async function triggerJenkins(jobName: string, parameters: Record<string, string
       queueUrl,
       crumbUsed: Boolean(crumb),
       crumbField: crumb?.field || null,
+      jobUrl,
+      triggerUrl,
+      usedEndpoint: useParameters ? 'buildWithParameters' : 'build',
+      jobAcceptsParameters: useParameters,
+      acceptedParameters: (jobInfo as any).parameters || [],
     },
   };
 }
