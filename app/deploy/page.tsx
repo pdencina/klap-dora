@@ -46,7 +46,7 @@ const STATUS_LABEL: Record<string, string> = {
   QUEUED: 'En cola',
   RUNNING: 'En ejecución',
   SUCCESS: 'Exitoso',
-  FAILURE: 'Fallido',
+  FAILURE: 'Fallido en Jenkins',
   ABORTED: 'Abortado',
   FAILED_TO_TRIGGER: 'Error al iniciar',
 };
@@ -126,6 +126,8 @@ export default function DeployCenterPage() {
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
   const [syncingRunId, setSyncingRunId] = useState('');
+  const [analyzingRunId, setAnalyzingRunId] = useState('');
+  const [analysis, setAnalysis] = useState<any>(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -278,6 +280,31 @@ export default function DeployCenterPage() {
       setError(err?.message || 'Error actualizando Jenkins');
     } finally {
       setSyncingRunId('');
+    }
+  }
+
+  async function analyzeJenkinsRun(runId: string) {
+    try {
+      setAnalyzingRunId(runId);
+      setError('');
+      setMessage('');
+      setAnalysis(null);
+
+      const response = await fetch('/api/deploy/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ runId }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || 'No se pudo analizar Jenkins');
+
+      setAnalysis(data.analysis);
+      setMessage('Análisis Jenkins generado correctamente.');
+    } catch (err: any) {
+      setError(err?.message || 'Error analizando Jenkins');
+    } finally {
+      setAnalyzingRunId('');
     }
   }
 
@@ -466,7 +493,17 @@ export default function DeployCenterPage() {
                               {STATUS_LABEL[run.status] || run.status}
                             </span>
                             <div className="runActions">
-                              {run.build_url ? <a href={run.build_url} target="_blank" rel="noreferrer">Ver Jenkins ↗</a> : run.queue_url ? <a href={run.queue_url} target="_blank" rel="noreferrer">Ver cola ↗</a> : null}
+                              {run.build_url ? <a href={run.build_url} target="_blank" rel="noreferrer">Revisar log Jenkins ↗</a> : run.queue_url ? <a href={run.queue_url} target="_blank" rel="noreferrer">Ver cola ↗</a> : null}
+                              {run.build_url && (run.status === 'FAILURE' || run.result === 'FAILURE' || run.result === 'UNSTABLE') ? (
+                                <button
+                                  type="button"
+                                  className="syncBtn analyzeBtn"
+                                  onClick={() => analyzeJenkinsRun(run.id)}
+                                  disabled={analyzingRunId === run.id}
+                                >
+                                  {analyzingRunId === run.id ? 'Analizando…' : 'Analizar fallo'}
+                                </button>
+                              ) : null}
                               <button
                                 type="button"
                                 className="syncBtn"
@@ -483,6 +520,43 @@ export default function DeployCenterPage() {
                 </section>
 
                 {message ? <div className="msg">{message}</div> : null}
+
+                {analysis ? (
+                  <section className="analysisCard">
+                    <div className="analysisHead">
+                      <div>
+                        <p className="kicker">Recomendación IA</p>
+                        <h3>{analysis.title || 'Análisis Jenkins'}</h3>
+                        <p>{analysis.probableCause}</p>
+                      </div>
+                      {analysis.buildUrl ? <a href={analysis.buildUrl} target="_blank" rel="noreferrer">Abrir Jenkins ↗</a> : null}
+                    </div>
+
+                    <div className="analysisGrid">
+                      <div>
+                        <h4>Hallazgos</h4>
+                        <ul>
+                          {(analysis.findings || []).map((item: string, i: number) => <li key={i}>{item}</li>)}
+                        </ul>
+                      </div>
+                      <div>
+                        <h4>Pasos recomendados</h4>
+                        <ol>
+                          {(analysis.recommendedSteps || []).map((item: string, i: number) => <li key={i}>{item}</li>)}
+                        </ol>
+                      </div>
+                    </div>
+
+                    {analysis.evidenceLines?.length ? (
+                      <div className="evidenceBox">
+                        <h4>Líneas relevantes del log</h4>
+                        {(analysis.evidenceLines || []).map((line: string, i: number) => <code key={i}>{line}</code>)}
+                      </div>
+                    ) : null}
+
+                    <p className="analysisDisclaimer">{analysis.disclaimer}</p>
+                  </section>
+                ) : null}
 
                 {confirmOpen ? (
                   <div className="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
@@ -606,6 +680,19 @@ export default function DeployCenterPage() {
         .runActions { display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-wrap:wrap; }
         .run a { color:var(--green-d); font-weight:900; }
         .syncBtn { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:999px; padding:9px 11px; font-size:12px; font-weight:900; }
+        .analyzeBtn { background:#fff7e6; border-color:#fee7aa; color:#7a4b00; }
+        .analysisCard { background:#fff; border:1px solid var(--line); border-radius:22px; padding:20px; box-shadow:0 18px 45px rgba(7,59,93,.06); }
+        .analysisHead { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:16px; }
+        .analysisHead h3 { margin:0; color:var(--navy-d); font-size:24px; letter-spacing:-.04em; }
+        .analysisHead p { color:var(--ink-soft); margin:8px 0 0; line-height:1.45; }
+        .analysisHead a { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:999px; padding:10px 13px; font-weight:900; white-space:nowrap; }
+        .analysisGrid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+        .analysisGrid div, .evidenceBox { background:var(--bg); border:1px solid #dfeaf0; border-radius:16px; padding:14px; }
+        .analysisGrid h4, .evidenceBox h4 { margin:0 0 10px; color:var(--navy-d); }
+        .analysisGrid li { color:var(--ink); margin:6px 0; line-height:1.4; }
+        .evidenceBox { margin-top:14px; display:grid; gap:8px; }
+        .evidenceBox code { display:block; background:#fff; border:1px solid #dfeaf0; border-radius:10px; padding:9px 10px; color:#315873; white-space:pre-wrap; font-size:12px; }
+        .analysisDisclaimer { margin:12px 0 0; color:var(--ink-soft); font-size:12px; line-height:1.4; }
         .state { padding:28px; color:var(--ink-soft); }
         .state.error { background:#fff1f0; color:#b42318; }
         .empty { color:var(--ink-soft); }
