@@ -37,8 +37,6 @@ function normalizeJenkinsUrl(value: string | null | undefined) {
     const base = new URL(baseUrl);
     const input = new URL(raw, baseUrl);
 
-    // Jenkins puede devolver queue_url con http:// aunque el portal use https://.
-    // Preservamos path/search, pero forzamos origin de JENKINS_BASE_URL.
     input.protocol = base.protocol;
     input.host = base.host;
 
@@ -49,11 +47,40 @@ function normalizeJenkinsUrl(value: string | null | undefined) {
   }
 }
 
+function cleanJobName(jobName: string) {
+  return String(jobName || '')
+    .replace(/\s+·\s+.*$/, '')
+    .replace(/\s+-\s+OK$/, '')
+    .trim();
+}
+
+function buildJobPath(jobName: string) {
+  const baseUrl = getJenkinsBaseUrl();
+  const cleanJob = cleanJobName(jobName);
+
+  if (cleanJob.includes('/job/')) {
+    const raw = cleanJob.startsWith('http') ? cleanJob : `${baseUrl}/${cleanJob.replace(/^\//, '')}`;
+    return normalizeJenkinsUrl(raw);
+  }
+
+  if (cleanJob.includes('/')) {
+    const encoded = cleanJob.split('/').map(encodeURIComponent).join('/job/');
+    return `${baseUrl}/job/${encoded}`;
+  }
+
+  return `${baseUrl}/job/${encodeURIComponent(cleanJob)}`;
+}
+
 function apiUrl(base: string, query: string) {
   const clean = normalizeJenkinsUrl(base);
   if (!clean) return '';
   if (clean.endsWith('/api/json')) return clean;
   return `${clean}/api/json${query ? `?${query}` : ''}`;
+}
+
+function getQueueId(queueUrl?: string | null) {
+  const match = String(queueUrl || '').match(/\/queue\/item\/(\d+)/);
+  return match ? Number(match[1]) : null;
 }
 
 function normalizeResult(result: string | null, building: boolean) {
@@ -81,14 +108,76 @@ async function fetchJenkinsJson(url: string, authHeader: string) {
 
     if (!response.ok) {
       const text = await response.text();
-      throw new Error(`Jenkins respondió ${response.status} al consultar estado: ${text.slice(0, 500)}`);
+      const err: any = new Error(`Jenkins respondió ${response.status} al consultar estado: ${text.slice(0, 500)}`);
+      err.status = response.status;
+      err.body = text;
+      throw err;
     }
 
     return response.json();
   } catch (error: any) {
+    if (error?.status) throw error;
     const message = error?.message || 'fetch failed';
     throw new Error(`No fue posible consultar Jenkins (${url}). Detalle: ${message}`);
   }
+}
+
+async function getBuildFromJobFallback(run: any, authHeader: string) {
+  const rawJobUrl = run?.raw_response?.jobUrl || '';
+  const jobUrl = rawJobUrl ? normalizeJenkinsUrl(rawJobUrl) : buildJobPath(run.job_name);
+  const queueId = getQueueId(run.queue_url);
+
+  const buildsApi = apiUrl(
+    jobUrl,
+    'tree=builds[number,url,queueId,building,result,timestamp,duration]{0,10}'
+  );
+
+  const jobData = await fetchJenkinsJson(buildsApi, authHeader);
+  const builds = Array.isArray(jobData?.builds) ? jobData.builds : [];
+
+  if (builds.length === 0) {
+    return {
+      found: false,
+      jobUrl,
+      queueId,
+      jobData,
+      message: 'La cola ya no existe y Jenkins no informó builds recientes para este job.',
+    };
+  }
+
+  const matched = queueId
+    ? builds.find((build: any) => Number(build?.queueId) === Number(queueId))
+    : null;
+
+  const selected = matched || builds[0];
+
+  return {
+    found: true,
+    jobUrl,
+    queueId,
+    matchedByQueueId: Boolean(matched),
+    build: selected,
+    jobData,
+  };
+}
+
+function buildUpdateFromBuild(build: any, extraRaw: Record<string, any>) {
+  const normalized = normalizeResult(build?.result || null, Boolean(build?.building));
+
+  return {
+    status: normalized.status,
+    result: normalized.result,
+    build_url: normalizeJenkinsUrl(build?.url || ''),
+    build_number: build?.number ? String(build.number) : null,
+    finished_at: build?.building ? null : new Date().toISOString(),
+    raw_response: {
+      ...extraRaw,
+      build,
+      syncMessage: build?.building
+        ? 'Build en ejecución.'
+        : `Build finalizado con resultado ${build?.result || 'desconocido'}.`,
+    },
+  };
 }
 
 async function syncFromJenkins(run: any) {
@@ -109,7 +198,40 @@ async function syncFromJenkins(run: any) {
       'tree=cancelled,blocked,buildable,stuck,why,executable[number,url]'
     );
 
-    queueData = await fetchJenkinsJson(queueUrl, authHeader);
+    try {
+      queueData = await fetchJenkinsJson(queueUrl, authHeader);
+    } catch (error: any) {
+      if (error?.status === 404) {
+        const fallback = await getBuildFromJobFallback(run, authHeader);
+
+        if (fallback.found) {
+          return buildUpdateFromBuild(fallback.build, {
+            ...(run.raw_response || {}),
+            normalizedQueueUrl,
+            queueExpired: true,
+            fallback,
+            syncMessage: 'La cola expiró en Jenkins. Se obtuvo el estado desde los builds recientes del job.',
+          });
+        }
+
+        return {
+          status: 'QUEUED',
+          result: null,
+          build_url: null,
+          build_number: null,
+          finished_at: null,
+          raw_response: {
+            ...(run.raw_response || {}),
+            normalizedQueueUrl,
+            queueExpired: true,
+            fallback,
+            syncError: 'La cola ya no existe en Jenkins y no se encontró build reciente asociado.',
+          },
+        };
+      }
+
+      throw error;
+    }
 
     if (queueData?.cancelled) {
       return {
@@ -153,7 +275,7 @@ async function syncFromJenkins(run: any) {
 
     const buildApi = apiUrl(
       normalizedBuildUrl,
-      'tree=building,result,number,url,duration,timestamp,estimatedDuration'
+      'tree=building,result,number,url,duration,timestamp,estimatedDuration,queueId'
     );
 
     buildData = await fetchJenkinsJson(buildApi, authHeader);
