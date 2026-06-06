@@ -750,7 +750,7 @@ export default function DeployCenterPage() {
         .heroActions { display:flex; flex-direction:column; align-items:flex-end; gap:10px; flex:none; }
         .heroActions a { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:999px; padding:10px 13px; font-weight:900; white-space:nowrap; box-shadow:0 8px 20px rgba(7,59,93,.04); }
         .readyBadge, .blockedBadge, .okPill, .warnPill { border-radius:999px; padding:10px 13px; font-weight:900; white-space:nowrap; }
-        .readyBadge, .okPill { background:#e8fff3; color:#008f57; }
+        .readyBadge, .okPill { background:#fff; color:#008f57; }
         .blockedBadge, .warnPill { background:#fff; color:#9a6700; }
         .summaryGrid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
         .summaryGrid div { background:#fff; border:1px solid var(--line); border-radius:18px; padding:16px; }
@@ -759,7 +759,7 @@ export default function DeployCenterPage() {
         .pipelineCard, .runs, .conditionsCard { padding:20px; }
         .conditions { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; }
         .condition { display:flex; gap:15px; align-items:flex-start; background:var(--bg); border:1px solid #dfeaf0; border-radius:18px; padding:16px; min-height:96px; }
-        .condition.ok { border-color:#bbf7d0; background:#f0fff7; }
+        .condition.ok { border-color:#dfeaf0; background:#f0fff7; }
         .condition.warn { border-color:#dfeaf0; background:#fff; }
         .conditionIcon { width:34px; height:34px; border-radius:999px; display:flex; align-items:center; justify-content:center; flex:none; font-weight:900; font-size:15px; margin-top:1px; }
         .condition.ok .conditionIcon { width:34px; height:34px; border-radius:999px; display:flex; align-items:center; justify-content:center; flex:none; font-weight:900; font-size:15px; margin-top:1px; }
@@ -783,7 +783,7 @@ export default function DeployCenterPage() {
         .pipelineLink { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:999px; padding:10px 14px; font-weight:900; white-space:nowrap; box-shadow:0 8px 20px rgba(7,59,93,.04); }
         .stageFlow { display:flex; align-items:center; gap:8px; flex:none; }
         .stageFlow span { border-radius:999px; background:#eef4f8; color:var(--ink-soft); padding:8px 10px; font-size:12px; font-weight:900; }
-        .stageFlow span.done { background:#e8fff3; color:#008f57; }
+        .stageFlow span.done { background:#fff; color:#008f57; }
         .stageFlow i { width:24px; height:2px; background:#d8e4eb; }
         .deployForm { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:14px; }
         label { display:grid; gap:7px; color:#315873; font-weight:900; font-size:13px; }
@@ -802,7 +802,7 @@ export default function DeployCenterPage() {
         .runInfo small { color:var(--ink-soft); font-size:13px; line-height:1.35; word-break:break-word; }
 .runActions a, .runActions button { white-space:nowrap; }
         .runStatus { display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:7px 11px; font-size:12px; font-weight:900; white-space:nowrap; flex-shrink:0; }
-.runStatus.ok { background:#e8fff3; color:#008f57; }
+.runStatus.ok { background:#fff; color:#008f57; }
 .runInfo b { color:var(--navy-d); font-size:15px; line-height:1.25; word-break:break-word; }
         .runInfo small { color:var(--ink-soft); font-size:13px; line-height:1.35; word-break:break-word; }
 .runActions a, .runActions button { white-space:nowrap; }
@@ -836,10 +836,10 @@ export default function DeployCenterPage() {
         .state { padding:28px; color:var(--ink-soft); }
         .state.error { background:#fff1f0; color:#b42318; }
         .empty { color:var(--ink-soft); }
-        .msg { background:#e8fff3; color:#008f57; border:1px solid #bbf7d0; border-radius:14px; padding:12px 14px; font-weight:900; }
+        .msg { background:#fff; color:#008f57; border:1px solid #dfeaf0; border-radius:14px; padding:12px 14px; font-weight:900; }
         .modalOverlay { position:fixed; inset:0; z-index:80; background:rgba(5,24,38,.58); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:24px; }
         .confirmModal { width:min(620px, 100%); background:#fff; border:1px solid var(--line); border-radius:28px; box-shadow:0 30px 90px rgba(5,24,38,.28); padding:28px; }
-        .modalIcon { width:48px; height:48px; border-radius:16px; background:#e8fff3; color:#008f57; display:flex; align-items:center; justify-content:center; font-size:24px; margin-bottom:14px; }
+        .modalIcon { width:48px; height:48px; border-radius:16px; background:#fff; color:#008f57; display:flex; align-items:center; justify-content:center; font-size:24px; margin-bottom:14px; }
         .confirmModal h3 { margin:0; color:var(--navy-d); font-size:28px; letter-spacing:-.04em; }
         .modalLead { color:var(--ink); font-weight:800; margin:10px 0 18px; line-height:1.45; }
         .modalSummary { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:16px 0; }
@@ -856,185 +856,7 @@ export default function DeployCenterPage() {
 .runState, .runLinks,
 .runLinks a, .runLinks button,
 }
-
-      
-        /* Local Deploy palette cleanup - scoped only to this page */
-        .heroCard,
-        .selectedCard,
-        .conditionsCard,
-        .deployCard {
-          background:#fff !important;
-          border-color:#dfeaf0 !important;
-        }
-
-        .readyBadge,
-        .okBadge,
-        .successBadge,
-        .conditionsHead .okBadge,
-        .heroCard .okBadge,
-        .selectedCard .okBadge {
-          background:#e8fff3 !important;
-          color:#008f57 !important;
-          border-color:#bbf7d0 !important;
-        }
-
-        .pendingBadge,
-        .warningBadge,
-        .reviewBadge,
-        .blockReasonBox {
-          background:#fff7e6 !important;
-          color:#7a4b00 !important;
-          border-color:#fee7aa !important;
-        }
-/* Final local palette override - Deploy Center only */
-        .deploy .heroCard,
-        .deploy .hero,
-        .deploy .selectedCard,
-        .deploy .changeCard,
-        .deploy .selectedChange,
-        .deploy .conditionsCard,
-        .deploy .controlCard,
-        .deploy .deployCard,
-        .deploy .pipelineCard,
-        .deploy .summaryCard {
-          background:#fff !important;
-          border-color:#dfeaf0 !important;
-        }
-
-        .deploy .blockReasonBox,
-        .deploy .pendingBox,
-        .deploy .warningBox,
-        .deploy .reviewBox {
-          background:#fff7e6 !important;
-          border-color:#fee7aa !important;
-          color:#7a4b00 !important;
-        }
-
-        .deploy .readyBadge,
-        .deploy .okBadge,
-        .deploy .successBadge,
-        .deploy .pill.ok,
-        .deploy .statusOk,
-        .deploy .statusReady {
-          background:#e8fff3 !important;
-          color:#008f57 !important;
-          border-color:#bbf7d0 !important;
-        }
-
-        .deploy
-/* Warning colors restored only for real warning actions */
-.blockReasonBox,
-        .pendingBox,
-        .warningBox,
-        .reviewBox {
-          background:#fff7e6 !important;
-          border-color:#fee7aa !important;
-          color:#7a4b00 !important;
-        }
-
-        /* Force white cards only in Deploy Center */
-        .deploy > section,
-        .deploy .heroCard,
-        .deploy .selectedCard,
-        .deploy .conditionsCard,
-        .deploy .deployCard,
-        .deploy .historyCard,
-        .deploy .summaryCard,
-        .deploy
-.deploy .readyBadge,
-        .deploy .okBadge,
-        .deploy .successBadge,
-        .deploy .pill {
-          background:#e8fff3 !important;
-          color:#008f57 !important;
-          border-color:#bbf7d0 !important;
-        }
-
-      
-        /* Historial de ejecución - layout local únicamente */
-        .run {
-          background:#fff;
-          border:1px solid #dfeaf0;
-          border-radius:16px;
-          padding:14px 16px;
-          display:grid;
-          grid-template-columns:minmax(220px,1fr) 150px minmax(380px,440px);
-          align-items:center;
-          gap:16px;
-          box-shadow:0 10px 24px rgba(7,59,93,.03);
-        }
-
-        .runInfo {
-          min-width:0;
-          display:flex;
-          flex-direction:column;
-          gap:4px;
-        }
-
-        .runInfo b {
-          color:var(--navy-d);
-          font-size:15px;
-          line-height:1.25;
-          word-break:break-word;
-        }
-
-        .runInfo small {
-          color:var(--ink-soft);
-          font-size:13px;
-          line-height:1.35;
-          word-break:break-word;
-        }
-
-        .runState {
-          display:flex;
-          align-items:center;
-          justify-content:flex-start;
-        }
-
-        .runActionsPanel {
-          display:grid;
-          grid-template-columns:1fr 1fr;
-          gap:8px;
-          align-items:center;
-        }
-
-        .runActionGroup {
-          display:contents;
-        }
-
-        .runActionsPanel a,
-        .runActionsPanel button {
-          min-height:36px;
-          border-radius:999px;
-          padding:9px 12px;
-          font-size:12px;
-          font-weight:900;
-          white-space:nowrap;
-          display:inline-flex;
-          align-items:center;
-          justify-content:center;
-          text-align:center;
-        }
-
-        .runActionLinks a:first-child {
-          color:var(--green-d);
-          background:#fff;
-          border:1px solid transparent;
-        }
-
-        .pipelineMiniLink {
-          color:var(--navy) !important;
-          background:#fff;
-          border:1px solid var(--line);
-        }
-
-        .analyzeBtn {
-          background:#fffaf0 !important;
-          border:1px solid #f8df9a !important;
-          color:#7a4b00 !important;
-        }
-
-        .syncBtn {
+.syncBtn {
           background:#fff;
           border:1px solid var(--line);
           color:var(--navy);
@@ -1076,6 +898,47 @@ export default function DeployCenterPage() {
           .runActionsPanel {
             grid-template-columns:1fr;
           }
+        }
+
+      
+        /* Deploy Center final palette: white cards, green only for badges */
+        .heroCard,
+        .selectedCard,
+        .conditionsCard,
+        .deployCard,
+        .historyCard,
+        .summaryCard,
+        .pipelineCard,
+        .controlCard {
+          background:#fff !important;
+          border-color:#dfeaf0 !important;
+        }
+
+        .readyBadge,
+        .okBadge,
+        .successBadge,
+        .statusReady,
+        .statusOk,
+        .runStatus.ok,
+        .runStatus.SUCCESS {
+          background:#e8fff3 !important;
+          color:#008f57 !important;
+          border-color:#bbf7d0 !important;
+        }
+
+        .blockReasonBox,
+        .pendingBox,
+        .warningBox,
+        .reviewBox {
+          background:#fff7e6 !important;
+          border-color:#fee7aa !important;
+          color:#7a4b00 !important;
+        }
+
+        .analyzeBtn {
+          background:#fffaf0 !important;
+          border:1px solid #f8df9a !important;
+          color:#7a4b00 !important;
         }
 
       `}</style>
