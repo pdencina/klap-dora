@@ -117,6 +117,32 @@ function jobColorLabel(color?: string) {
   return color;
 }
 
+
+function cleanJenkinsJobName(value: string) {
+  return String(value || '')
+    .replace(/\s+·\s+.*$/, '')
+    .replace(/\s+-\s+OK$/, '')
+    .trim();
+}
+
+function buildJenkinsPipelineUrl(baseUrl: string | undefined, jobName: string) {
+  const cleanBase = String(baseUrl || '').replace(/\/$/, '');
+  const cleanJob = cleanJenkinsJobName(jobName);
+
+  if (!cleanBase || !cleanJob) return '';
+
+  if (cleanJob.includes('/job/')) {
+    return cleanJob.startsWith('http') ? cleanJob : `${cleanBase}/${cleanJob.replace(/^\//, '')}`;
+  }
+
+  if (cleanJob.includes('/')) {
+    return `${cleanBase}/job/${cleanJob.split('/').map(encodeURIComponent).join('/job/')}/`;
+  }
+
+  return `${cleanBase}/job/${encodeURIComponent(cleanJob)}/`;
+}
+
+
 export default function DeployCenterPage() {
   const [changes, setChanges] = useState<Change[]>([]);
   const [selectedId, setSelectedId] = useState('');
@@ -139,6 +165,7 @@ export default function DeployCenterPage() {
 
   const selected = useMemo(() => changes.find((c) => c.id === selectedId) || null, [changes, selectedId]);
   const selectedLastRun = lastRun(selected);
+  const pipelineUrl = buildJenkinsPipelineUrl(process.env.NEXT_PUBLIC_JENKINS_BASE_URL, jobName);
 
   const cabReady = isRdcApproved(selected);
   const papReady = isPapReady(selected);
@@ -438,7 +465,14 @@ export default function DeployCenterPage() {
                       <h3>Ejecutar despliegue</h3>
                       <p>La ejecución queda asociada al RDC, usuario ejecutor, parámetros y resultado.</p>
                     </div>
-                    <div className="stageFlow">
+
+                    <div className="pipelineHeadActions">
+                      {pipelineUrl ? (
+                        <a className="pipelineLink" href={pipelineUrl} target="_blank" rel="noreferrer">
+                          Abrir pipeline Jenkins ↗
+                        </a>
+                      ) : null}
+                      <div className="stageFlow">
                       <span className={cabReady ? 'done' : ''}>CAB</span>
                       <i />
                       <span className={papReady ? 'done' : ''}>PAP</span>
@@ -446,6 +480,7 @@ export default function DeployCenterPage() {
                       <span className={selectedLastRun ? 'done' : ''}>Jenkins</span>
                       <i />
                       <span>Cierre</span>
+                      </div>
                     </div>
                   </div>
 
@@ -686,6 +721,8 @@ export default function DeployCenterPage() {
         .blockReasonBox a { flex:none; background:#fff; border:1px solid #f8d77a; color:#7a4b00; border-radius:999px; padding:11px 15px; font-weight:900; box-shadow:0 8px 20px rgba(154,103,0,.08); }
         .pipelineHead { display:flex; justify-content:space-between; gap:16px; margin-bottom:16px; }
         .pipelineHead p { color:var(--ink-soft); margin:8px 0 0; }
+        .pipelineHeadActions { display:flex; flex-direction:column; align-items:flex-end; gap:12px; }
+        .pipelineLink { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:999px; padding:10px 14px; font-weight:900; white-space:nowrap; box-shadow:0 8px 20px rgba(7,59,93,.04); }
         .stageFlow { display:flex; align-items:center; gap:8px; flex:none; }
         .stageFlow span { border-radius:999px; background:#eef4f8; color:var(--ink-soft); padding:8px 10px; font-size:12px; font-weight:900; }
         .stageFlow span.done { background:#e8fff3; color:#008f57; }
@@ -747,7 +784,7 @@ export default function DeployCenterPage() {
         .modalActions { display:flex; justify-content:flex-end; gap:10px; margin-top:20px; }
         .modalActions button { min-width:150px; }
         @media(max-width:1120px){ .layout{grid-template-columns:1fr;} .pipelineHead{flex-direction:column;} }
-        @media(max-width:760px){ .head,.heroCard,.conditionsHead,.blockReasonBox { display:flex; justify-content:space-between; align-items:center; gap:18px; background:#fff7e6; color:#9a6700; border:1px solid #fee7aa; border-radius:18px; padding:16px; margin:16px 0 0; } .summaryGrid,.deployForm,.conditions { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; } .run{grid-template-columns:1fr;} .blockReasonBox a { flex:none; background:#fff; border:1px solid #f8d77a; color:#7a4b00; border-radius:999px; padding:11px 15px; font-weight:900; box-shadow:0 8px 20px rgba(154,103,0,.08); } }
+        @media(max-width:760px){ .head,.heroCard,.conditionsHead,.blockReasonBox,.pipelineHead { display:flex; justify-content:space-between; align-items:center; gap:18px; background:#fff7e6; color:#9a6700; border:1px solid #fee7aa; border-radius:18px; padding:16px; margin:16px 0 0; } .summaryGrid,.deployForm,.conditions { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; } .run{grid-template-columns:1fr;} .blockReasonBox a { flex:none; background:#fff; border:1px solid #f8d77a; color:#7a4b00; border-radius:999px; padding:11px 15px; font-weight:900; box-shadow:0 8px 20px rgba(154,103,0,.08); } }
       `}</style>
     </main>
   );
