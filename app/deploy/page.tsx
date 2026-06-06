@@ -906,6 +906,48 @@ export default function DeployCenterPage() {
           color:#7a4b00 !important;
         }
 
+      
+        /* Final local palette override - Deploy Center only */
+        .deploy .heroCard,
+        .deploy .hero,
+        .deploy .selectedCard,
+        .deploy .changeCard,
+        .deploy .selectedChange,
+        .deploy .conditionsCard,
+        .deploy .controlCard,
+        .deploy .deployCard,
+        .deploy .pipelineCard,
+        .deploy .summaryCard {
+          background:#fff !important;
+          border-color:#dfeaf0 !important;
+        }
+
+        .deploy .blockReasonBox,
+        .deploy .pendingBox,
+        .deploy .warningBox,
+        .deploy .reviewBox {
+          background:#fff7e6 !important;
+          border-color:#fee7aa !important;
+          color:#7a4b00 !important;
+        }
+
+        .deploy .readyBadge,
+        .deploy .okBadge,
+        .deploy .successBadge,
+        .deploy .pill.ok,
+        .deploy .statusOk,
+        .deploy .statusReady {
+          background:#e8fff3 !important;
+          color:#008f57 !important;
+          border-color:#bbf7d0 !important;
+        }
+
+        .deploy .analyzeBtn {
+          background:#fffaf0 !important;
+          border-color:#f8df9a !important;
+          color:#7a4b00 !important;
+        }
+
       `}</style>
     </main>
   );
