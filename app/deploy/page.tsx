@@ -312,7 +312,11 @@ export default function DeployCenterPage() {
                     <h2>{selected.title}</h2>
                     <p>{selected.system || 'Sin sistema'} · {selected.cell || 'Sin célula'} · {selected.category || 'Sin categoría'}</p>
                   </div>
-                  <span className={canExecute ? 'readyBadge' : 'blockedBadge'}>{canExecute ? 'Listo para Deploy' : !papReady ? 'Pendiente Plan PAP' : 'No ejecutable todavía'}</span>
+
+                  <div className="heroActions">
+                    <span className={canExecute ? 'readyBadge' : 'blockedBadge'}>{canExecute ? 'Listo para Deploy' : !papReady ? 'Pendiente Plan PAP' : 'No ejecutable todavía'}</span>
+                    <a href={`/pap?rdcId=${selected.id}`}>{papReady ? 'Editar Plan PAP →' : 'Ir a Plan PAP →'}</a>
+                  </div>
                 </div>
 
                 <div className="summaryGrid">
@@ -473,6 +477,8 @@ export default function DeployCenterPage() {
         .heroCard { padding:20px; display:flex; justify-content:space-between; gap:18px; align-items:flex-start; }
         .heroCard h2 { margin:0 0 8px; font-size:28px; color:var(--navy-d); letter-spacing:-.04em; }
         .heroCard p { margin:0; color:var(--ink-soft); }
+        .heroActions { display:flex; flex-direction:column; align-items:flex-end; gap:10px; flex:none; }
+        .heroActions a { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:999px; padding:10px 13px; font-weight:900; white-space:nowrap; box-shadow:0 8px 20px rgba(7,59,93,.04); }
         .readyBadge, .blockedBadge, .okPill, .warnPill { border-radius:999px; padding:10px 13px; font-weight:900; white-space:nowrap; }
         .readyBadge, .okPill { background:#e8fff3; color:#008f57; }
         .blockedBadge, .warnPill { background:#fff7e6; color:#9a6700; }
