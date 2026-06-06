@@ -941,6 +941,146 @@ export default function DeployCenterPage() {
           color:#7a4b00 !important;
         }
 
+      
+        /* Historial de ejecución - grid final limpio */
+        .runs {
+          display:flex;
+          flex-direction:column;
+          gap:10px;
+        }
+
+        .run {
+          background:#fff !important;
+          border:1px solid #dfeaf0 !important;
+          border-radius:16px !important;
+          padding:14px 16px !important;
+          display:grid !important;
+          grid-template-columns:minmax(230px,1fr) 150px minmax(360px,420px) !important;
+          align-items:center !important;
+          gap:16px !important;
+          box-shadow:0 10px 24px rgba(7,59,93,.03) !important;
+        }
+
+        .runInfo {
+          min-width:0 !important;
+          display:flex !important;
+          flex-direction:column !important;
+          gap:4px !important;
+        }
+
+        .runInfo b {
+          display:block !important;
+          color:var(--navy-d) !important;
+          font-size:15px !important;
+          line-height:1.25 !important;
+          word-break:break-word !important;
+        }
+
+        .runInfo small {
+          display:block !important;
+          color:var(--ink-soft) !important;
+          font-size:13px !important;
+          line-height:1.35 !important;
+          word-break:break-word !important;
+        }
+
+        .runState {
+          display:flex !important;
+          align-items:center !important;
+          justify-content:flex-start !important;
+        }
+
+        .runStatus {
+          display:inline-flex !important;
+          align-items:center !important;
+          justify-content:center !important;
+          border-radius:999px !important;
+          padding:7px 11px !important;
+          font-size:12px !important;
+          font-weight:900 !important;
+          white-space:nowrap !important;
+          flex-shrink:0 !important;
+        }
+
+        .runActionsPanel {
+          display:grid !important;
+          grid-template-columns:1fr 1fr !important;
+          gap:8px !important;
+          align-items:center !important;
+          justify-content:stretch !important;
+          width:100% !important;
+        }
+
+        .runActionGroup {
+          display:contents !important;
+        }
+
+        .runActionsPanel a,
+        .runActionsPanel button {
+          min-height:36px !important;
+          border-radius:999px !important;
+          padding:9px 12px !important;
+          font-size:12px !important;
+          font-weight:900 !important;
+          white-space:nowrap !important;
+          display:inline-flex !important;
+          align-items:center !important;
+          justify-content:center !important;
+          text-align:center !important;
+          width:100% !important;
+          line-height:1 !important;
+        }
+
+        .runActionLinks a:first-child {
+          color:var(--green-d) !important;
+          background:#fff !important;
+          border:1px solid transparent !important;
+        }
+
+        .pipelineMiniLink {
+          color:var(--navy) !important;
+          background:#fff !important;
+          border:1px solid var(--line) !important;
+        }
+
+        .analyzeBtn {
+          background:#fffaf0 !important;
+          border:1px solid #f8df9a !important;
+          color:#7a4b00 !important;
+        }
+
+        .syncBtn {
+          background:#fff !important;
+          border:1px solid var(--line) !important;
+          color:var(--navy) !important;
+        }
+
+        .primaryAction {
+          min-width:0 !important;
+        }
+
+        @media(max-width:980px){
+          .run {
+            grid-template-columns:1fr !important;
+            align-items:flex-start !important;
+          }
+
+          .runState,
+          .runActionsPanel {
+            width:100% !important;
+          }
+
+          .runActionsPanel {
+            grid-template-columns:1fr 1fr !important;
+          }
+        }
+
+        @media(max-width:560px){
+          .runActionsPanel {
+            grid-template-columns:1fr !important;
+          }
+        }
+
       `}</style>
     </main>
   );
