@@ -295,7 +295,7 @@ export default function DeployCenterPage() {
                     >
                       <strong>{change.title}</strong>
                       <small>{change.system || 'Sin sistema'} · {change.cell || 'Sin célula'}</small>
-                      <em>{run ? `Último run: ${STATUS_LABEL[run.status] || run.status}` : 'Sin ejecución'}</em>
+                      <em>{run ? `Última ejecución: ${STATUS_LABEL[run.status] || run.status}` : 'Sin ejecución Jenkins'}</em>
                     </button>
                   );
                 })}
@@ -319,7 +319,7 @@ export default function DeployCenterPage() {
                   <div><span>Aprobaciones CAB</span><b>{approvedCount(selected)}/{totalApprovals(selected)}</b></div>
                   <div><span>Plan PAP</span><b>{papPercent}%</b></div>
                   <div><span>Estado RDC</span><b>{humanRdcStatus(selected.status)}</b></div>
-                  <div><span>Última ejecución</span><b>{selectedLastRun ? (STATUS_LABEL[selectedLastRun.status] || selectedLastRun.status) : 'Sin run'}</b></div>
+                  <div><span>Última ejecución</span><b>{selectedLastRun ? (STATUS_LABEL[selectedLastRun.status] || selectedLastRun.status) : 'Sin ejecución Jenkins'}</b></div>
                 </div>
 
                 <section className="conditionsCard">
