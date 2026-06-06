@@ -1,226 +1,119 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* KLAP Release UI System 1.0 - SAFE FIX
-   Conservador: no pinta cards completas ni listas completas. */
-
+/* ===== Tokens KLAP ===== */
 :root {
-  --klap-green: #00b86b;
-  --klap-green-dark: #008f57;
-  --klap-green-soft: #e8fff3;
-  --klap-navy: #073b5d;
-  --klap-navy-dark: #05283f;
-  --klap-bg: #f4f8fb;
-  --klap-surface: #ffffff;
-  --klap-line: #dfeaf0;
-  --klap-text: #07324d;
-  --klap-muted: #60748a;
-  --klap-warning-bg: #fff7e6;
-  --klap-warning-text: #7a4b00;
-  --klap-warning-line: #fee7aa;
-  --klap-danger-bg: #fff1f1;
-  --klap-danger-text: #b42318;
-  --klap-danger-line: #ffd6d6;
-  --klap-radius: 18px;
-  --klap-shadow: 0 18px 45px rgba(7, 59, 93, 0.06);
+  --green: #00c16e;
+  --green-d: #00a85f;
+  --green-soft: #e8fff3;
+  --navy: #02568c;
+  --navy-d: #013356;
+  --ink: #073b5d;
+  --ink-soft: #5d7890;
+  --bg: #f2f7fa;
+  --line: #dfeaf0;
+  --amber: #cf8b2c;
+  --font: var(--font-jakarta), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 * { box-sizing: border-box; }
-
-html, body {
-  margin: 0;
-  background: var(--klap-bg);
-  color: var(--klap-text);
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
 }
-
 a { color: inherit; text-decoration: none; }
 
-button {
-  font-family: inherit;
-  cursor: pointer;
-}
+.app-shell { min-height: calc(100vh - 60px); }
 
-button:disabled {
-  cursor: not-allowed;
-  opacity: .65;
-}
-
-input, select, textarea {
-  color: var(--klap-navy-dark);
-}
-
-input:focus, select:focus, textarea:focus {
-  outline: none;
-}
-
-/* Utilidades explícitas, no globales agresivas */
-.klap-card, .ui-card {
-  background: var(--klap-surface);
-  border: 1px solid var(--klap-line);
-  border-radius: var(--klap-radius);
-  box-shadow: var(--klap-shadow);
-}
-
-.klap-muted, .ui-muted { color: var(--klap-muted); }
-
-.klap-kicker, .kicker {
-  color: var(--klap-green-dark);
-  text-transform: uppercase;
-  letter-spacing: .22em;
-  font-weight: 900;
-  font-size: 12px;
-}
-
-.klap-badge, .ui-badge {
-  display: inline-flex;
+/* ===== Top nav ===== */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  height: 60px;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  padding: 7px 11px;
+  gap: 22px;
+  padding: 0 6vw;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+.nav-brand {
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -0.04em;
+  color: var(--navy);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.nav-brand .k { color: var(--green); }
+.nav-brand em {
+  font-style: normal;
   font-size: 12px;
-  font-weight: 900;
-  border: 1px solid var(--klap-line);
-  background: #fff;
-  color: var(--klap-navy);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+.nav-links a {
+  position: relative;
+  padding: 8px 12px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  transition: background 0.15s, color 0.15s;
+}
+.nav-links a:hover { background: #eef4f8; color: var(--ink); }
+.nav-links a.active { color: var(--navy); background: #e9f1f8; }
+/* Marca sutil de que un enlace es del área Release Manager */
+.nav-links a.rm::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  margin-right: 7px;
+  vertical-align: middle;
+}
+
+.nav-right { display: flex; align-items: center; gap: 12px; }
+.nav-role {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 999px;
   white-space: nowrap;
 }
+.nav-role.user { background: #eef4f8; color: var(--navy); }
+.nav-role.rm { background: var(--green-soft); color: var(--green-d); }
 
-.klap-badge.ok, .ui-badge.ok, .badge-ok, .status-ok, .status-success, .status-ready {
-  background: var(--klap-green-soft);
-  color: var(--klap-green-dark);
-  border-color: #bbf7d0;
-}
-
-.klap-badge.pending, .ui-badge.pending, .badge-pending, .status-pending, .status-warning {
-  background: var(--klap-warning-bg);
-  color: var(--klap-warning-text);
-  border-color: var(--klap-warning-line);
-}
-
-.klap-badge.bad, .ui-badge.bad, .badge-bad, .status-bad, .status-error, .status-failure {
-  background: var(--klap-danger-bg);
-  color: var(--klap-danger-text);
-  border-color: var(--klap-danger-line);
-}
-
-.runStatus.ok,
-.runStatus.SUCCESS,
-.runStatus.QUEUED,
-.runStatus.RUNNING {
-  background: var(--klap-green-soft);
-  color: var(--klap-green-dark);
-  border-color: #bbf7d0;
-}
-
-.runStatus.pending {
-  background: var(--klap-warning-bg);
-  color: var(--klap-warning-text);
-  border-color: var(--klap-warning-line);
-}
-
-.runStatus.bad,
-.runStatus.FAILURE,
-.runStatus.FAILED_TO_TRIGGER,
-.runStatus.ABORTED {
-  background: var(--klap-danger-bg);
-  color: var(--klap-danger-text);
-  border-color: var(--klap-danger-line);
-}
-
-.klap-btn, .ui-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+.nav-email { font-size: 12px; color: var(--ink-soft); font-weight: 600; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-logout {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--navy);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 13px;
   border-radius: 999px;
-  padding: 11px 16px;
-  font-weight: 900;
-  border: 1px solid var(--klap-line);
-  background: #fff;
-  color: var(--klap-navy);
+  cursor: pointer;
 }
-
-.klap-btn.primary, .ui-btn.primary, .btn-primary {
-  background: var(--klap-green);
-  border-color: var(--klap-green);
-  color: #fff;
-}
-
-.klap-btn.secondary, .ui-btn.secondary, .btn-secondary {
-  background: #fff;
-  border-color: var(--klap-line);
-  color: var(--klap-navy);
-}
-
-.klap-btn.warning, .ui-btn.warning, .btn-warning {
-  background: var(--klap-warning-bg);
-  border-color: var(--klap-warning-line);
-  color: var(--klap-warning-text);
-}
-
-.klap-btn.danger, .ui-btn.danger, .btn-danger {
-  background: var(--klap-danger-bg);
-  border-color: var(--klap-danger-line);
-  color: var(--klap-danger-text);
-}
-
-/* Corrección específica Deploy Center:
-   evita que tarjetas/listos queden pintadas completas de verde. */
-.deploy .readyItem,
-.deploy .changeItem,
-.deploy .run,
-.deploy .summaryCard,
-.deploy .conditionsCard,
-.deploy .deployCard,
-.deploy .heroCard,
-.deploy .selectedCard,
-.deploy article,
-.deploy section {
-  background-color: #fff;
-}
-
-.deploy .selected,
-.deploy .active {
-  background-color: #fff;
-}
-
-.deploy .readyBadge,
-.deploy .okBadge,
-.deploy .successBadge,
-.deploy .pill.ok {
-  background: var(--klap-green-soft);
-  color: var(--klap-green-dark);
-  border-color: #bbf7d0;
-}
-
-.deploy .syncBtn,
-.deploy .pipelineMiniLink {
-  background: #fff;
-  border: 1px solid var(--klap-line);
-  color: var(--klap-navy);
-}
-
-.deploy .analyzeBtn {
-  background: var(--klap-warning-bg);
-  border-color: var(--klap-warning-line);
-  color: var(--klap-warning-text);
-}
-
-.msg,
-.alert-success {
-  background: var(--klap-green-soft);
-  border: 1px solid #bbf7d0;
-  color: var(--klap-green-dark);
-}
-
-.error,
-.alert-error {
-  background: var(--klap-danger-bg);
-  border: 1px solid var(--klap-danger-line);
-  color: var(--klap-danger-text);
-}
+.nav-logout:hover { background: #eef4f8; }
 
 @media (max-width: 760px) {
-  .klap-btn, .ui-btn { width: 100%; }
+  .nav { height: auto; flex-wrap: wrap; padding: 10px 18px; gap: 12px; }
+  .nav-links { order: 3; width: 100%; }
 }
