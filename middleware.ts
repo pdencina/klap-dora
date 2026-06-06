@@ -48,8 +48,9 @@ export async function middleware(req: NextRequest) {
   }
 
   if (user && onLogin) {
+    const role = roleOf(user);
     const url = req.nextUrl.clone();
-    url.pathname = '/';
+    url.pathname = role === 'approver' ? '/mis-aprobaciones' : '/';
     url.search = '';
     return NextResponse.redirect(url);
   }
@@ -59,6 +60,14 @@ export async function middleware(req: NextRequest) {
 
     // RM ve todo.
     if (role !== 'rm') {
+      // El aprobador aterriza en su bandeja, no en el home de cliente.
+      if (role === 'approver' && pathname === '/') {
+        const url = req.nextUrl.clone();
+        url.pathname = '/mis-aprobaciones';
+        url.search = '';
+        return NextResponse.redirect(url);
+      }
+
       if (matchPrefix(pathname, RM_PREFIXES)) {
         const url = req.nextUrl.clone();
         url.pathname = '/';

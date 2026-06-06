@@ -169,14 +169,14 @@ export default function RdcDetailPage() {
       setLoading(true);
       setError('');
 
-      const response = await fetch('/api/approvals/list', { cache: 'no-store' });
+      const response = await fetch(`/api/rdc/get?id=${encodeURIComponent(id)}`, { cache: 'no-store' });
       const data = await response.json();
 
       if (!response.ok || !data.ok) {
         throw new Error(data.error || 'No fue posible cargar RDC');
       }
 
-      const found = (data.changes || []).find((item: Change) => item.id === id);
+      const found = data.change;
 
       if (!found) {
         throw new Error('RDC no encontrado');
