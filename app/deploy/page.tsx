@@ -143,6 +143,23 @@ function buildJenkinsPipelineUrl(baseUrl: string | undefined, jobName: string) {
 }
 
 
+
+function getPipelineUrlFromBuildUrl(buildUrl?: string | null) {
+  const raw = String(buildUrl || '').trim();
+  if (!raw) return '';
+
+  try {
+    const url = new URL(raw);
+    // Jenkins build URLs normally end in /job/name/10/
+    // Remove the final numeric build segment and keep the job base URL.
+    url.pathname = url.pathname.replace(/\/\d+\/?$/, '/');
+    return url.toString();
+  } catch {
+    return raw.replace(/\/\d+\/?$/, '/');
+  }
+}
+
+
 export default function DeployCenterPage() {
   const [changes, setChanges] = useState<Change[]>([]);
   const [selectedId, setSelectedId] = useState('');
@@ -581,7 +598,9 @@ export default function DeployCenterPage() {
                             </span>
                             <div className="runActions">
                               {run.build_url ? <a href={run.build_url} target="_blank" rel="noreferrer">Revisar log Jenkins ↗</a> : run.queue_url ? <a href={run.queue_url} target="_blank" rel="noreferrer">Ver cola ↗</a> : null}
-                              {pipelineUrl ? <a className="pipelineMiniLink" href={pipelineUrl} target="_blank" rel="noreferrer">Abrir pipeline ↗</a> : null}
+                              {getPipelineUrlFromBuildUrl(run.build_url) ? (
+                                <a className="pipelineMiniLink" href={getPipelineUrlFromBuildUrl(run.build_url)} target="_blank" rel="noreferrer">Abrir pipeline ↗</a>
+                              ) : null}
                               {run.build_url && (run.status === 'FAILURE' || run.result === 'FAILURE' || run.result === 'UNSTABLE') ? (
                                 <button
                                   type="button"
