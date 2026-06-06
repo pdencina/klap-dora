@@ -483,7 +483,7 @@ export default function DeployCenterPage() {
                     <small>Control previo</small>
                     <h3>Condiciones para ejecutar</h3>
                   </div>
-                  <span className={canRun ? 'okBadge' : 'reviewBadge'}>{canRun ? 'Todo listo' : 'Revisión requerida'}</span>
+                  <span className={canExecute ? 'okBadge' : 'reviewBadge'}>{canExecute ? 'Todo listo' : 'Revisión requerida'}</span>
                 </div>
 
                 <div className="controlGrid">
@@ -491,15 +491,15 @@ export default function DeployCenterPage() {
                     <div className="controlIcon">✓</div>
                     <div>
                       <b>CAB aprobado</b>
-                      <span>{cabApprovedCount}/{cabTotalCount} áreas aprobadoras listas</span>
+                      <span>{approvedCount(selected)}/{totalApprovals(selected)} áreas aprobadoras listas</span>
                     </div>
                   </article>
 
                   <article className="controlItem">
                     <div className="controlIcon">▣</div>
                     <div>
-                      <b>{papComplete ? 'Plan PAP completo' : 'Plan PAP pendiente'}</b>
-                      <span>{papComplete ? 'Actividades validadas para ejecución' : 'Completa y valida el Plan PAP'}</span>
+                      <b>{papReady ? 'Plan PAP completo' : 'Plan PAP pendiente'}</b>
+                      <span>{papReady ? 'Actividades validadas para ejecución' : 'Completa y valida el Plan PAP'}</span>
                     </div>
                   </article>
 
@@ -507,7 +507,7 @@ export default function DeployCenterPage() {
                     <div className="controlIcon">⚙</div>
                     <div>
                       <b>Job Jenkins configurado</b>
-                      <span>{resolvedJobName || 'Sin job asociado'}</span>
+                      <span>{jobName || 'Sin job asociado'}</span>
                     </div>
                   </article>
 
@@ -515,16 +515,16 @@ export default function DeployCenterPage() {
                     <div className="controlIcon">◎</div>
                     <div>
                       <b>Rol Release Manager</b>
-                      <span>{isReleaseManager ? 'Usuario autorizado para ejecutar' : 'Usuario no autorizado para ejecutar'}</span>
+                      <span>{roleReady ? 'Usuario autorizado para ejecutar' : 'Usuario no autorizado para ejecutar'}</span>
                     </div>
                   </article>
-                </div>
-
-                {!canRun ? (
+                </div>                {!canExecute ? (
                   <div className="blockReasonBox">
-                    <b>{blockReasonTitle}</b>
-                    <span>{blockReasonText}</span>
-                    {blockReasonAction ? <a href={blockReasonAction.href}>{blockReasonAction.label}</a> : null}
+                    <div className="blockReasonText">
+                      <b>Revisión requerida</b>
+                      <span>{executionBlockReason()}</span>
+                    </div>
+                    {!papReady ? <a href={`/pap?rdcId=${selected.id}`}>Ir a Plan PAP →</a> : null}
                   </div>
                 ) : null}
               </section>
