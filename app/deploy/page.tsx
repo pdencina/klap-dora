@@ -128,6 +128,7 @@ export default function DeployCenterPage() {
   const [syncingRunId, setSyncingRunId] = useState('');
   const [analyzingRunId, setAnalyzingRunId] = useState('');
   const [analysis, setAnalysis] = useState<any>(null);
+  const [analysisOpen, setAnalysisOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -287,8 +288,9 @@ export default function DeployCenterPage() {
     try {
       setAnalyzingRunId(runId);
       setError('');
-      setMessage('');
+      setMessage('Analizando log Jenkins...');
       setAnalysis(null);
+      setAnalysisOpen(false);
 
       const response = await fetch('/api/deploy/analyze', {
         method: 'POST',
@@ -296,12 +298,22 @@ export default function DeployCenterPage() {
         body: JSON.stringify({ runId }),
       });
 
-      const data = await response.json();
-      if (!response.ok || !data.ok) throw new Error(data.error || 'No se pudo analizar Jenkins');
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
+
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error || `No se pudo analizar Jenkins. HTTP ${response.status}`);
+      }
 
       setAnalysis(data.analysis);
+      setAnalysisOpen(true);
       setMessage('Análisis Jenkins generado correctamente.');
     } catch (err: any) {
+      setAnalysisOpen(false);
       setError(err?.message || 'Error analizando Jenkins');
     } finally {
       setAnalyzingRunId('');
@@ -501,7 +513,7 @@ export default function DeployCenterPage() {
                                   onClick={() => analyzeJenkinsRun(run.id)}
                                   disabled={analyzingRunId === run.id}
                                 >
-                                  {analyzingRunId === run.id ? 'Analizando…' : 'Analizar fallo'}
+                                  {analyzingRunId === run.id ? 'Analizando log…' : 'Analizar fallo'}
                                 </button>
                               ) : null}
                               <button
@@ -520,43 +532,6 @@ export default function DeployCenterPage() {
                 </section>
 
                 {message ? <div className="msg">{message}</div> : null}
-
-                {analysis ? (
-                  <section className="analysisCard">
-                    <div className="analysisHead">
-                      <div>
-                        <p className="kicker">Recomendación IA</p>
-                        <h3>{analysis.title || 'Análisis Jenkins'}</h3>
-                        <p>{analysis.probableCause}</p>
-                      </div>
-                      {analysis.buildUrl ? <a href={analysis.buildUrl} target="_blank" rel="noreferrer">Abrir Jenkins ↗</a> : null}
-                    </div>
-
-                    <div className="analysisGrid">
-                      <div>
-                        <h4>Hallazgos</h4>
-                        <ul>
-                          {(analysis.findings || []).map((item: string, i: number) => <li key={i}>{item}</li>)}
-                        </ul>
-                      </div>
-                      <div>
-                        <h4>Pasos recomendados</h4>
-                        <ol>
-                          {(analysis.recommendedSteps || []).map((item: string, i: number) => <li key={i}>{item}</li>)}
-                        </ol>
-                      </div>
-                    </div>
-
-                    {analysis.evidenceLines?.length ? (
-                      <div className="evidenceBox">
-                        <h4>Líneas relevantes del log</h4>
-                        {(analysis.evidenceLines || []).map((line: string, i: number) => <code key={i}>{line}</code>)}
-                      </div>
-                    ) : null}
-
-                    <p className="analysisDisclaimer">{analysis.disclaimer}</p>
-                  </section>
-                ) : null}
 
                 {confirmOpen ? (
                   <div className="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
@@ -586,6 +561,51 @@ export default function DeployCenterPage() {
                         <button type="button" onClick={triggerPipeline} disabled={triggering}>
                           {triggering ? 'Ejecutando…' : 'Ejecutar pipeline'}
                         </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                {analysisOpen && analysis ? (
+                  <div className="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="analysis-title">
+                    <div className="analysisModal">
+                      <div className="analysisModalHead">
+                        <div>
+                          <div className="modalIcon">✦</div>
+                          <p className="kicker">Recomendación IA</p>
+                          <h3 id="analysis-title">{analysis.title || 'Análisis Jenkins'}</h3>
+                          <p>{analysis.probableCause}</p>
+                        </div>
+                        <button type="button" className="closeBtn" onClick={() => setAnalysisOpen(false)}>Cerrar</button>
+                      </div>
+
+                      <div className="analysisGrid">
+                        <div>
+                          <h4>Hallazgos</h4>
+                          <ul>
+                            {(analysis.findings || []).map((item: string, i: number) => <li key={i}>{item}</li>)}
+                          </ul>
+                        </div>
+                        <div>
+                          <h4>Pasos recomendados</h4>
+                          <ol>
+                            {(analysis.recommendedSteps || []).map((item: string, i: number) => <li key={i}>{item}</li>)}
+                          </ol>
+                        </div>
+                      </div>
+
+                      {analysis.evidenceLines?.length ? (
+                        <div className="evidenceBox">
+                          <h4>Líneas relevantes del log</h4>
+                          {(analysis.evidenceLines || []).map((line: string, i: number) => <code key={i}>{line}</code>)}
+                        </div>
+                      ) : null}
+
+                      <p className="analysisDisclaimer">{analysis.disclaimer}</p>
+
+                      <div className="modalActions">
+                        {analysis.buildUrl ? <a className="ghostBtn" href={analysis.buildUrl} target="_blank" rel="noreferrer">Abrir Jenkins ↗</a> : null}
+                        <button type="button" onClick={() => setAnalysisOpen(false)}>Entendido</button>
                       </div>
                     </div>
                   </div>
@@ -693,6 +713,11 @@ export default function DeployCenterPage() {
         .evidenceBox { margin-top:14px; display:grid; gap:8px; }
         .evidenceBox code { display:block; background:#fff; border:1px solid #dfeaf0; border-radius:10px; padding:9px 10px; color:#315873; white-space:pre-wrap; font-size:12px; }
         .analysisDisclaimer { margin:12px 0 0; color:var(--ink-soft); font-size:12px; line-height:1.4; }
+        .analysisModal { width:min(860px, 100%); max-height:88vh; overflow:auto; background:#fff; border:1px solid var(--line); border-radius:28px; box-shadow:0 30px 90px rgba(5,24,38,.28); padding:28px; }
+        .analysisModalHead { display:flex; justify-content:space-between; align-items:flex-start; gap:18px; margin-bottom:18px; }
+        .analysisModalHead h3 { margin:0; color:var(--navy-d); font-size:30px; letter-spacing:-.04em; }
+        .analysisModalHead p { color:var(--ink-soft); margin:8px 0 0; line-height:1.45; }
+        .closeBtn { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:999px; padding:10px 13px; font-weight:900; }
         .state { padding:28px; color:var(--ink-soft); }
         .state.error { background:#fff1f0; color:#b42318; }
         .empty { color:var(--ink-soft); }
