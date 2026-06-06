@@ -320,6 +320,17 @@ export default function DeployCenterPage() {
     }
   }
 
+  async function copyAnalysisRecommendation() {
+    if (!analysis?.copyText) return;
+
+    try {
+      await navigator.clipboard.writeText(analysis.copyText);
+      setMessage('Recomendación copiada al portapapeles.');
+    } catch {
+      setError('No fue posible copiar la recomendación.');
+    }
+  }
+
   return (
     <main className="deploy">
       <header className="head">
@@ -587,7 +598,7 @@ export default function DeployCenterPage() {
                           </ul>
                         </div>
                         <div>
-                          <h4>Pasos recomendados</h4>
+                          <h4>Pasos recomendados para resolver</h4>
                           <ol>
                             {(analysis.recommendedSteps || []).map((item: string, i: number) => <li key={i}>{item}</li>)}
                           </ol>
@@ -596,7 +607,7 @@ export default function DeployCenterPage() {
 
                       {analysis.evidenceLines?.length ? (
                         <div className="evidenceBox">
-                          <h4>Líneas relevantes del log</h4>
+                          <h4>Líneas críticas del log</h4>
                           {(analysis.evidenceLines || []).map((line: string, i: number) => <code key={i}>{line}</code>)}
                         </div>
                       ) : null}
@@ -604,6 +615,7 @@ export default function DeployCenterPage() {
                       <p className="analysisDisclaimer">{analysis.disclaimer}</p>
 
                       <div className="modalActions">
+                        <button type="button" className="ghostBtn" onClick={copyAnalysisRecommendation}>Copiar recomendación</button>
                         {analysis.buildUrl ? <a className="ghostBtn" href={analysis.buildUrl} target="_blank" rel="noreferrer">Abrir Jenkins ↗</a> : null}
                         <button type="button" onClick={() => setAnalysisOpen(false)}>Entendido</button>
                       </div>

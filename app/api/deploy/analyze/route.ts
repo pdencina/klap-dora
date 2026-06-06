@@ -68,19 +68,140 @@ async function fetchConsoleText(buildUrl: string) {
   return response.text();
 }
 
-function pickLines(consoleText: string, patterns: RegExp[], limit = 10) {
-  const lines = consoleText.split(/\r?\n/);
-  const matches: string[] = [];
+function cleanLine(line: string) {
+  return String(line || '')
+    .replace(/\x1b\[[0-9;]*m/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
-  for (const line of lines) {
-    if (patterns.some((pattern) => pattern.test(line))) {
-      const clean = line.trim();
-      if (clean && !matches.includes(clean)) matches.push(clean.slice(0, 260));
+function isGenericLine(line: string) {
+  const lower = line.toLowerCase();
+
+  return [
+    'running on jenkins',
+    'running in ',
+    'git init',
+    'git fetch',
+    'git config',
+    'git rev-parse',
+    'git checkout',
+    'using credential',
+    'checking out revision',
+    'using git',
+    'recommended git tool',
+    'workspace/',
+    'obtained jenkinsfile',
+    'lightweight checkout support',
+    'the recommended git tool is',
+  ].some((generic) => lower.includes(generic));
+}
+
+function extractRelevantLines(consoleText: string, limit = 12) {
+  const lines = consoleText.split(/\r?\n/).map(cleanLine).filter(Boolean);
+
+  const criticalPatterns = [
+    /BUILD FAILURE/i,
+    /Finished: FAILURE/i,
+    /script returned exit code/i,
+    /Failed to execute goal/i,
+    /There are test failures/i,
+    /Tests run:.*Failures:/i,
+    /Failed tests?:/i,
+    /\[ERROR\]/i,
+    /npm ERR!/i,
+    /yarn error/i,
+    /pnpm ERR!/i,
+    /Exception in thread/i,
+    /Caused by:/i,
+    /Compilation failure/i,
+    /permission denied/i,
+    /access denied/i,
+    /timed out|timeout/i,
+    /ImagePullBackOff|CrashLoopBackOff/i,
+    /helm.*failed|kubectl.*error/i,
+    /fallo|falla|fallido/i,
+  ];
+
+  const secondaryPatterns = [
+    /FAILURE/i,
+    /ERROR/i,
+    /Exception/i,
+    /failed/i,
+    /test/i,
+    /maven/i,
+    /gradle/i,
+    /junit/i,
+    /surefire/i,
+  ];
+
+  const selected: string[] = [];
+
+  function addWithContext(index: number, radius: number) {
+    const start = Math.max(0, index - radius);
+    const end = Math.min(lines.length - 1, index + radius);
+
+    for (let i = start; i <= end; i++) {
+      const line = lines[i];
+      if (!line || isGenericLine(line)) continue;
+      const numbered = `${i + 1}: ${line.slice(0, 280)}`;
+      if (!selected.includes(numbered)) selected.push(numbered);
+      if (selected.length >= limit) return;
     }
-    if (matches.length >= limit) break;
   }
 
-  return matches;
+  for (let i = 0; i < lines.length; i++) {
+    if (criticalPatterns.some((pattern) => pattern.test(lines[i])) && !isGenericLine(lines[i])) {
+      addWithContext(i, 2);
+    }
+    if (selected.length >= limit) break;
+  }
+
+  if (selected.length < Math.min(5, limit)) {
+    for (let i = 0; i < lines.length; i++) {
+      if (secondaryPatterns.some((pattern) => pattern.test(lines[i])) && !isGenericLine(lines[i])) {
+        addWithContext(i, 1);
+      }
+      if (selected.length >= limit) break;
+    }
+  }
+
+  if (selected.length === 0) {
+    const tail = lines
+      .filter((line) => !isGenericLine(line))
+      .slice(-limit)
+      .map((line, index) => `tail-${index + 1}: ${line.slice(0, 280)}`);
+
+    return tail;
+  }
+
+  return selected.slice(0, limit);
+}
+
+function stageHint(consoleText: string) {
+  const lower = consoleText.toLowerCase();
+
+  if (lower.includes('test') || lower.includes('surefire') || lower.includes('junit') || lower.includes('jest')) {
+    return 'pruebas automatizadas/unitarias';
+  }
+
+  if (lower.includes('compilation failure') || lower.includes('maven') || lower.includes('gradle')) {
+    return 'compilación/build';
+  }
+
+  if (lower.includes('docker') || lower.includes('image')) {
+    return 'construcción/publicación de imagen';
+  }
+
+  if (lower.includes('kubectl') || lower.includes('helm') || lower.includes('kubernetes')) {
+    return 'despliegue Kubernetes/Helm';
+  }
+
+  if (lower.includes('permission denied') || lower.includes('access denied')) {
+    return 'permisos/credenciales';
+  }
+
+  return 'ejecución del pipeline';
 }
 
 function analyzeConsole(consoleText: string, run: any) {
@@ -89,26 +210,27 @@ function analyzeConsole(consoleText: string, run: any) {
 
   const findings: string[] = [];
   const recommendedSteps: string[] = [];
-  let probableCause = 'No se detectó una causa única. Revisa el log completo en Jenkins.';
+  let probableCause = `El pipeline falló durante la etapa de ${stageHint(text)}.`;
 
-  const testSignals = [
-    'test failed',
-    'tests failed',
-    'failed tests',
-    'there are test failures',
-    'surefire',
-    'jest',
-    'junit',
-    'unit test',
-    'test unitario',
-    'falla test',
-    'fallo intencional',
-    'npm test',
-    'mvn test',
-    'gradle test',
-  ];
+  const hasTestFailure =
+    /test failed|tests failed|failed tests|there are test failures|surefire|junit|jest|unit test|test unitario|falla test|fallo intencional/i.test(text);
 
-  if (testSignals.some((signal) => lower.includes(signal))) {
+  const hasMavenGradle =
+    /Failed to execute goal|BUILD FAILURE|maven|gradle|compilation failure/i.test(text);
+
+  const hasTimeout =
+    /timeout|timed out/i.test(text);
+
+  const hasPermission =
+    /permission denied|access denied|forbidden|unauthorized/i.test(text);
+
+  const hasDocker =
+    /docker|imagepullbackoff|container|registry/i.test(text);
+
+  const hasKube =
+    /kubernetes|kubectl|helm|namespace|CrashLoopBackOff/i.test(text);
+
+  if (hasTestFailure) {
     probableCause = 'El pipeline parece fallar por pruebas automatizadas/unitarias.';
     findings.push('Se detectaron señales de tests fallidos en el log de Jenkins.');
     recommendedSteps.push('Abrir el Console Output y ubicar la primera prueba fallida, no solo el último error.');
@@ -117,35 +239,31 @@ function analyzeConsole(consoleText: string, run: any) {
     recommendedSteps.push('Si el fallo fue intencional o de prueba, revertir ese commit o ajustar el test antes de redeploy.');
   }
 
-  if (lower.includes('permission denied') || lower.includes('access denied') || lower.includes('forbidden')) {
-    probableCause = 'El pipeline parece fallar por permisos.';
+  if (hasMavenGradle) {
+    findings.push('Se detectaron señales de build Java/Maven/Gradle.');
+    recommendedSteps.push('Validar compilación, dependencias y versión JDK usada por el agente Jenkins.');
+    recommendedSteps.push('Buscar en el log la primera aparición de BUILD FAILURE o Failed to execute goal.');
+  }
+
+  if (hasTimeout) {
+    findings.push('Se detectaron señales de timeout.');
+    recommendedSteps.push('Revisar tiempos de espera del job, conectividad con ambiente destino y performance del servicio.');
+  }
+
+  if (hasPermission) {
+    probableCause = 'El pipeline parece fallar por permisos o credenciales.';
     findings.push('Se detectaron mensajes de permisos o acceso denegado.');
     recommendedSteps.push('Validar permisos del usuario Jenkins, credenciales del job y acceso a repositorios/ambiente.');
   }
 
-  if (lower.includes('npm err') || lower.includes('yarn error') || lower.includes('pnpm')) {
-    findings.push('Se detectaron errores asociados a dependencias Node/NPM/Yarn/PNPM.');
-    recommendedSteps.push('Revisar instalación de dependencias, lockfile y versión de Node configurada en Jenkins.');
-  }
-
-  if (lower.includes('maven') || lower.includes('gradle') || lower.includes('compilation failure')) {
-    findings.push('Se detectaron señales de build Java/Maven/Gradle.');
-    recommendedSteps.push('Validar compilación, dependencias y versión JDK usada por el agente Jenkins.');
-  }
-
-  if (lower.includes('docker') || lower.includes('imagepullbackoff') || lower.includes('container')) {
+  if (hasDocker) {
     findings.push('Se detectaron señales relacionadas a Docker/imagen/contenedor.');
     recommendedSteps.push('Validar construcción de imagen, registry, tag publicado y credenciales del registry.');
   }
 
-  if (lower.includes('kubernetes') || lower.includes('kubectl') || lower.includes('helm')) {
+  if (hasKube) {
     findings.push('Se detectaron señales relacionadas a Kubernetes/Helm.');
     recommendedSteps.push('Validar namespace, kubeconfig, permisos RBAC, chart/values y estado de pods.');
-  }
-
-  if (lower.includes('timeout') || lower.includes('timed out')) {
-    findings.push('Se detectaron señales de timeout.');
-    recommendedSteps.push('Revisar tiempos de espera del job, conectividad con ambiente destino y performance del servicio.');
   }
 
   if (findings.length === 0) {
@@ -155,18 +273,24 @@ function analyzeConsole(consoleText: string, run: any) {
     recommendedSteps.push('Confirmar branch/tag, variables y credenciales del pipeline.');
   }
 
-  const evidenceLines = pickLines(text, [
-    /error/i,
-    /failed/i,
-    /failure/i,
-    /test/i,
-    /exception/i,
-    /permission/i,
-    /denied/i,
-    /timeout/i,
-    /fallo/i,
-    /falla/i,
-  ]);
+  const evidenceLines = extractRelevantLines(text);
+
+  const copyText = [
+    `Análisis Jenkins - ${run.job_name || 'pipeline'}`,
+    `Build: ${run.build_number || 'N/D'}`,
+    `Causa probable: ${probableCause}`,
+    '',
+    'Hallazgos:',
+    ...findings.map((item) => `- ${item}`),
+    '',
+    'Pasos recomendados:',
+    ...Array.from(new Set(recommendedSteps)).map((item, index) => `${index + 1}. ${item}`),
+    '',
+    'Líneas relevantes:',
+    ...evidenceLines.map((item) => `- ${item}`),
+    '',
+    `Jenkins: ${run.build_url || ''}`,
+  ].join('\n');
 
   return {
     title: run.result === 'SUCCESS' ? 'El build finalizó exitosamente' : 'Análisis inicial del fallo Jenkins',
@@ -176,6 +300,7 @@ function analyzeConsole(consoleText: string, run: any) {
     evidenceLines,
     buildUrl: run.build_url,
     buildNumber: run.build_number,
+    copyText,
     disclaimer: 'Este análisis es una recomendación inicial basada en patrones del log. La causa definitiva debe validarse en Jenkins/Console Output.',
   };
 }
