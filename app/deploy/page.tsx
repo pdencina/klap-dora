@@ -161,7 +161,9 @@ function getPipelineUrlFromBuildUrl(buildUrl?: string | null) {
 
 
 export default function DeployCenterPage() {
-  const [changes, setChanges] = useState<Change[]>([]);
+  
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+const [changes, setChanges] = useState<Change[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [jobs, setJobs] = useState<JenkinsJob[]>([]);
   const [jobsLoading, setJobsLoading] = useState(false);
@@ -405,7 +407,50 @@ export default function DeployCenterPage() {
   }
 
   return (
-    <main className="deploy">
+    <div className={sidebarCollapsed ? 'deployShell sidebarCollapsed' : 'deployShell'}>
+
+      <aside className={sidebarCollapsed ? 'deploySidebar collapsed' : 'deploySidebar'}>
+        <div className="sidebarTop">
+          <button
+            className="hamburgerBtn"
+            type="button"
+            aria-label="Abrir o cerrar menú"
+            onClick={() => setSidebarCollapsed((value) => !value)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+
+          <a className="sidebarBrand" href="/">
+            <strong>klap</strong>
+            <span>RELEASE</span>
+          </a>
+        </div>
+
+        <nav className="sidebarNav" aria-label="Navegación principal">
+          <a href="/" className="sidebarLink"><span>⌂</span><b>Inicio</b></a>
+          <a href="/rdc" className="sidebarLink"><span>＋</span><b>Nuevo RDC</b></a>
+          <a href="/mis-cambios" className="sidebarLink"><span>◇</span><b>Mis Cambios</b></a>
+          <a href="/release" className="sidebarLink"><span>○</span><b>Release</b></a>
+          <a href="/aprobaciones" className="sidebarLink"><span>✓</span><b>Aprobaciones</b></a>
+          <a href="/cab" className="sidebarLink"><span>▣</span><b>Agenda CAB</b></a>
+          <a href="/pap" className="sidebarLink"><span>□</span><b>Plan PAP</b></a>
+          <a href="/deploy" className="sidebarLink active"><span>↗</span><b>Deploy Center</b></a>
+          <a href="/cierre" className="sidebarLink"><span>⚑</span><b>Cierre</b></a>
+          <a href="/dashboard" className="sidebarLink"><span>⌁</span><b>Dashboard DORA</b></a>
+        </nav>
+
+        <div className="sidebarUser">
+          <div className="avatar">PE</div>
+          <div>
+            <b>Pablo Encina</b>
+            <span>Release Manager</span>
+          </div>
+        </div>
+      </aside>
+
+      <main className="deploy">
       <header className="head">
         <div>
           <p className="kicker">RELEASE EXECUTION</p>
@@ -1380,8 +1425,259 @@ export default function DeployCenterPage() {
           }
         }
 
+      
+        /* Left hamburger sidebar layout */
+        .deployShell {
+          --sidebar-w: 280px;
+          min-height:100vh;
+          background:#f4f8fb;
+        }
+
+        .deploySidebar {
+          position:fixed;
+          inset:0 auto 0 0;
+          width:var(--sidebar-w);
+          background:#fff;
+          border-right:1px solid #dfeaf0;
+          box-shadow:12px 0 34px rgba(7,59,93,.04);
+          z-index:50;
+          display:flex;
+          flex-direction:column;
+          padding:18px 14px;
+          transition:width .2s ease;
+        }
+
+        .sidebarTop {
+          display:flex;
+          align-items:center;
+          gap:14px;
+          padding:0 4px 18px;
+          border-bottom:1px solid #edf3f7;
+          margin-bottom:14px;
+        }
+
+        .hamburgerBtn {
+          width:38px;
+          height:38px;
+          border:1px solid #dfeaf0;
+          background:#fff;
+          border-radius:12px;
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          flex-direction:column;
+          gap:4px;
+          flex-shrink:0;
+        }
+
+        .hamburgerBtn span {
+          width:16px;
+          height:2px;
+          background:#073b5d;
+          border-radius:999px;
+          display:block;
+        }
+
+        .sidebarBrand {
+          display:flex;
+          align-items:baseline;
+          gap:8px;
+          white-space:nowrap;
+        }
+
+        .sidebarBrand strong {
+          color:#009f63;
+          font-size:26px;
+          letter-spacing:-.04em;
+          line-height:1;
+        }
+
+        .sidebarBrand span {
+          color:#425d76;
+          font-size:12px;
+          font-weight:900;
+          letter-spacing:.18em;
+        }
+
+        .sidebarNav {
+          display:flex;
+          flex-direction:column;
+          gap:6px;
+          padding:4px 0;
+          flex:1;
+        }
+
+        .sidebarLink {
+          min-height:46px;
+          display:flex;
+          align-items:center;
+          gap:12px;
+          padding:0 14px;
+          border-radius:14px;
+          color:#425d76;
+          font-weight:800;
+          border:1px solid transparent;
+          transition:background .15s ease, color .15s ease, border-color .15s ease;
+        }
+
+        .sidebarLink span {
+          width:22px;
+          height:22px;
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          color:#31516d;
+          font-size:15px;
+          flex-shrink:0;
+        }
+
+        .sidebarLink b {
+          font-size:14px;
+          white-space:nowrap;
+        }
+
+        .sidebarLink:hover {
+          background:#f4f8fb;
+          color:#073b5d;
+        }
+
+        .sidebarLink.active {
+          background:#e8fff3;
+          border-color:#bbf7d0;
+          color:#008f57;
+        }
+
+        .sidebarLink.active span {
+          color:#008f57;
+        }
+
+        .sidebarUser {
+          display:flex;
+          align-items:center;
+          gap:12px;
+          border:1px solid #dfeaf0;
+          border-radius:16px;
+          padding:12px;
+          background:#fff;
+          box-shadow:0 10px 24px rgba(7,59,93,.03);
+        }
+
+        .avatar {
+          width:38px;
+          height:38px;
+          border-radius:999px;
+          background:#00b86b;
+          color:#fff;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          font-size:13px;
+          font-weight:900;
+          flex-shrink:0;
+        }
+
+        .sidebarUser b {
+          display:block;
+          color:#073b5d;
+          font-size:13px;
+          line-height:1.2;
+        }
+
+        .sidebarUser span {
+          display:block;
+          color:#60748a;
+          font-size:12px;
+          margin-top:2px;
+        }
+
+        .deployShell .deploy {
+          margin-left:var(--sidebar-w);
+          width:calc(100% - var(--sidebar-w));
+          max-width:none;
+          padding-left:36px;
+          padding-right:36px;
+          transition:margin-left .2s ease, width .2s ease;
+        }
+
+        .deployShell.sidebarCollapsed {
+          --sidebar-w: 86px;
+        }
+
+        .deployShell.sidebarCollapsed .sidebarBrand span,
+        .deployShell.sidebarCollapsed .sidebarLink b,
+        .deployShell.sidebarCollapsed .sidebarUser div {
+          display:none;
+        }
+
+        .deployShell.sidebarCollapsed .deploySidebar {
+          align-items:center;
+        }
+
+        .deployShell.sidebarCollapsed .sidebarTop {
+          flex-direction:column;
+        }
+
+        .deployShell.sidebarCollapsed .sidebarLink {
+          justify-content:center;
+          padding:0;
+          width:52px;
+        }
+
+        .deployShell.sidebarCollapsed .sidebarUser {
+          justify-content:center;
+          padding:10px;
+        }
+
+        @media(max-width:980px){
+          .deployShell {
+            --sidebar-w: 86px;
+          }
+
+          .deploySidebar {
+            align-items:center;
+          }
+
+          .sidebarBrand span,
+          .sidebarLink b,
+          .sidebarUser div {
+            display:none;
+          }
+
+          .sidebarTop {
+            flex-direction:column;
+          }
+
+          .sidebarLink {
+            justify-content:center;
+            padding:0;
+            width:52px;
+          }
+
+          .sidebarUser {
+            justify-content:center;
+            padding:10px;
+          }
+
+          .deployShell .deploy {
+            padding-left:22px;
+            padding-right:22px;
+          }
+        }
+
+        @media(max-width:720px){
+          .deploySidebar {
+            transform:translateX(-100%);
+          }
+
+          .deployShell .deploy {
+            margin-left:0;
+            width:100%;
+          }
+        }
+
       `}</style>
-    </main>
+      </main>
+    </div>
   );
 }
 
