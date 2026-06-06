@@ -477,34 +477,59 @@ export default function DeployCenterPage() {
                   <div><span>Última ejecución</span><b>{selectedLastRun ? (STATUS_LABEL[selectedLastRun.status] || selectedLastRun.status) : 'Sin ejecución Jenkins'}</b></div>
                 </div>
 
-                <section className="conditionsCard">
-                  <div className="conditionsHead">
+                              <section className="conditionsCard">
+                <div className="conditionsHead">
+                  <div>
+                    <small>Control previo</small>
+                    <h3>Condiciones para ejecutar</h3>
+                  </div>
+                  <span className={canRun ? 'okBadge' : 'reviewBadge'}>{canRun ? 'Todo listo' : 'Revisión requerida'}</span>
+                </div>
+
+                <div className="controlGrid">
+                  <article className="controlItem">
+                    <div className="controlIcon">✓</div>
                     <div>
-                      <p className="kicker">Control previo</p>
-                      <h3>Condiciones para ejecutar</h3>
+                      <b>CAB aprobado</b>
+                      <span>{cabApprovedCount}/{cabTotalCount} áreas aprobadoras listas</span>
                     </div>
-                    <span className={canExecute ? 'okPill' : 'warnPill'}>{canExecute ? 'Todo listo' : 'Revisión requerida'}</span>
-                  </div>
+                  </article>
 
-                  <div className="conditions">
-                    <Condition ok={cabReady} title={`CAB aprobado ${approvedCount(selected)}/${totalApprovals(selected)}`} help="Todas las áreas aprobadoras deben estar en APROBADO." />
-                    <Condition ok={papReady} title={papReady ? 'Plan PAP completo' : 'Plan PAP pendiente'} help={papReady ? 'Todas las actividades PAP están validadas y listas para ejecución.' : 'Valida la planificación del paso a producción antes de ejecutar Jenkins.'} />
-                    <Condition ok={roleReady} title="Rol Release Manager" help="Solo RM puede ejecutar pipelines desde el portal." />
-                    <Condition ok={jobReady} title="Job Jenkins configurado" help={jobReady ? jobName : 'Selecciona o escribe un job.'} />
-                  </div>
-
-                  {!canExecute ? (
-                    <div className="blockReasonBox">
-                      <div className="blockReasonText">
-                        <b>{!papReady ? 'Plan PAP requerido para ejecución' : 'Ejecución bloqueada'}</b>
-                        <span>{!papReady ? 'Antes de ejecutar Jenkins, completa y valida las actividades del paso a producción.' : executionBlockReason()}</span>
-                      </div>
-                      {!papReady ? <a href={`/pap?rdcId=${selected.id}`}>Ir a Plan PAP →</a> : null}
+                  <article className="controlItem">
+                    <div className="controlIcon">▣</div>
+                    <div>
+                      <b>{papComplete ? 'Plan PAP completo' : 'Plan PAP pendiente'}</b>
+                      <span>{papComplete ? 'Actividades validadas para ejecución' : 'Completa y valida el Plan PAP'}</span>
                     </div>
-                  ) : null}
-                </section>
+                  </article>
 
-                <section className="pipelineCard">
+                  <article className="controlItem">
+                    <div className="controlIcon">⚙</div>
+                    <div>
+                      <b>Job Jenkins configurado</b>
+                      <span>{resolvedJobName || 'Sin job asociado'}</span>
+                    </div>
+                  </article>
+
+                  <article className="controlItem">
+                    <div className="controlIcon">◎</div>
+                    <div>
+                      <b>Rol Release Manager</b>
+                      <span>{isReleaseManager ? 'Usuario autorizado para ejecutar' : 'Usuario no autorizado para ejecutar'}</span>
+                    </div>
+                  </article>
+                </div>
+
+                {!canRun ? (
+                  <div className="blockReasonBox">
+                    <b>{blockReasonTitle}</b>
+                    <span>{blockReasonText}</span>
+                    {blockReasonAction ? <a href={blockReasonAction.href}>{blockReasonAction.label}</a> : null}
+                  </div>
+                ) : null}
+              </section>
+
+<section className="pipelineCard">
                   <div className="pipelineHead">
                     <div>
                       <p className="kicker">Jenkins Pipeline</p>
@@ -1078,6 +1103,95 @@ export default function DeployCenterPage() {
         @media(max-width:560px){
           .runActionsPanel {
             grid-template-columns:1fr !important;
+          }
+        }
+
+      
+        /* Control previo cards */
+        .conditionsCard {
+          background:#fff !important;
+          border:1px solid #dfeaf0 !important;
+          border-radius:20px;
+          padding:18px;
+          box-shadow:0 18px 45px rgba(7,59,93,.05);
+        }
+
+        .conditionsHead {
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:14px;
+          margin-bottom:14px;
+        }
+
+        .conditionsHead small {
+          color:var(--green-d);
+          text-transform:uppercase;
+          letter-spacing:.22em;
+          font-weight:900;
+          font-size:12px;
+        }
+
+        .conditionsHead h3 {
+          margin:4px 0 0;
+          color:var(--navy-d);
+          font-size:20px;
+          line-height:1.2;
+        }
+
+        .controlGrid {
+          display:grid;
+          grid-template-columns:repeat(2,minmax(0,1fr));
+          gap:10px;
+        }
+
+        .controlItem {
+          display:flex;
+          align-items:center;
+          gap:12px;
+          background:#fff;
+          border:1px solid #dfeaf0;
+          border-radius:14px;
+          padding:14px 16px;
+        }
+
+        .controlIcon {
+          width:34px;
+          height:34px;
+          border-radius:999px;
+          background:#e8fff3;
+          color:#008f57;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          font-weight:900;
+          flex-shrink:0;
+        }
+
+        .controlItem b {
+          display:block;
+          color:var(--navy-d);
+          font-size:15px;
+          line-height:1.25;
+        }
+
+        .controlItem span {
+          display:block;
+          color:var(--ink-soft);
+          font-size:13px;
+          line-height:1.35;
+          margin-top:3px;
+          word-break:break-word;
+        }
+
+        @media(max-width:760px){
+          .conditionsHead {
+            flex-direction:column;
+            align-items:flex-start;
+          }
+
+          .controlGrid {
+            grid-template-columns:1fr;
           }
         }
 
