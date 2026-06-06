@@ -125,6 +125,7 @@ export default function DeployCenterPage() {
   const [jobsWarning, setJobsWarning] = useState('');
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
+  const [syncingRunId, setSyncingRunId] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -253,6 +254,30 @@ export default function DeployCenterPage() {
       setError(err?.message || 'Error ejecutando pipeline');
     } finally {
       setTriggering(false);
+    }
+  }
+
+  async function syncJenkinsRun(runId: string) {
+    try {
+      setSyncingRunId(runId);
+      setError('');
+      setMessage('');
+
+      const response = await fetch('/api/deploy/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ runId }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || 'No se pudo actualizar Jenkins');
+
+      setMessage('Estado Jenkins actualizado correctamente.');
+      await load();
+    } catch (err: any) {
+      setError(err?.message || 'Error actualizando Jenkins');
+    } finally {
+      setSyncingRunId('');
     }
   }
 
@@ -440,7 +465,17 @@ export default function DeployCenterPage() {
                             <span className={`runStatus ${run.result === 'FAILURE' || run.status === 'FAILED_TO_TRIGGER' ? 'bad' : run.status === 'SUCCESS' || run.result === 'SUCCESS' ? 'ok' : 'pending'}`}>
                               {STATUS_LABEL[run.status] || run.status}
                             </span>
-                            {run.build_url ? <a href={run.build_url} target="_blank" rel="noreferrer">Ver Jenkins ↗</a> : run.queue_url ? <a href={run.queue_url} target="_blank" rel="noreferrer">Ver cola ↗</a> : null}
+                            <div className="runActions">
+                              {run.build_url ? <a href={run.build_url} target="_blank" rel="noreferrer">Ver Jenkins ↗</a> : run.queue_url ? <a href={run.queue_url} target="_blank" rel="noreferrer">Ver cola ↗</a> : null}
+                              <button
+                                type="button"
+                                className="syncBtn"
+                                onClick={() => syncJenkinsRun(run.id)}
+                                disabled={syncingRunId === run.id}
+                              >
+                                {syncingRunId === run.id ? 'Actualizando…' : 'Actualizar estado'}
+                              </button>
+                            </div>
                           </article>
                         ))}
                     </div>
@@ -568,7 +603,9 @@ export default function DeployCenterPage() {
         .runStatus.ok { background:#e8fff3; color:#008f57; }
         .runStatus.bad { background:#fff1f0; color:#b42318; }
         .runStatus.pending { background:#fff7e6; color:#9a6700; }
+        .runActions { display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-wrap:wrap; }
         .run a { color:var(--green-d); font-weight:900; }
+        .syncBtn { background:#fff; border:1px solid var(--line); color:var(--navy); border-radius:999px; padding:9px 11px; font-size:12px; font-weight:900; }
         .state { padding:28px; color:var(--ink-soft); }
         .state.error { background:#fff1f0; color:#b42318; }
         .empty { color:var(--ink-soft); }
