@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { evaluateCabRoute, type CabRoute } from '../../lib/cab-routing';
 
 type Approval = { id: string; approver_role: string; status: string };
 type Change = {
@@ -14,7 +15,10 @@ type Change = {
   proposed_deploy_date?: string | null;
   jira_key?: string | null;
   approval_requests?: Approval[];
+  rdc_details?: any;
+  form_data?: any;
 };
+type Annotated = Change & { _route: ReturnType<typeof evaluateCabRoute> };
 
 const STATUS: Record<string, { label: string; cls: string }> = {
   PENDIENTE_APROBACIONES: { label: 'Pendiente aprobación', cls: 'pending' },
@@ -23,8 +27,14 @@ const STATUS: Record<string, { label: string; cls: string }> = {
   RECHAZADO: { label: 'Rechazado', cls: 'bad' },
 };
 
-const FILTERS: Array<[string, string]> = [
+const ROUTE_TABS: Array<[CabRoute | 'ALL', string]> = [
+  ['CAB', 'Requieren CAB'],
+  ['DIGITAL', 'Aprobación digital'],
   ['ALL', 'Todos'],
+];
+
+const STATUS_FILTERS: Array<[string, string]> = [
+  ['ALL', 'Todos los estados'],
   ['PENDIENTE_APROBACIONES', 'Pendientes'],
   ['APROBADO_PARA_EJECUCION', 'Aprobados'],
   ['OBSERVADO', 'Observados'],
@@ -51,7 +61,8 @@ export default function CabPage() {
   const [changes, setChanges] = useState<Change[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [filter, setFilter] = useState('ALL');
+  const [routeFilter, setRouteFilter] = useState<CabRoute | 'ALL'>('CAB');
+  const [statusFilter, setStatusFilter] = useState('ALL');
 
   useEffect(() => {
     (async () => {
@@ -68,40 +79,52 @@ export default function CabPage() {
     })();
   }, []);
 
+  const annotated: Annotated[] = useMemo(
+    () => changes.map((c) => ({ ...c, _route: evaluateCabRoute(c) })),
+    [changes],
+  );
+
+  const routeCounts = useMemo(() => {
+    let cab = 0;
+    for (const c of annotated) if (c._route.route === 'CAB') cab++;
+    return { CAB: cab, DIGITAL: annotated.length - cab, ALL: annotated.length };
+  }, [annotated]);
+
   const rows = useMemo(() => {
-    const filtered = filter === 'ALL' ? changes : changes.filter((c) => c.status === filter);
-    // Orden por fecha propuesta ascendente; los sin fecha al final.
-    return [...filtered].sort((a, b) => {
+    let list = annotated;
+    if (routeFilter !== 'ALL') list = list.filter((c) => c._route.route === routeFilter);
+    if (statusFilter !== 'ALL') list = list.filter((c) => c.status === statusFilter);
+    return [...list].sort((a, b) => {
       const da = a.proposed_deploy_date ? +new Date(a.proposed_deploy_date) : Infinity;
       const db = b.proposed_deploy_date ? +new Date(b.proposed_deploy_date) : Infinity;
       return da - db;
     });
-  }, [changes, filter]);
-
-  const counts = useMemo(() => {
-    const c: Record<string, number> = { ALL: changes.length };
-    for (const ch of changes) c[ch.status] = (c[ch.status] || 0) + 1;
-    return c;
-  }, [changes]);
+  }, [annotated, routeFilter, statusFilter]);
 
   return (
     <main className="cab">
       <header className="head">
         <p className="kicker">ÁREA RELEASE MANAGEMENT</p>
         <h1>Agenda CAB</h1>
-        <p className="sub">Cambios a presentar en el comité, ordenados por fecha propuesta de paso a producción.</p>
+        <p className="sub">La CAB se reserva para cambios críticos. El resto se aprueba digital por las áreas, sin reunión.</p>
       </header>
 
-      <div className="filters">
-        {FILTERS.map(([key, label]) => (
-          <button
-            key={key}
-            className={`chip ${filter === key ? 'active' : ''}`}
-            onClick={() => setFilter(key)}
-          >
-            {label}
-            {counts[key] != null ? <span className="n">{counts[key] ?? 0}</span> : null}
+      <div className="summary">
+        <div className="card cab"><b>{routeCounts.CAB}</b><span>requieren CAB</span></div>
+        <div className="card digital"><b>{routeCounts.DIGITAL}</b><span>aprobación digital</span></div>
+      </div>
+
+      <div className="tabs">
+        {ROUTE_TABS.map(([key, label]) => (
+          <button key={key} className={`tab ${routeFilter === key ? 'active' : ''}`} onClick={() => setRouteFilter(key)}>
+            {label}<span className="n">{routeCounts[key]}</span>
           </button>
+        ))}
+      </div>
+
+      <div className="filters">
+        {STATUS_FILTERS.map(([key, label]) => (
+          <button key={key} className={`chip ${statusFilter === key ? 'active' : ''}`} onClick={() => setStatusFilter(key)}>{label}</button>
         ))}
       </div>
 
@@ -116,6 +139,7 @@ export default function CabPage() {
           {rows.map((c) => {
             const st = STATUS[c.status] || { label: c.status, cls: 'pending' };
             const p = progress(c);
+            const isCab = c._route.route === 'CAB';
             return (
               <article className="row" key={c.id}>
                 <div className="date">
@@ -124,6 +148,10 @@ export default function CabPage() {
                 </div>
                 <div className="main">
                   <h3>{c.title}</h3>
+                  <div className="route">
+                    <span className={`rbadge ${isCab ? 'cab' : 'digital'}`}>{isCab ? 'Requiere CAB' : 'Aprobación digital'}</span>
+                    {isCab && c._route.reasons.length ? <small>{c._route.reasons.join(' · ')}</small> : null}
+                  </div>
                   <div className="meta">
                     {c.system ? <span>{c.system}</span> : null}
                     {c.cell ? <span>{c.cell}</span> : null}
@@ -139,7 +167,7 @@ export default function CabPage() {
                   {c.jira_key ? (
                     <a className="jira" href={`${JIRA_BROWSE}${c.jira_key}`} target="_blank" rel="noreferrer">{c.jira_key} ↗</a>
                   ) : (
-                    <Link className="link" href="/approvals">Ver aprobaciones →</Link>
+                    <Link className="link" href={`/rdc/${c.id}`}>Ver detalle →</Link>
                   )}
                 </div>
               </article>
@@ -152,13 +180,26 @@ export default function CabPage() {
         .cab { max-width: 1040px; margin: 0 auto; padding: 32px 6vw 64px; }
         .cab .kicker { color: var(--green-d); font-size: 13px; font-weight: 800; letter-spacing: .16em; margin: 0 0 8px; }
         .cab h1 { font-size: clamp(30px, 4vw, 44px); line-height: 1.05; letter-spacing: -.03em; color: var(--navy-d); margin: 0; }
-        .cab .sub { color: var(--ink-soft); margin: 10px 0 0; font-size: 16px; }
+        .cab .sub { color: var(--ink-soft); margin: 10px 0 0; font-size: 16px; max-width: 70ch; }
 
-        .cab .filters { display: flex; gap: 8px; flex-wrap: wrap; margin: 22px 0 18px; }
-        .cab .chip { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: #fff; color: var(--ink-soft); font: inherit; font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
+        .cab .summary { display: grid; grid-template-columns: repeat(2, minmax(0, 220px)); gap: 12px; margin: 22px 0 18px; }
+        .cab .summary .card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: flex; align-items: baseline; gap: 10px; }
+        .cab .summary .card b { font-size: 28px; letter-spacing: -.03em; }
+        .cab .summary .card span { color: var(--ink-soft); font-weight: 700; font-size: 13px; }
+        .cab .summary .card.cab { border-color: #ffd9b0; background: #fff8ef; }
+        .cab .summary .card.cab b { color: #b5651d; }
+        .cab .summary .card.digital { border-color: #9be7bf; background: #f0fff7; }
+        .cab .summary .card.digital b { color: var(--green-d); }
+
+        .cab .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+        .cab .tab { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: #fff; color: var(--ink-soft); font: inherit; font-size: 14px; font-weight: 800; padding: 9px 16px; border-radius: 12px; cursor: pointer; }
+        .cab .tab.active { border-color: var(--navy); background: var(--navy); color: #fff; }
+        .cab .tab .n { background: #eef4f8; color: var(--navy); border-radius: 999px; padding: 1px 8px; font-size: 12px; }
+        .cab .tab.active .n { background: rgba(255,255,255,.25); color: #fff; }
+
+        .cab .filters { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 18px; }
+        .cab .chip { border: 1px solid var(--line); background: #fff; color: var(--ink-soft); font: inherit; font-size: 13px; font-weight: 700; padding: 7px 13px; border-radius: 999px; cursor: pointer; }
         .cab .chip.active { border-color: #9be7bf; background: var(--green-soft); color: var(--green-d); }
-        .cab .chip .n { background: #eef4f8; color: var(--navy); border-radius: 999px; padding: 1px 8px; font-size: 12px; }
-        .cab .chip.active .n { background: #fff; }
 
         .cab .state { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 40px; text-align: center; color: var(--ink-soft); }
         .cab .state.err { color: #c0392b; }
@@ -167,7 +208,12 @@ export default function CabPage() {
         .cab .row { display: grid; grid-template-columns: 120px 1fr 180px 170px; gap: 18px; align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
         .cab .date b { display: block; color: var(--navy-d); font-size: 14px; }
         .cab .date span { font-size: 11px; color: var(--ink-soft); font-weight: 600; }
-        .cab .main h3 { margin: 0 0 6px; font-size: 16px; color: var(--ink); letter-spacing: -.01em; }
+        .cab .main h3 { margin: 0 0 8px; font-size: 16px; color: var(--ink); letter-spacing: -.01em; }
+        .cab .route { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+        .cab .rbadge { font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 999px; }
+        .cab .rbadge.cab { background: #fff1e0; color: #b5651d; }
+        .cab .rbadge.digital { background: var(--green-soft); color: var(--green-d); }
+        .cab .route small { color: var(--ink-soft); font-size: 12px; font-weight: 600; }
         .cab .meta { display: flex; gap: 6px; flex-wrap: wrap; }
         .cab .meta span { font-size: 11px; font-weight: 700; color: var(--ink-soft); background: var(--bg); border-radius: 999px; padding: 3px 9px; }
         .cab .approvals .bar { height: 7px; background: #eef4f8; border-radius: 999px; overflow: hidden; }
@@ -183,6 +229,7 @@ export default function CabPage() {
         .cab .link { font-size: 12px; font-weight: 700; color: var(--green-d); }
 
         @media (max-width: 820px) {
+          .cab .summary { grid-template-columns: 1fr 1fr; }
           .cab .row { grid-template-columns: 1fr; gap: 10px; }
           .cab .end { align-items: flex-start; flex-direction: row; justify-content: space-between; }
         }
