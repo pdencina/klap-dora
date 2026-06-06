@@ -1195,6 +1195,191 @@ export default function DeployCenterPage() {
           }
         }
 
+      
+        /* Jenkins Pipeline polish */
+        .pipelineCard {
+          background:#fff !important;
+          border:1px solid #dfeaf0 !important;
+          border-radius:20px !important;
+          padding:18px !important;
+          box-shadow:0 18px 45px rgba(7,59,93,.05) !important;
+        }
+
+        .pipelineHead {
+          display:grid !important;
+          grid-template-columns:minmax(0,1fr) auto !important;
+          align-items:start !important;
+          gap:18px !important;
+          padding:0 0 14px !important;
+          margin-bottom:14px !important;
+          border-bottom:1px solid #edf3f7 !important;
+        }
+
+        .pipelineHead .kicker {
+          color:var(--green-d) !important;
+          text-transform:uppercase !important;
+          letter-spacing:.22em !important;
+          font-weight:900 !important;
+          font-size:12px !important;
+          margin:0 0 4px !important;
+        }
+
+        .pipelineHead h3 {
+          margin:0 !important;
+          color:var(--navy-d) !important;
+          font-size:22px !important;
+          line-height:1.15 !important;
+        }
+
+        .pipelineHead p {
+          margin:8px 0 0 !important;
+          color:var(--ink-soft) !important;
+          line-height:1.45 !important;
+          max-width:560px !important;
+        }
+
+        .pipelineHeadActions {
+          display:flex !important;
+          flex-direction:column !important;
+          align-items:flex-end !important;
+          gap:12px !important;
+          min-width:260px !important;
+        }
+
+        .pipelineLink {
+          display:inline-flex !important;
+          align-items:center !important;
+          justify-content:center !important;
+          min-height:40px !important;
+          border-radius:999px !important;
+          padding:10px 16px !important;
+          background:#fff !important;
+          border:1px solid var(--line) !important;
+          color:var(--navy) !important;
+          font-weight:900 !important;
+          white-space:nowrap !important;
+          box-shadow:0 8px 18px rgba(7,59,93,.04) !important;
+        }
+
+        .stageFlow {
+          display:flex !important;
+          align-items:center !important;
+          justify-content:flex-end !important;
+          gap:8px !important;
+          flex-wrap:wrap !important;
+        }
+
+        .stageFlow span {
+          display:inline-flex !important;
+          align-items:center !important;
+          justify-content:center !important;
+          min-height:28px !important;
+          padding:6px 11px !important;
+          border-radius:999px !important;
+          background:#f4f8fb !important;
+          color:var(--ink-soft) !important;
+          font-size:12px !important;
+          font-weight:900 !important;
+          border:1px solid #edf3f7 !important;
+        }
+
+        .stageFlow span.done {
+          background:#e8fff3 !important;
+          color:#008f57 !important;
+          border-color:#bbf7d0 !important;
+        }
+
+        .pipelineForm,
+        .deployForm {
+          display:grid !important;
+          grid-template-columns:1fr 1fr !important;
+          gap:12px !important;
+        }
+
+        .pipelineForm label,
+        .deployForm label {
+          display:flex !important;
+          flex-direction:column !important;
+          gap:6px !important;
+          color:var(--navy) !important;
+          font-size:13px !important;
+          font-weight:900 !important;
+        }
+
+        .pipelineForm input,
+        .pipelineForm select,
+        .deployForm input,
+        .deployForm select {
+          min-height:46px !important;
+          border-radius:12px !important;
+          border:1px solid #dfeaf0 !important;
+          background:#fff !important;
+          padding:0 14px !important;
+          color:var(--navy-d) !important;
+          font-weight:800 !important;
+          box-shadow:none !important;
+        }
+
+        .pipelineForm input:focus,
+        .pipelineForm select:focus,
+        .deployForm input:focus,
+        .deployForm select:focus {
+          border-color:#9edec1 !important;
+          box-shadow:0 0 0 3px rgba(0,184,107,.10) !important;
+          outline:none !important;
+        }
+
+        .pipelineForm label.full,
+        .deployForm label.full,
+        .manualJobField {
+          grid-column:1 / -1 !important;
+        }
+
+        .pipelineCard button.primary,
+        .pipelineCard .primary {
+          width:100% !important;
+          min-height:50px !important;
+          margin-top:14px !important;
+          border-radius:999px !important;
+          background:#00b86b !important;
+          border:1px solid #00b86b !important;
+          color:#fff !important;
+          font-weight:900 !important;
+          box-shadow:0 14px 28px rgba(0,184,107,.16) !important;
+        }
+
+        .pipelineCard .helper {
+          margin:10px 0 0 !important;
+          color:var(--ink-soft) !important;
+          font-size:13px !important;
+          line-height:1.4 !important;
+        }
+
+        @media(max-width:860px){
+          .pipelineHead {
+            grid-template-columns:1fr !important;
+          }
+
+          .pipelineHeadActions {
+            align-items:flex-start !important;
+            min-width:0 !important;
+            width:100% !important;
+          }
+
+          .pipelineLink {
+            width:100% !important;
+          }
+
+          .stageFlow {
+            justify-content:flex-start !important;
+          }
+
+          .pipelineForm,
+          .deployForm {
+            grid-template-columns:1fr !important;
+          }
+        }
+
       `}</style>
     </main>
   );
