@@ -19,8 +19,38 @@ function getAuthHeader() {
   return `Basic ${basicAuth(user, token)}`;
 }
 
+function getJenkinsBaseUrl() {
+  const baseUrl = process.env.JENKINS_BASE_URL;
+  if (!baseUrl) {
+    throw new Error('Jenkins no está configurado. Falta JENKINS_BASE_URL.');
+  }
+  return baseUrl.replace(/\/$/, '');
+}
+
+function normalizeJenkinsUrl(value: string | null | undefined) {
+  const baseUrl = getJenkinsBaseUrl();
+  const raw = String(value || '').trim();
+
+  if (!raw) return '';
+
+  try {
+    const base = new URL(baseUrl);
+    const input = new URL(raw, baseUrl);
+
+    // Jenkins puede devolver queue_url con http:// aunque el portal use https://.
+    // Preservamos path/search, pero forzamos origin de JENKINS_BASE_URL.
+    input.protocol = base.protocol;
+    input.host = base.host;
+
+    return input.toString().replace(/\/$/, '');
+  } catch {
+    if (raw.startsWith('/')) return `${baseUrl}${raw}`.replace(/\/$/, '');
+    return `${baseUrl}/${raw}`.replace(/\/$/, '');
+  }
+}
+
 function apiUrl(base: string, query: string) {
-  const clean = String(base || '').replace(/\/$/, '');
+  const clean = normalizeJenkinsUrl(base);
   if (!clean) return '';
   if (clean.endsWith('/api/json')) return clean;
   return `${clean}/api/json${query ? `?${query}` : ''}`;
@@ -39,21 +69,26 @@ function normalizeResult(result: string | null, building: boolean) {
 }
 
 async function fetchJenkinsJson(url: string, authHeader: string) {
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      Authorization: authHeader,
-      Accept: 'application/json',
-    },
-    cache: 'no-store',
-  });
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: authHeader,
+        Accept: 'application/json',
+      },
+      cache: 'no-store',
+    });
 
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Jenkins respondió ${response.status} al consultar estado: ${text.slice(0, 500)}`);
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Jenkins respondió ${response.status} al consultar estado: ${text.slice(0, 500)}`);
+    }
+
+    return response.json();
+  } catch (error: any) {
+    const message = error?.message || 'fetch failed';
+    throw new Error(`No fue posible consultar Jenkins (${url}). Detalle: ${message}`);
   }
-
-  return response.json();
 }
 
 async function syncFromJenkins(run: any) {
@@ -61,14 +96,16 @@ async function syncFromJenkins(run: any) {
 
   let queueData: any = null;
   let buildData: any = null;
-  let buildUrl = run.build_url || '';
+  let buildUrl = run.build_url ? normalizeJenkinsUrl(run.build_url) : '';
   let buildNumber = run.build_number || null;
   let status = run.status || 'QUEUED';
   let result = run.result || null;
 
   if (!buildUrl && run.queue_url) {
+    const normalizedQueueUrl = normalizeJenkinsUrl(run.queue_url);
+
     const queueUrl = apiUrl(
-      run.queue_url,
+      normalizedQueueUrl,
       'tree=cancelled,blocked,buildable,stuck,why,executable[number,url]'
     );
 
@@ -83,6 +120,7 @@ async function syncFromJenkins(run: any) {
         finished_at: new Date().toISOString(),
         raw_response: {
           ...(run.raw_response || {}),
+          normalizedQueueUrl,
           queue: queueData,
           syncMessage: 'La ejecución fue cancelada en la cola de Jenkins.',
         },
@@ -90,7 +128,7 @@ async function syncFromJenkins(run: any) {
     }
 
     if (queueData?.executable?.url) {
-      buildUrl = String(queueData.executable.url);
+      buildUrl = normalizeJenkinsUrl(String(queueData.executable.url));
       buildNumber = queueData?.executable?.number ? String(queueData.executable.number) : null;
       status = 'RUNNING';
     } else {
@@ -102,6 +140,7 @@ async function syncFromJenkins(run: any) {
         finished_at: null,
         raw_response: {
           ...(run.raw_response || {}),
+          normalizedQueueUrl,
           queue: queueData,
           syncMessage: queueData?.why || 'La ejecución sigue en cola.',
         },
@@ -110,8 +149,10 @@ async function syncFromJenkins(run: any) {
   }
 
   if (buildUrl) {
+    const normalizedBuildUrl = normalizeJenkinsUrl(buildUrl);
+
     const buildApi = apiUrl(
-      buildUrl,
+      normalizedBuildUrl,
       'tree=building,result,number,url,duration,timestamp,estimatedDuration'
     );
 
@@ -121,7 +162,7 @@ async function syncFromJenkins(run: any) {
     status = normalized.status;
     result = normalized.result;
     buildNumber = buildData?.number ? String(buildData.number) : buildNumber;
-    buildUrl = buildData?.url || buildUrl;
+    buildUrl = normalizeJenkinsUrl(buildData?.url || normalizedBuildUrl);
 
     return {
       status,
@@ -131,8 +172,8 @@ async function syncFromJenkins(run: any) {
       finished_at: buildData?.building ? null : new Date().toISOString(),
       raw_response: {
         ...(run.raw_response || {}),
-        queue: queueData,
         build: buildData,
+        normalizedBuildUrl,
         syncMessage: buildData?.building ? 'Build en ejecución.' : `Build finalizado con resultado ${buildData?.result || 'desconocido'}.`,
       },
     };
