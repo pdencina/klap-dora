@@ -3,7 +3,7 @@ import { createSupabaseServer } from './supabase-server';
 import { createSupabaseAdmin } from './supabase-admin';
 import { actionsForRole, normalizeAppRole, type AppRole } from './permissions';
 
-export type Role = 'client' | 'approver' | 'rm' | 'super_admin' | 'deployment' | 'read_only';
+export type Role = 'client' | 'approver' | 'deployment' | 'rm' | 'super_admin' | 'read_only';
 
 // getUser() valida el JWT contra el servidor de Supabase.
 export async function getCurrentUser() {
@@ -43,7 +43,6 @@ export function roleOf(user: any): Role {
 }
 
 export function roleLabel(role: Role) {
-  if (role === 'super_admin') return 'Super Admin';
   if (role === 'super_admin') return 'Super Admin';
   if (role === 'rm') return 'Release Manager';
   if (role === 'deployment') return 'Deployment';
