@@ -234,7 +234,7 @@ export default function RdcDetailPage() {
         <div>
           <p className="kicker">RDC · Ficha maestra del cambio</p>
           <h1>{change?.title || 'Detalle RDC'}</h1>
-          <p>Vista ordenada del RDC Confluence en el sistema RM: contexto, impacto, riesgo, despliegue, rollback, evidencias y aprobaciones CAB.</p>
+          <p>Ficha principal del cambio tipo RFC: identifica, justifica, evalúa riesgo y define criterios de implementación, reversa y aprobación. La trazabilidad operativa queda separada para auditoría y seguimiento.</p>
         </div>
         <div className="headerActions">
           <span className={`cabState ${cabTone}`}>{cabState}</span>
@@ -251,7 +251,7 @@ export default function RdcDetailPage() {
             <section className="section executive">
               <div className="sectionHead">
                 <div>
-                  <p className="sectionLabel">1. Resumen ejecutivo</p>
+                  <p className="sectionLabel">RDC PRINCIPAL · Identificación del cambio</p>
                   <h2>{change.title}</h2>
                   <p className="muted">{statusLabel[change.status] || change.status}</p>
                 </div>
@@ -270,10 +270,21 @@ export default function RdcDetailPage() {
                 <div><span>PAP Jira</span><b>{valueOrEmpty(change.jira_key, 'Pendiente')}</b></div>
                 <div><span>Resultado deploy</span><b>{valueOrEmpty(change.deployment_result, 'PENDIENTE')}</b></div>
               </div>
+
+              <div className="rdcBoundary">
+                <div>
+                  <b>Qué vive en el RDC</b>
+                  <span>Definición del cambio, justificación, impacto, riesgo, responsables, validación, implementación resumida, reversa y aprobaciones requeridas.</span>
+                </div>
+                <div>
+                  <b>Qué vive como trazabilidad</b>
+                  <span>PAP operativo, evidencias, ejecución Jenkins, historial, auditoría digital y detalle de aprobaciones.</span>
+                </div>
+              </div>
             </section>
 
             <section className="section">
-              <p className="sectionLabel">2. Descripción del cambio</p>
+              <p className="sectionLabel">RDC PRINCIPAL · Descripción y justificación</p>
               <div className="twoCols">
                 <div className="textBox">
                   <h3>Descripción del requerimiento</h3>
@@ -301,8 +312,8 @@ export default function RdcDetailPage() {
             <section className="section riskSection">
               <div className="sectionHead">
                 <div>
-                  <p className="sectionLabel">3. Impacto y riesgo CAB</p>
-                  <h2>Evaluación para decisión CAB</h2>
+                  <p className="sectionLabel">RDC PRINCIPAL · Impacto y riesgo</p>
+                  <h2>Riesgo, impacto y criticidad del cambio</h2>
                 </div>
                 <span className={`riskBadge ${riskTone}`}>Riesgo {valueOrEmpty(details.impact, 'Controlado')}</span>
               </div>
@@ -325,7 +336,7 @@ export default function RdcDetailPage() {
             </section>
 
             <section className="section">
-              <p className="sectionLabel">4. Responsables</p>
+              <p className="sectionLabel">RDC PRINCIPAL · Responsables y ownership</p>
               <div className="grid">
                 <div><span>Presentador</span><b>{valueOrEmpty(change.presenter || change.created_by, 'No informado')}</b></div>
                 <div><span>Líder técnico</span><b>{valueOrEmpty(change.technical_lead, 'No informado')}</b></div>
@@ -335,21 +346,21 @@ export default function RdcDetailPage() {
             </section>
 
             <section className="section">
-              <p className="sectionLabel">5. Plan QA y validación</p>
+              <p className="sectionLabel">RDC PRINCIPAL · Validación y criterios de éxito</p>
               <div className="twoCols">
                 <div className="textBox">
-                  <h3>Plan de validación</h3>
+                  <h3>Criterios de validación / éxito</h3>
                   <p>{valueOrEmpty(details.validation_plan, 'No se registró plan de validación.')}</p>
                 </div>
                 <div className="textBox">
-                  <h3>Dependencia con otro RDC</h3>
+                  <h3>Dependencias y relación con otros cambios</h3>
                   <p>{valueOrEmpty(details.dependent_rdc, 'No aplica')}</p>
                 </div>
               </div>
             </section>
 
             <section className="section deploySection">
-              <p className="sectionLabel">6. Plan de despliegue producción</p>
+              <p className="sectionLabel">RDC PRINCIPAL · Plan de implementación resumido</p>
               <div className="planBox">
                 {deploymentSteps.length ? (
                   <ol>
@@ -362,9 +373,9 @@ export default function RdcDetailPage() {
             </section>
 
             <section className="section rollbackSection">
-              <p className="sectionLabel">7. Rollback / plan de mitigación</p>
+              <p className="sectionLabel">RDC PRINCIPAL · Plan de reversa / mitigación</p>
               <div className="rollbackBox">
-                <h2>Plan de vuelta atrás</h2>
+                <h2>Plan de reversa del cambio</h2>
                 {rollbackSteps.length ? (
                   <ol>
                     {rollbackSteps.map((step, index) => <li key={`${step}-${index}`}>{step}</li>)}
@@ -375,10 +386,16 @@ export default function RdcDetailPage() {
               </div>
             </section>
 
-            <section className="section">
+            <section className="sectionDivider traceabilityDivider">
+              <p className="sectionLabel">Información complementaria</p>
+              <h2>Trazabilidad operacional y auditoría</h2>
+              <p>Estos datos no ensucian el cuerpo principal del RDC, pero quedan asociados al cambio para seguimiento, evidencia, auditoría y continuidad entre áreas.</p>
+            </section>
+
+            <section className="section traceabilitySection">
               <div className="sectionHead">
                 <div>
-                  <p className="sectionLabel">8. Aprobaciones CAB</p>
+                  <p className="sectionLabel">TRAZABILIDAD · Aprobaciones CAB digitales</p>
                   <h2>{progress.approved} de {progress.total} aprobaciones completadas</h2>
                 </div>
                 <strong className="bigPercent">{progress.percent}%</strong>
@@ -407,7 +424,7 @@ export default function RdcDetailPage() {
 
           <aside className="sideCard">
             <section>
-              <p className="sectionLabel">Avance del cambio</p>
+              <p className="sectionLabel">Trazabilidad del cambio</p>
               <strong className="sidePercent">{progress.percent}%</strong>
               <div className="progressBar"><i style={{ width: `${progress.percent}%` }} /></div>
             </section>
@@ -420,7 +437,7 @@ export default function RdcDetailPage() {
             </section>
 
             <section className="checklist">
-              <h2>Checklist CAB</h2>
+              <h2>Checklist de completitud RDC</h2>
               <div className={valueOrEmpty(details.requirement_description || change.description, '').trim() ? 'check ok' : 'check'}><i /> Descripción</div>
               <div className={valueOrEmpty(details.impact, '').trim() ? 'check ok' : 'check'}><i /> Impacto</div>
               <div className={systems.length ? 'check ok' : 'check'}><i /> Sistemas afectados</div>
@@ -432,22 +449,22 @@ export default function RdcDetailPage() {
 
             {readiness.missing.length ? (
               <section className="missingBox">
-                <h2>Faltante para CAB Ready</h2>
+                <h2>Faltante para completar RDC</h2>
                 {readiness.missing.map((item) => <span key={item}>{item}</span>)}
               </section>
             ) : null}
 
             <section className="timeline">
-              <h2>Timeline</h2>
-              <div className="step done"><i /> <span>RDC creado</span></div>
-              <div className="step done"><i /> <span>CAB Digital</span></div>
-              <div className={change.status === 'APROBADO_PARA_EJECUCION' ? 'step done' : 'step'}><i /> <span>PAP Jira</span></div>
-              <div className="step"><i /> <span>Implementación</span></div>
-              <div className="step"><i /> <span>Cierre</span></div>
+              <h2>Módulos relacionados</h2>
+              <div className="step done"><i /> <span>RDC principal creado</span></div>
+              <div className="step done"><i /> <span>Aprobaciones CAB</span></div>
+              <a className={change.status === 'APROBADO_PARA_EJECUCION' ? 'step done' : 'step'} href={`/pap?rdcId=${change.id}`}><i /> <span>Plan PAP operativo</span></a>
+              <a className="step" href={`/deploy?rdcId=${change.id}`}><i /> <span>Deploy Center / Jenkins</span></a>
+              <a className="step" href={`/cierre?rdcId=${change.id}`}><i /> <span>Cierre y evidencias</span></a>
             </section>
 
             <section className="audit">
-              <h2>Evidencia digital</h2>
+              <h2>Auditoría digital de aprobaciones</h2>
               {(change.approval_requests || [])
                 .filter((approval) => approval.status !== 'PENDIENTE')
                 .map((approval) => (
@@ -514,8 +531,20 @@ export default function RdcDetailPage() {
         .step{display:flex;gap:10px;align-items:center;color:#8aa0b2;font-weight:900}.step.done{color:#073b5d}
         .auditItem{background:#f8fbfd;border:1px solid #e5eef3;border-radius:16px;padding:12px}
         .empty,.error{padding:24px;margin-bottom:18px;color:#5d7890}.error{color:#b42318;background:#fff1f0;border-color:#ffd6d2}
+
+        .rdcBoundary{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+        .rdcBoundary div{background:#fff;border:1px solid #dfeaf0;border-radius:16px;padding:14px}
+        .rdcBoundary b{display:block;color:#073b5d;font-size:14px;margin-bottom:6px}
+        .rdcBoundary span{display:block;color:#5d7890;font-size:13px;line-height:1.45}
+        .sectionDivider{background:white;border:1px dashed #b8d4e4;border-radius:20px;padding:18px;margin:22px 0 16px}
+        .sectionDivider h2{margin:0 0 8px;color:#073b5d}
+        .sectionDivider p:not(.sectionLabel){margin:0;color:#5d7890;line-height:1.5}
+        .traceabilityDivider{background:linear-gradient(135deg,#f8fbfd,#ffffff)}
+        .traceabilitySection{background:#ffffff;border-color:#dfeaf0}
+        .timeline .step{border:1px solid #e5eef3;border-radius:14px;padding:10px 12px;background:#f8fbfd}
+        .timeline a.step:hover{border-color:#bbf7d0;background:#f4fff9;color:#008f57}
         @media(max-width:1100px){.layout{grid-template-columns:1fr}.grid,.riskGrid{grid-template-columns:repeat(2,1fr)}}
-        @media(max-width:760px){.page{padding:20px 18px 44px}.header,.sectionHead{flex-direction:column}.grid,.riskGrid,.twoCols,.approvalRow{grid-template-columns:1fr}h1{font-size:38px}.full{grid-column:auto}}
+        @media(max-width:760px){.page{padding:20px 18px 44px}.header,.sectionHead{flex-direction:column}.grid,.riskGrid,.twoCols,.approvalRow,.rdcBoundary{grid-template-columns:1fr}h1{font-size:38px}.full{grid-column:auto}}
       `}</style>
     </main>
   );
