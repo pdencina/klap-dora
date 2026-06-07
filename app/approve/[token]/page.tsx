@@ -126,22 +126,26 @@ export default function ApproveTokenPage() {
       setBusy(true);
       setOtpMessage('');
 
+      if (!token) {
+        throw new Error('Token de aprobación no disponible.');
+      }
+
       const response = await fetch('/api/approvals/send-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => null);
 
-      if (!response.ok || !data.ok) {
-        throw new Error(data.error || 'No fue posible enviar código');
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error || `No fue posible enviar código. Estado HTTP ${response.status}`);
       }
 
       setOtpSent(true);
       setOtpMessage(data.debugCode ? `${data.message} Código debug: ${data.debugCode}` : data.message);
     } catch (err: any) {
-      alert(err?.message || 'Error enviando código');
+      setOtpMessage(err?.message || 'Error enviando código');
     } finally {
       setBusy(false);
     }
@@ -289,8 +293,8 @@ export default function ApproveTokenPage() {
 
                     {!verified ? (
                       <div className="otpActions">
-                        <button disabled={busy || !approval.approver_email} onClick={sendCode}>
-                          {otpSent ? 'Reenviar código' : 'Enviar código'}
+                        <button type="button" disabled={busy || !approval.approver_email} onClick={sendCode}>
+                          {busy ? 'Enviando…' : otpSent ? 'Reenviar código' : 'Enviar código'}
                         </button>
 
                         {otpMessage ? <div className="notice">{otpMessage}</div> : null}
@@ -303,7 +307,7 @@ export default function ApproveTokenPage() {
                               placeholder="Código de 6 dígitos"
                               maxLength={6}
                             />
-                            <button disabled={busy || code.length < 6} onClick={verifyCode}>Validar código</button>
+                            <button type="button" disabled={busy || code.length < 6} onClick={verifyCode}>Validar código</button>
                           </div>
                         ) : null}
                       </div>
@@ -316,9 +320,9 @@ export default function ApproveTokenPage() {
                     <h2>Decisión requerida</h2>
                     <p>Si observas o rechazas, el sistema solicitará un comentario para dejar evidencia.</p>
                     <div className="actions">
-                      <button disabled={busy || !verified} onClick={() => submit('APROBADO')}>Aprobar</button>
-                      <button disabled={busy || !verified} className="secondary" onClick={() => submit('OBSERVADO')}>Observar</button>
-                      <button disabled={busy || !verified} className="danger" onClick={() => submit('RECHAZADO')}>Rechazar</button>
+                      <button type="button" disabled={busy || !verified} onClick={() => submit('APROBADO')}>Aprobar</button>
+                      <button type="button" disabled={busy || !verified} className="secondary" onClick={() => submit('OBSERVADO')}>Observar</button>
+                      <button type="button" disabled={busy || !verified} className="danger" onClick={() => submit('RECHAZADO')}>Rechazar</button>
                     </div>
                   </div>
                 </>
