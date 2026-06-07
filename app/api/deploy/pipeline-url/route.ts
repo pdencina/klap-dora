@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireRM } from '../../../../lib/auth';
+import { requireDeployAccess } from '../../../../lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +28,7 @@ function buildJenkinsPipelineUrl(baseUrl: string, jobName: string) {
 }
 
 export async function GET(req: Request) {
-  const { deny } = await requireRM();
+  const { deny } = await requireDeployAccess();
   if (deny) return deny;
 
   const { searchParams } = new URL(req.url);

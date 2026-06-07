@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdmin } from '../../../../lib/supabase-admin';
-import { requireRM } from '../../../../lib/auth';
+import { requireActionPermission } from '../../../../lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +12,7 @@ function mapRdcStatus(result: string, hadRollback: boolean, hadIncident: boolean
 }
 
 export async function POST(req: Request) {
-  const { user, deny } = await requireRM();
+  const { user, deny } = await requireActionPermission('close_change');
   if (deny) return deny;
 
   const body = await req.json();

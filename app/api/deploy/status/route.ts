@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdmin } from '../../../../lib/supabase-admin';
-import { requireRM } from '../../../../lib/auth';
+import { requireActionPermission } from '../../../../lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
-  const { deny } = await requireRM();
+  const { deny } = await requireActionPermission('update_jenkins_status');
   if (deny) return deny;
 
   const { searchParams } = new URL(req.url);
@@ -29,7 +29,7 @@ export async function GET(req: Request) {
 }
 
 export async function PATCH(req: Request) {
-  const { deny } = await requireRM();
+  const { deny } = await requireActionPermission('update_jenkins_status');
   if (deny) return deny;
 
   const body = await req.json();

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireRM } from '../../../../lib/auth';
+import { requireDeployAccess } from '../../../../lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +20,7 @@ function normalizeJobs(raw: any): Array<{ name: string; url: string; color?: str
 }
 
 export async function GET() {
-  const { deny } = await requireRM();
+  const { deny } = await requireDeployAccess();
   if (deny) return deny;
 
   const baseUrl = process.env.JENKINS_BASE_URL;

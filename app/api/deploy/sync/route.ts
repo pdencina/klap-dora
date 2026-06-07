@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdmin } from '../../../../lib/supabase-admin';
-import { requireRM } from '../../../../lib/auth';
+import { requireActionPermission } from '../../../../lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -315,7 +315,7 @@ async function syncFromJenkins(run: any) {
 }
 
 export async function POST(req: Request) {
-  const { deny } = await requireRM();
+  const { deny } = await requireActionPermission('update_jenkins_status');
   if (deny) return deny;
 
   const body = await req.json();

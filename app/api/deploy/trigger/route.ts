@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdmin } from '../../../../lib/supabase-admin';
-import { requireRM } from '../../../../lib/auth';
+import { requireActionPermission } from '../../../../lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -204,7 +204,7 @@ async function triggerJenkins(jobName: string, parameters: Record<string, string
 }
 
 export async function POST(req: Request) {
-  const { user, deny } = await requireRM();
+  const { user, deny } = await requireActionPermission('execute_jenkins');
   if (deny) return deny;
 
   const body = await req.json();

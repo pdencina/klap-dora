@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdmin } from '../../../../lib/supabase-admin';
-import { requireRM } from '../../../../lib/auth';
+import { requireDeployAccess } from '../../../../lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -306,7 +306,7 @@ function analyzeConsole(consoleText: string, run: any) {
 }
 
 export async function POST(req: Request) {
-  const { deny } = await requireRM();
+  const { deny } = await requireDeployAccess();
   if (deny) return deny;
 
   const body = await req.json();
