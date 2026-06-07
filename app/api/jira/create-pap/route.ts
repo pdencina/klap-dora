@@ -67,10 +67,7 @@ function buildTraceabilityText(formData: any) {
   ].filter(([, value]) => value);
 
   if (!rows.length) return 'No se registró trazabilidad complementaria.';
-  return rows.map(([area, value]) => `${area}:
-${value}`).join('
-
-');
+  return rows.map(([area, value]) => `${area}:\n${value}`).join('\n\n');
 }
 
 function buildDescriptionText(rdc: any, details: RdcDetails) {
