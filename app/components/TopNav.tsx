@@ -1,138 +1,71 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { createSupabaseBrowser } from '../../lib/supabase-browser';
+import { APP_MODULES, modulesForRole, normalizeAppRole, type AppModule, type AppRole } from '../../lib/permissions';
 
-type Role = 'client' | 'approver' | 'rm';
+type Role = 'client' | 'approver' | 'rm' | 'super_admin';
 
-type NavLink = {
-  href: string;
-  label: string;
-  icon: string;
-  rm?: boolean;
-  section?: 'OPERACIÓN' | 'CONTROL' | 'EJECUCIÓN' | 'MÉTRICAS';
-};
-
-const CLIENT_LINKS: NavLink[] = [
-  { href: '/', label: 'Inicio', icon: '⌂' },
-  { href: '/rdc', label: 'Nuevo RDC', icon: '＋', section: 'OPERACIÓN' },
-  { href: '/mis-cambios', label: 'Mis Cambios', icon: '◇', section: 'OPERACIÓN' },
-];
-
-const APPROVER_LINKS: NavLink[] = [
-  { href: '/', label: 'Inicio', icon: '⌂' },
-  { href: '/mis-aprobaciones', label: 'Mis Aprobaciones', icon: '✓', section: 'CONTROL' },
-];
-
-const DEPLOYMENT_LINKS: NavLink[] = [
-  { href: '/', label: 'Inicio', icon: '⌂' },
-  { href: '/mis-aprobaciones', label: 'Mis Aprobaciones', icon: '✓', section: 'CONTROL' },
-  { href: '/pap', label: 'Plan PAP', icon: '□', section: 'EJECUCIÓN' },
-  { href: '/deploy', label: 'Deploy Center', icon: '↗', section: 'EJECUCIÓN' },
-  { href: '/cierre', label: 'Cierre técnico', icon: '⚑', section: 'EJECUCIÓN' },
-];
-
-const RM_LINKS: NavLink[] = [
-  { href: '/', label: 'Inicio', icon: '⌂' },
-
-  { href: '/rdc', label: 'Nuevo RDC', icon: '＋', section: 'OPERACIÓN' },
-  { href: '/mis-cambios', label: 'Mis Cambios', icon: '◇', section: 'OPERACIÓN' },
-  { href: '/release', label: 'Release', icon: '○', rm: true, section: 'OPERACIÓN' },
-
-  { href: '/approvals', label: 'Aprobaciones', icon: '✓', rm: true, section: 'CONTROL' },
-  { href: '/cab', label: 'Agenda CAB', icon: '▣', rm: true, section: 'CONTROL' },
-
-  { href: '/pap', label: 'Plan PAP', icon: '□', rm: true, section: 'EJECUCIÓN' },
-  { href: '/deploy', label: 'Deploy Center', icon: '↗', rm: true, section: 'EJECUCIÓN' },
-  { href: '/cierre', label: 'Cierre', icon: '⚑', rm: true, section: 'EJECUCIÓN' },
-
-  { href: '/dashboard', label: 'Dashboard DORA', icon: '⌁', rm: true, section: 'MÉTRICAS' },
-];
-
-const ROLE_LABEL: Record<Role, string> = {
+const ROLE_LABEL: Record<Role | AppRole, string> = {
   client: 'Cliente Interno',
   approver: 'Aprobador',
+  deployment: 'Deployment',
   rm: 'Release Manager',
+  super_admin: 'Super Admin',
+  read_only: 'Solo Lectura',
 };
 
-function normalizeEmail(value: string) {
-  return String(value || '').trim().toLowerCase();
-}
-
-function isDeploymentApproverEmail(email: string) {
-  const normalized = normalizeEmail(email);
-
-  const configuredEmails = String(process.env.NEXT_PUBLIC_DEPLOYMENT_APPROVERS || '')
-    .split(',')
-    .map((item) => normalizeEmail(item))
-    .filter(Boolean);
-
-  return configuredEmails.includes(normalized)
-    || normalized === 'ximena.cruz@klap.cl'
-    || normalized.includes('ximena.cruz');
+function fallbackModules(role: Role, email: string) {
+  const normalized = email.trim().toLowerCase();
+  if (role === 'approver' && (normalized === 'ximena.cruz@klap.cl' || normalized.includes('ximena.cruz'))) {
+    return modulesForRole('deployment');
+  }
+  return modulesForRole(normalizeAppRole(role));
 }
 
 export default function TopNav({ role, email }: { role: Role; email: string }) {
   const pathname = usePathname() || '/';
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
+  const [modules, setModules] = useState<AppModule[]>(() => fallbackModules(role, email));
+  const [displayRole, setDisplayRole] = useState<AppRole>(() => normalizeAppRole(role));
 
-  const isDeploymentApprover = role === 'approver' && isDeploymentApproverEmail(email);
-  const links = role === 'rm'
-    ? RM_LINKS
-    : isDeploymentApprover
-      ? DEPLOYMENT_LINKS
-      : role === 'approver'
-        ? APPROVER_LINKS
-        : CLIENT_LINKS;
-  const displayRoleLabel = isDeploymentApprover ? 'Deployment' : ROLE_LABEL[role];
+  useEffect(() => {
+    let active = true;
+
+    async function loadPermissions() {
+      try {
+        const response = await fetch('/api/admin/my-permissions', { cache: 'no-store' });
+        const data = await response.json().catch(() => null);
+        if (!active || !data?.ok) return;
+
+        const nextModules = Array.isArray(data.modules) && data.modules.length
+          ? data.modules
+          : fallbackModules(role, email);
+
+        setModules(nextModules);
+        setDisplayRole(normalizeAppRole(data.role || role));
+      } catch {
+        if (active) setModules(fallbackModules(role, email));
+      }
+    }
+
+    loadPermissions();
+    return () => { active = false; };
+  }, [role, email]);
 
   const isActive = (href: string) => (href === '/' ? pathname === '/' : pathname.startsWith(href));
 
-  function renderSidebarLinks() {
-    const home = links.find((link) => link.href === '/');
-    const sectionNames = Array.from(
-      new Set(links.map((link) => link.section).filter(Boolean)),
-    ) as Array<NonNullable<NavLink['section']>>;
+  const sections = useMemo(() => {
+    const orderedSections: AppModule['section'][] = ['OPERACIÓN', 'CONTROL', 'EJECUCIÓN', 'MÉTRICAS', 'ADMINISTRACIÓN'];
+    return orderedSections
+      .map((section) => ({ section, links: modules.filter((module) => module.section === section && module.path !== '/') }))
+      .filter((group) => group.links.length);
+  }, [modules]);
 
-    return (
-      <>
-        {home ? (
-          <Link
-            key={home.href}
-            href={home.href}
-            className={`app-sidebar-link ${isActive(home.href) ? 'active' : ''}`}
-          >
-            <span className="app-sidebar-icon" aria-hidden="true">{home.icon}</span>
-            <b>{home.label}</b>
-          </Link>
-        ) : null}
-
-        {sectionNames.map((section) => {
-          const sectionLinks = links.filter((link) => link.section === section);
-          if (!sectionLinks.length) return null;
-
-          return (
-            <div className="app-sidebar-section" key={section}>
-              <small>{section}</small>
-              {sectionLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`app-sidebar-link ${isActive(link.href) ? 'active' : ''} ${link.rm ? 'rm' : ''}`}
-                >
-                  <span className="app-sidebar-icon" aria-hidden="true">{link.icon}</span>
-                  <b>{link.label}</b>
-                </Link>
-              ))}
-            </div>
-          );
-        })}
-      </>
-    );
-  }
+  const home = modules.find((module) => module.path === '/') || APP_MODULES[0];
 
   useEffect(() => {
     document.body.classList.toggle('sidebar-collapsed', collapsed);
@@ -167,14 +100,36 @@ export default function TopNav({ role, email }: { role: Role; email: string }) {
       </div>
 
       <nav className="app-sidebar-nav" aria-label="Navegación principal">
-        {renderSidebarLinks()}
+        <Link
+          href={home.path}
+          className={`app-sidebar-link ${isActive(home.path) ? 'active' : ''}`}
+        >
+          <span className="app-sidebar-icon" aria-hidden="true">{home.icon}</span>
+          <b>{home.label}</b>
+        </Link>
+
+        {sections.map((group) => (
+          <div className="app-sidebar-section" key={group.section}>
+            <small>{group.section}</small>
+            {group.links.map((link) => (
+              <Link
+                key={link.key}
+                href={link.path}
+                className={`app-sidebar-link ${isActive(link.path) ? 'active' : ''}`}
+              >
+                <span className="app-sidebar-icon" aria-hidden="true">{link.icon}</span>
+                <b>{link.label}</b>
+              </Link>
+            ))}
+          </div>
+        ))}
       </nav>
 
       <div className="app-sidebar-user">
         <div className="app-sidebar-avatar">PE</div>
         <div className="app-sidebar-user-text">
           <b>{email ? email.split('@')[0].replace('.', ' ') : 'Usuario'}</b>
-          <span>{displayRoleLabel}</span>
+          <span>{ROLE_LABEL[displayRole] || ROLE_LABEL[role]}</span>
         </div>
       </div>
 
