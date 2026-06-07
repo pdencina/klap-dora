@@ -12,6 +12,7 @@ type NavLink = {
   label: string;
   icon: string;
   rm?: boolean;
+  section?: 'OPERACIÓN' | 'CONTROL' | 'EJECUCIÓN' | 'MÉTRICAS';
 };
 
 const CLIENT_LINKS: NavLink[] = [
@@ -27,15 +28,19 @@ const APPROVER_LINKS: NavLink[] = [
 
 const RM_LINKS: NavLink[] = [
   { href: '/', label: 'Inicio', icon: '⌂' },
-  { href: '/rdc', label: 'Nuevo RDC', icon: '＋' },
-  { href: '/mis-cambios', label: 'Mis Cambios', icon: '◇' },
-  { href: '/release', label: 'Release', icon: '○', rm: true },
-  { href: '/approvals', label: 'Aprobaciones', icon: '✓', rm: true },
-  { href: '/cab', label: 'Agenda CAB', icon: '▣', rm: true },
-  { href: '/pap', label: 'Plan PAP', icon: '□', rm: true },
-  { href: '/deploy', label: 'Deploy Center', icon: '↗', rm: true },
-  { href: '/cierre', label: 'Cierre', icon: '⚑', rm: true },
-  { href: '/dashboard', label: 'Dashboard DORA', icon: '⌁', rm: true },
+
+  { href: '/rdc', label: 'Nuevo RDC', icon: '＋', section: 'OPERACIÓN' },
+  { href: '/mis-cambios', label: 'Mis Cambios', icon: '◇', section: 'OPERACIÓN' },
+  { href: '/release', label: 'Release', icon: '○', rm: true, section: 'OPERACIÓN' },
+
+  { href: '/approvals', label: 'Aprobaciones', icon: '✓', rm: true, section: 'CONTROL' },
+  { href: '/cab', label: 'Agenda CAB', icon: '▣', rm: true, section: 'CONTROL' },
+
+  { href: '/pap', label: 'Plan PAP', icon: '□', rm: true, section: 'EJECUCIÓN' },
+  { href: '/deploy', label: 'Deploy Center', icon: '↗', rm: true, section: 'EJECUCIÓN' },
+  { href: '/cierre', label: 'Cierre', icon: '⚑', rm: true, section: 'EJECUCIÓN' },
+
+  { href: '/dashboard', label: 'Dashboard DORA', icon: '⌁', rm: true, section: 'MÉTRICAS' },
 ];
 
 const ROLE_LABEL: Record<Role, string> = {
@@ -52,6 +57,60 @@ export default function TopNav({ role, email }: { role: Role; email: string }) {
   const links = role === 'rm' ? RM_LINKS : role === 'approver' ? APPROVER_LINKS : CLIENT_LINKS;
 
   const isActive = (href: string) => (href === '/' ? pathname === '/' : pathname.startsWith(href));
+
+  function renderSidebarLinks() {
+    if (role !== 'rm') {
+      return links.map((link) => (
+        <Link
+          key={link.href}
+          href={link.href}
+          className={`app-sidebar-link ${isActive(link.href) ? 'active' : ''} ${link.rm ? 'rm' : ''}`}
+        >
+          <span className="app-sidebar-icon" aria-hidden="true">{link.icon}</span>
+          <b>{link.label}</b>
+        </Link>
+      ));
+    }
+
+    const home = links.find((link) => link.href === '/');
+    const sections: Array<NonNullable<NavLink['section']>> = ['OPERACIÓN', 'CONTROL', 'EJECUCIÓN', 'MÉTRICAS'];
+
+    return (
+      <>
+        {home ? (
+          <Link
+            key={home.href}
+            href={home.href}
+            className={`app-sidebar-link ${isActive(home.href) ? 'active' : ''}`}
+          >
+            <span className="app-sidebar-icon" aria-hidden="true">{home.icon}</span>
+            <b>{home.label}</b>
+          </Link>
+        ) : null}
+
+        {sections.map((section) => {
+          const sectionLinks = links.filter((link) => link.section === section);
+          if (!sectionLinks.length) return null;
+
+          return (
+            <div className="app-sidebar-section" key={section}>
+              <small>{section}</small>
+              {sectionLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`app-sidebar-link ${isActive(link.href) ? 'active' : ''} ${link.rm ? 'rm' : ''}`}
+                >
+                  <span className="app-sidebar-icon" aria-hidden="true">{link.icon}</span>
+                  <b>{link.label}</b>
+                </Link>
+              ))}
+            </div>
+          );
+        })}
+      </>
+    );
+  }
 
   useEffect(() => {
     document.body.classList.toggle('sidebar-collapsed', collapsed);
@@ -86,16 +145,7 @@ export default function TopNav({ role, email }: { role: Role; email: string }) {
       </div>
 
       <nav className="app-sidebar-nav" aria-label="Navegación principal">
-        {links.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={`app-sidebar-link ${isActive(link.href) ? 'active' : ''} ${link.rm ? 'rm' : ''}`}
-          >
-            <span className="app-sidebar-icon" aria-hidden="true">{link.icon}</span>
-            <b>{link.label}</b>
-          </Link>
-        ))}
+        {renderSidebarLinks()}
       </nav>
 
       <div className="app-sidebar-user">

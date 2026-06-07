@@ -394,3 +394,43 @@ a { color: inherit; text-decoration: none; }
     margin-left: 76px;
   }
 }
+
+
+/* Sidebar seccionado por flujo de gestión del cambio */
+.app-sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.app-sidebar-section small {
+  display: block;
+  padding: 0 14px 4px;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: #91a4b6;
+}
+
+.app-sidebar-section + .app-sidebar-section {
+  padding-top: 10px;
+  border-top: 1px solid #edf3f7;
+}
+
+.app-sidebar-nav > .app-sidebar-link {
+  margin-bottom: 8px;
+}
+
+body.sidebar-collapsed .app-sidebar-section small {
+  display: none;
+}
+
+body.sidebar-collapsed .app-sidebar-section {
+  align-items: center;
+  width: 100%;
+  margin-top: 10px;
+  padding-top: 10px;
+}
