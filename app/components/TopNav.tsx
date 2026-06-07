@@ -17,13 +17,21 @@ type NavLink = {
 
 const CLIENT_LINKS: NavLink[] = [
   { href: '/', label: 'Inicio', icon: '⌂' },
-  { href: '/rdc', label: 'Nuevo RDC', icon: '＋' },
-  { href: '/mis-cambios', label: 'Mis Cambios', icon: '◇' },
+  { href: '/rdc', label: 'Nuevo RDC', icon: '＋', section: 'OPERACIÓN' },
+  { href: '/mis-cambios', label: 'Mis Cambios', icon: '◇', section: 'OPERACIÓN' },
 ];
 
 const APPROVER_LINKS: NavLink[] = [
   { href: '/', label: 'Inicio', icon: '⌂' },
-  { href: '/mis-aprobaciones', label: 'Mis Aprobaciones', icon: '✓' },
+  { href: '/mis-aprobaciones', label: 'Mis Aprobaciones', icon: '✓', section: 'CONTROL' },
+];
+
+const DEPLOYMENT_LINKS: NavLink[] = [
+  { href: '/', label: 'Inicio', icon: '⌂' },
+  { href: '/mis-aprobaciones', label: 'Mis Aprobaciones', icon: '✓', section: 'CONTROL' },
+  { href: '/pap', label: 'Plan PAP', icon: '□', section: 'EJECUCIÓN' },
+  { href: '/deploy', label: 'Deploy Center', icon: '↗', section: 'EJECUCIÓN' },
+  { href: '/cierre', label: 'Cierre técnico', icon: '⚑', section: 'EJECUCIÓN' },
 ];
 
 const RM_LINKS: NavLink[] = [
@@ -49,31 +57,45 @@ const ROLE_LABEL: Record<Role, string> = {
   rm: 'Release Manager',
 };
 
+function normalizeEmail(value: string) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function isDeploymentApproverEmail(email: string) {
+  const normalized = normalizeEmail(email);
+
+  const configuredEmails = String(process.env.NEXT_PUBLIC_DEPLOYMENT_APPROVERS || '')
+    .split(',')
+    .map((item) => normalizeEmail(item))
+    .filter(Boolean);
+
+  return configuredEmails.includes(normalized)
+    || normalized === 'ximena.cruz@klap.cl'
+    || normalized.includes('ximena.cruz');
+}
+
 export default function TopNav({ role, email }: { role: Role; email: string }) {
   const pathname = usePathname() || '/';
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
 
-  const links = role === 'rm' ? RM_LINKS : role === 'approver' ? APPROVER_LINKS : CLIENT_LINKS;
+  const isDeploymentApprover = role === 'approver' && isDeploymentApproverEmail(email);
+  const links = role === 'rm'
+    ? RM_LINKS
+    : isDeploymentApprover
+      ? DEPLOYMENT_LINKS
+      : role === 'approver'
+        ? APPROVER_LINKS
+        : CLIENT_LINKS;
+  const displayRoleLabel = isDeploymentApprover ? 'Deployment' : ROLE_LABEL[role];
 
   const isActive = (href: string) => (href === '/' ? pathname === '/' : pathname.startsWith(href));
 
   function renderSidebarLinks() {
-    if (role !== 'rm') {
-      return links.map((link) => (
-        <Link
-          key={link.href}
-          href={link.href}
-          className={`app-sidebar-link ${isActive(link.href) ? 'active' : ''} ${link.rm ? 'rm' : ''}`}
-        >
-          <span className="app-sidebar-icon" aria-hidden="true">{link.icon}</span>
-          <b>{link.label}</b>
-        </Link>
-      ));
-    }
-
     const home = links.find((link) => link.href === '/');
-    const sections: Array<NonNullable<NavLink['section']>> = ['OPERACIÓN', 'CONTROL', 'EJECUCIÓN', 'MÉTRICAS'];
+    const sectionNames = Array.from(
+      new Set(links.map((link) => link.section).filter(Boolean)),
+    ) as Array<NonNullable<NavLink['section']>>;
 
     return (
       <>
@@ -88,7 +110,7 @@ export default function TopNav({ role, email }: { role: Role; email: string }) {
           </Link>
         ) : null}
 
-        {sections.map((section) => {
+        {sectionNames.map((section) => {
           const sectionLinks = links.filter((link) => link.section === section);
           if (!sectionLinks.length) return null;
 
@@ -152,7 +174,7 @@ export default function TopNav({ role, email }: { role: Role; email: string }) {
         <div className="app-sidebar-avatar">PE</div>
         <div className="app-sidebar-user-text">
           <b>{email ? email.split('@')[0].replace('.', ' ') : 'Usuario'}</b>
-          <span>{ROLE_LABEL[role]}</span>
+          <span>{displayRoleLabel}</span>
         </div>
       </div>
 
