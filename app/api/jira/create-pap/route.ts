@@ -51,6 +51,28 @@ function clean(value?: string | null) {
   return String(value || '').trim();
 }
 
+function traceValue(formData: any, key: string) {
+  return clean(formData?.traceability?.[key]);
+}
+
+function buildTraceabilityText(formData: any) {
+  const rows = [
+    ['QA', traceValue(formData, 'qaNotes')],
+    ['DBA', traceValue(formData, 'dbaNotes')],
+    ['Seguridad', traceValue(formData, 'securityNotes')],
+    ['Infraestructura / Redes', traceValue(formData, 'infraNotes')],
+    ['Operaciones / Monitoreo', traceValue(formData, 'operationsNotes')],
+    ['Dependencias / restricciones', traceValue(formData, 'dependencyNotes')],
+    ['Evidencias / documentación', traceValue(formData, 'evidenceLinks')],
+  ].filter(([, value]) => value);
+
+  if (!rows.length) return 'No se registró trazabilidad complementaria.';
+  return rows.map(([area, value]) => `${area}:
+${value}`).join('
+
+');
+}
+
 function buildDescriptionText(rdc: any, details: RdcDetails) {
   const formData = details.form_data || {};
   const deploymentPlan = clean(details.deployment_plan) || getFormValue(formData, 'deployment.productionPlan');
@@ -58,6 +80,11 @@ function buildDescriptionText(rdc: any, details: RdcDetails) {
   const mitigationPlan = getFormValue(formData, 'deployment.mitigationPlanCab20');
   const validationPlan = clean(details.validation_plan) || getFormValue(formData, 'deployment.qaPlan');
   const consequences = clean(details.consequence_not_implementing);
+  const successCriteria = getFormValue(formData, 'rdcCore.successCriteria');
+  const papOperationalNotes = getFormValue(formData, 'planning.papOperationalNotes');
+  const traceabilityText = buildTraceabilityText(formData);
+  const rdcUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || ''}/rdc/${rdc.id}`;
+  const papUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || ''}/pap?rdcId=${rdc.id}`;
 
   return [
     'RDC generado desde Release Management Portal',
@@ -91,6 +118,19 @@ function buildDescriptionText(rdc: any, details: RdcDetails) {
     '',
     'Rollback / Mitigación:',
     rollbackPlan || mitigationPlan || 'No informado',
+    '',
+    'Criterios de éxito:',
+    successCriteria || 'No informado',
+    '',
+    'Notas para Plan PAP / ejecución:',
+    papOperationalNotes || 'No informado',
+    '',
+    'Trazabilidad complementaria por área:',
+    traceabilityText,
+    '',
+    'Links Release Portal:',
+    rdcUrl.startsWith('http') ? `RDC: ${rdcUrl}` : 'RDC: URL no configurada',
+    papUrl.startsWith('http') ? `Plan PAP: ${papUrl}` : 'Plan PAP: URL no configurada',
     '',
     'Aprobaciones CAB:',
     ...((rdc.approval_requests || []).map((a: any) => `- ${a.approver_role}: ${a.status}${a.comment ? ` (${a.comment})` : ''}`)),

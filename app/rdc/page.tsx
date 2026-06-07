@@ -86,6 +86,18 @@ export default function RdcLitePage() {
     impact: 'Medio',
     priority: 'Media',
     affectedSystemsText: '',
+    successCriteria: '',
+    implementationSummary: '',
+
+    // Información complementaria / trazabilidad por área.
+    qaNotes: '',
+    dbaNotes: '',
+    securityNotes: '',
+    infraNotes: '',
+    operationsNotes: '',
+    dependencyNotes: '',
+    evidenceLinks: '',
+    papOperationalNotes: '',
 
     // Campos livianos para compatibilidad con backend/detalle.
     deploymentPlan: 'Plan operativo se completará en el módulo Plan PAP una vez aprobado el RDC.',
@@ -145,7 +157,7 @@ export default function RdcLitePage() {
 
   function buildFormData() {
     return {
-      version: 'rdc_lite_1_0',
+      version: 'rdc_core_traceability_1_0',
       mode: 'lite',
       classification: {
         changeType: form.changeType,
@@ -164,8 +176,20 @@ export default function RdcLitePage() {
         cell: form.cell,
         text: form.affectedSystemsText || `${form.system}${form.cell ? `, ${form.cell}` : ''}`,
       },
+      rdcCore: {
+        summary: form.description,
+        requirementDescription: form.requirementDescription,
+        implementedSolution: form.implementedSolution,
+        affectedServices: form.affectedServices,
+        affectedUsers: form.affectedUsers,
+        consequenceNotImplementing: form.consequenceNotImplementing,
+        implementationSummary: form.implementationSummary,
+        validationPlan: form.validationPlan,
+        successCriteria: form.successCriteria,
+      },
       planning: {
         papModuleRequired: true,
+        papOperationalNotes: form.papOperationalNotes,
         note: 'Los pasos operativos, horarios, evidencias y checklist de despliegue se completan en el módulo Plan PAP después de la aprobación CAB.',
       },
       preRequirements: {
@@ -179,6 +203,32 @@ export default function RdcLitePage() {
         productionPlan: form.deploymentPlan,
         rollback: form.rollbackPlan,
         mitigationPlanCab20: form.mitigationPlan,
+      },
+      traceability: {
+        qaNotes: form.qaNotes,
+        dbaNotes: form.dbaNotes,
+        securityNotes: form.securityNotes,
+        infraNotes: form.infraNotes,
+        operationsNotes: form.operationsNotes,
+        dependencyNotes: form.dependencyNotes,
+        evidenceLinks: form.evidenceLinks,
+      },
+      jiraPapPayload: {
+        title: form.title,
+        system: form.system,
+        cell: form.cell,
+        category: form.category,
+        changeType: form.changeType,
+        urgency: form.urgency,
+        impact: form.impact,
+        priority: form.priority,
+        proposedDeployDate: form.proposedDeployDate,
+        environment: form.environment,
+        technicalLead: form.technicalLead,
+        validationPlan: form.validationPlan,
+        rollbackPlan: form.rollbackPlan,
+        successCriteria: form.successCriteria,
+        papOperationalNotes: form.papOperationalNotes,
       },
       pimComponents: [],
     };
@@ -361,6 +411,12 @@ export default function RdcLitePage() {
                   <Field label="Consecuencia si no se implementa">
                     <textarea value={form.consequenceNotImplementing} onChange={(e) => update('consequenceNotImplementing', e.target.value)} rows={3} placeholder="Riesgo o impacto de no realizar el cambio." />
                   </Field>
+                  <Field label="Resumen de implementación">
+                    <textarea value={form.implementationSummary} onChange={(e) => update('implementationSummary', e.target.value)} rows={3} placeholder="Resumen ejecutivo de cómo se implementará. El detalle operativo queda para Plan PAP." />
+                  </Field>
+                  <Field label="Criterios de éxito">
+                    <textarea value={form.successCriteria} onChange={(e) => update('successCriteria', e.target.value)} rows={3} placeholder="Qué debe ocurrir para considerar exitoso el cambio." />
+                  </Field>
                 </Block>
 
                 <Block title="4. Clasificación y riesgo">
@@ -395,6 +451,34 @@ export default function RdcLitePage() {
                     <textarea value={form.affectedSystemsText} onChange={(e) => update('affectedSystemsText', e.target.value)} rows={3} placeholder="Ej: POS, TMS Cloud, SmartVista. Detalle fino se completa en Plan PAP." />
                   </Field>
                 </Block>
+
+                <Block title="6. Información complementaria por área">
+                  <div className="traceIntro">
+                    <b>Esto no reemplaza el RDC principal</b>
+                    <span>Estos datos quedan guardados como trazabilidad operacional para QA, DBA, Seguridad, Infraestructura y Operaciones. También viajan como contexto al PAP/Jira cuando corresponda.</span>
+                  </div>
+                  <Field label="Notas QA / pruebas">
+                    <textarea value={form.qaNotes} onChange={(e) => update('qaNotes', e.target.value)} rows={3} placeholder="Precondiciones, pruebas relevantes, regresión, casos críticos." />
+                  </Field>
+                  <Field label="Notas DBA">
+                    <textarea value={form.dbaNotes} onChange={(e) => update('dbaNotes', e.target.value)} rows={3} placeholder="Scripts, objetos, validaciones, ventanas, rollback DBA." />
+                  </Field>
+                  <Field label="Notas Seguridad">
+                    <textarea value={form.securityNotes} onChange={(e) => update('securityNotes', e.target.value)} rows={3} placeholder="Riesgos, permisos, accesos, consideraciones de seguridad." />
+                  </Field>
+                  <Field label="Notas Infraestructura / Redes">
+                    <textarea value={form.infraNotes} onChange={(e) => update('infraNotes', e.target.value)} rows={3} placeholder="Balanceadores, DNS, redes, servidores, recursos o conectividad." />
+                  </Field>
+                  <Field label="Notas Operaciones / Monitoreo">
+                    <textarea value={form.operationsNotes} onChange={(e) => update('operationsNotes', e.target.value)} rows={3} placeholder="Monitoreo, alertas, validación post-deploy, cuadraturas." />
+                  </Field>
+                  <Field label="Dependencias / restricciones">
+                    <textarea value={form.dependencyNotes} onChange={(e) => update('dependencyNotes', e.target.value)} rows={3} placeholder="Dependencias con otros cambios, equipos, ventanas o aprobaciones." />
+                  </Field>
+                  <Field label="Links de evidencia o documentación">
+                    <textarea value={form.evidenceLinks} onChange={(e) => update('evidenceLinks', e.target.value)} rows={3} placeholder="Jira, Confluence, evidencias, bitácoras, documentos, URLs relevantes." />
+                  </Field>
+                </Block>
               </>
             )}
 
@@ -413,6 +497,9 @@ export default function RdcLitePage() {
                   </Field>
                   <Field label="RDC dependiente">
                     <input value={form.dependentRdc} onChange={(e) => update('dependentRdc', e.target.value)} placeholder="No aplica / RDC relacionado" />
+                  </Field>
+                  <Field label="Notas para Plan PAP / Jira">
+                    <textarea value={form.papOperationalNotes} onChange={(e) => update('papOperationalNotes', e.target.value)} rows={3} placeholder="Contexto que Release debe considerar al armar los pasos a producción." />
                   </Field>
                 </Block>
 
@@ -464,6 +551,16 @@ export default function RdcLitePage() {
                   <div className="papCallout">
                     <b>Después de aprobar CAB</b>
                     <span>El detalle operativo del despliegue se generará en el módulo <b>Plan PAP</b>: actividades, responsables, horarios, estados y evidencias.</span>
+                  </div>
+
+                  <div className="traceReview">
+                    <h3>Información complementaria que queda como trazabilidad</h3>
+                    <div>
+                      <span>QA</span><b>{form.qaNotes ? 'Con notas' : 'Sin notas'}</b>
+                      <span>DBA</span><b>{form.dbaNotes ? 'Con notas' : 'Sin notas'}</b>
+                      <span>Seguridad</span><b>{form.securityNotes ? 'Con notas' : 'Sin notas'}</b>
+                      <span>Infra / Operaciones</span><b>{form.infraNotes || form.operationsNotes ? 'Con notas' : 'Sin notas'}</b>
+                    </div>
                   </div>
 
                   <div className="selectedApprovers">
@@ -539,6 +636,15 @@ export default function RdcLitePage() {
         .rdcLite .reviewGrid b, .rdcLite .reviewGrid span { display: block; }
         .rdcLite .reviewGrid b { color: var(--ink-soft); font-size: 12px; margin-bottom: 6px; }
         .rdcLite .reviewGrid span { color: var(--navy-d); font-weight: 800; }
+        .rdcLite .traceIntro { grid-column: 1 / -1; background: #fff; border: 1px solid #d9e7ef; border-radius: 14px; padding: 14px; display: grid; gap: 4px; }
+        .rdcLite .traceIntro b { color: var(--navy-d); }
+        .rdcLite .traceIntro span { color: var(--ink-soft); line-height: 1.45; }
+        .rdcLite .traceReview { margin: 14px 0; background: #fff; border: 1px solid #d9e7ef; border-radius: 14px; padding: 14px; }
+        .rdcLite .traceReview h3 { margin: 0 0 10px; color: var(--navy-d); }
+        .rdcLite .traceReview div { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .rdcLite .traceReview span, .rdcLite .traceReview b { display: block; }
+        .rdcLite .traceReview span { color: var(--ink-soft); font-size: 12px; font-weight: 900; }
+        .rdcLite .traceReview b { color: var(--navy-d); font-size: 13px; }
         .rdcLite .selectedApprovers h3 { margin: 16px 0 8px; color: var(--navy-d); }
         .rdcLite .selectedApprovers div { display: flex; flex-wrap: wrap; gap: 8px; }
         .rdcLite .selectedApprovers span { background: #ecf7ff; color: #02568c; border-radius: 999px; padding: 8px 11px; font-weight: 900; font-size: 12px; }
@@ -563,7 +669,7 @@ export default function RdcLitePage() {
         .rdcLite .doneActions .primary { background: var(--green); color: #fff; padding: 13px 20px; border-radius: 999px; font-weight: 900; }
         @media (max-width: 960px) { .rdcLite .stepper { grid-template-columns: repeat(2, 1fr); } .rdcLite .reviewGrid { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 760px) {
-          .rdcLite .stepper, .rdcLite .fields, .rdcLite .checks, .rdcLite .approvalRoles, .rdcLite .reviewGrid { grid-template-columns: 1fr; }
+          .rdcLite .stepper, .rdcLite .fields, .rdcLite .checks, .rdcLite .approvalRoles, .rdcLite .reviewGrid, .rdcLite .traceReview div { grid-template-columns: 1fr; }
           .rdcLite .wizNav, .rdcLite .reviewHead { flex-wrap: wrap; flex-direction: column; align-items: flex-start; }
           .rdcLite .wizNav button { width: 100%; }
         }

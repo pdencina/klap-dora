@@ -6,6 +6,67 @@ export const dynamic = 'force-dynamic';
 
 const DEFAULT_APPROVERS = ['Dueño Cambio', 'QA', 'DBA', 'Deployment'];
 
+function clean(value: any) {
+  return String(value || '').trim();
+}
+
+function traceabilityRows(rdcId: string, body: any, userEmail?: string | null) {
+  const items = [
+    { type: 'QA_NOTE', area: 'QA', title: 'Notas QA / pruebas', description: body?.qaNotes },
+    { type: 'DBA_NOTE', area: 'DBA', title: 'Notas DBA', description: body?.dbaNotes },
+    { type: 'SECURITY_NOTE', area: 'Seguridad', title: 'Notas Seguridad', description: body?.securityNotes },
+    { type: 'INFRA_NOTE', area: 'Infraestructura / Redes', title: 'Notas Infraestructura / Redes', description: body?.infraNotes },
+    { type: 'OPERATIONS_NOTE', area: 'Operaciones', title: 'Notas Operaciones / Monitoreo', description: body?.operationsNotes },
+    { type: 'DEPENDENCY', area: 'Release', title: 'Dependencias / restricciones', description: body?.dependencyNotes },
+    { type: 'PAP_CONTEXT', area: 'Release', title: 'Notas para Plan PAP / Jira', description: body?.papOperationalNotes },
+  ];
+
+  return items
+    .map((item) => ({
+      rdc_id: rdcId,
+      type: item.type,
+      area: item.area,
+      title: item.title,
+      description: clean(item.description),
+      created_by: userEmail || 'Portal Release',
+    }))
+    .filter((item) => item.description);
+}
+
+function evidenceRows(rdcId: string, body: any, userEmail?: string | null) {
+  return clean(body?.evidenceLinks)
+    .split(/\n|,|;/)
+    .map((url: string) => url.trim())
+    .filter(Boolean)
+    .map((url: string) => ({
+      rdc_id: rdcId,
+      source: 'RDC_FORM',
+      title: 'Evidencia / documentación complementaria',
+      url,
+      evidence_type: 'URL',
+      created_by: userEmail || 'Portal Release',
+    }));
+}
+
+async function insertTraceabilitySafely(supabase: any, rdcId: string, body: any, userEmail?: string | null) {
+  const traceRows = traceabilityRows(rdcId, body, userEmail);
+  const evidence = evidenceRows(rdcId, body, userEmail);
+  const warnings: string[] = [];
+
+  if (traceRows.length) {
+    const { error } = await supabase.from('rdc_traceability').insert(traceRows);
+    if (error) warnings.push(`rdc_traceability: ${error.message}`);
+  }
+
+  if (evidence.length) {
+    const { error } = await supabase.from('rdc_evidence').insert(evidence);
+    if (error) warnings.push(`rdc_evidence: ${error.message}`);
+  }
+
+  return warnings;
+}
+
+
 export async function POST(req: Request) {
   try {
     const { user, deny } = await requireUser();
@@ -59,9 +120,9 @@ export async function POST(req: Request) {
       affected_services: String(body?.affectedServices || '').trim(),
       affected_users: String(body?.affectedUsers || '').trim(),
       consequence_not_implementing: String(body?.consequenceNotImplementing || '').trim(),
-      validation_plan: String(body?.validationPlan || '').trim(),
-      deployment_plan: String(body?.deploymentPlan || '').trim(),
-      rollback_plan: String(body?.rollbackPlan || '').trim(),
+      validation_plan: clean(body?.validationPlan),
+      deployment_plan: clean(body?.implementationSummary) || clean(body?.deploymentPlan),
+      rollback_plan: clean(body?.rollbackPlan),
       impact: String(body?.impact || '').trim(),
       priority: String(body?.priority || '').trim(),
       requires_dba: Boolean(body?.requiresDba),
@@ -83,6 +144,10 @@ export async function POST(req: Request) {
       await supabase.from('rdc').delete().eq('id', rdc.id);
       return NextResponse.json({ ok: false, error: detailsError.message }, { status: 500 });
     }
+
+    // La información complementaria queda en BD si las tablas existen.
+    // Si aún no se ejecutó la migración, no bloquea la creación del RDC porque también queda respaldada en rdc_details.form_data.
+    const traceabilityWarnings = await insertTraceabilitySafely(supabase, rdc.id, body, user?.email);
 
     const selectedApprovalRoles: string[] =
       Array.isArray(body?.selectedApprovalRoles) && body.selectedApprovalRoles.length > 0
@@ -129,7 +194,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: approvalsError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true, rdc, details, approvals });
+    return NextResponse.json({ ok: true, rdc, details, approvals, traceabilityWarnings });
   } catch (error: any) {
     return NextResponse.json(
       { ok: false, error: error?.message || 'Error creando RDC' },
