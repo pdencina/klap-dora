@@ -806,7 +806,7 @@ const [changes, setChanges] = useState<Change[]>([]);
         </section>
       ) : null}
 
-      {confirmOpen ? (
+      {confirmOpen && selected ? (
                   <div className="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
                     <div className="confirmModal">
                       <div className="modalIcon">⚙</div>
@@ -884,14 +884,6 @@ const [changes, setChanges] = useState<Change[]>([]);
                     </div>
                   </div>
                 ) : null}
-              </>
-            ) : (
-              <div className="state">Selecciona un cambio para ver su ejecución.</div>
-            )}
-          </section>
-        </section>
-      ) : null}
-
       <style jsx global>{`
         .deploy { max-width: 1360px; margin: 0 auto; padding: 32px 5vw 64px; }
         .head { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:24px; }
