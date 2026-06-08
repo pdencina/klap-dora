@@ -2372,6 +2372,91 @@ const [changes, setChanges] = useState<Change[]>([]);
         }
 
 
+        /* Deploy Center overflow + spacing fix */
+        .deployShell,
+        .deployShell .deploy,
+        .layout,
+        .content,
+        .queue,
+        .head,
+        .heroCard,
+        .summaryGrid,
+        .pipelineCard,
+        .conditionsCard,
+        .runs,
+        .run,
+        .environmentPipeline,
+        .environmentStageFlow {
+          min-width:0 !important;
+          box-sizing:border-box !important;
+        }
+
+        .deployShell {
+          overflow-x:hidden !important;
+        }
+
+        .deployShell .deploy {
+          width:auto !important;
+          max-width:none !important;
+          margin-left:280px !important;
+          padding:24px clamp(18px, 2.2vw, 30px) 56px !important;
+          overflow-x:hidden !important;
+        }
+
+        .deployShell.sidebarCollapsed .deploy {
+          width:auto !important;
+          margin-left:86px !important;
+        }
+
+        .layout {
+          grid-template-columns:minmax(290px, 320px) minmax(0, 1fr) !important;
+          gap:18px !important;
+        }
+
+        .queue {
+          overflow:hidden !important;
+        }
+
+        .queueList {
+          display:grid !important;
+          grid-template-columns:1fr !important;
+          gap:12px !important;
+        }
+
+        .queueItem {
+          width:100% !important;
+          min-width:0 !important;
+        }
+
+        .heroCard,
+        .pipelineCard,
+        .conditionsCard,
+        .runs,
+        .queue,
+        .content > section {
+          width:100% !important;
+        }
+
+        @media (max-width: 1280px) {
+          .deployShell .deploy {
+            padding:22px 20px 52px !important;
+          }
+
+          .layout {
+            grid-template-columns:1fr !important;
+          }
+        }
+
+        @media (max-width: 720px) {
+          .deployShell .deploy,
+          .deployShell.sidebarCollapsed .deploy {
+            margin-left:0 !important;
+            width:100% !important;
+            padding:18px 14px 42px !important;
+          }
+        }
+
+
       `}</style>
       </main>
     </div>
