@@ -101,6 +101,48 @@ function isRdcApproved(change?: Change | null) {
   return total > 0 && approvedCount(change) === total;
 }
 
+function normalizeEnvironment(value?: string | null) {
+  const raw = String(value || '').trim().toLowerCase();
+
+  if (raw.includes('prod') || raw.includes('producción') || raw.includes('produccion')) return 'PROD';
+  if (raw.includes('qa') || raw.includes('test') || raw.includes('cert')) return 'QA';
+  if (raw.includes('dev') || raw.includes('desarrollo')) return 'DEV';
+
+  return 'PROD';
+}
+
+function latestRunForEnv(change: Change | null, env: string) {
+  const normalizedEnv = normalizeEnvironment(env);
+  return [...(change?.deployment_runs || [])]
+    .filter((run) => normalizeEnvironment(run.environment) === normalizedEnv)
+    .sort((a, b) => new Date(b.triggered_at || 0).getTime() - new Date(a.triggered_at || 0).getTime())[0];
+}
+
+function stageStatusForEnv(change: Change | null, env: string, selectedEnv: string, canExecute: boolean) {
+  const run = latestRunForEnv(change, env);
+  const selectedStage = normalizeEnvironment(selectedEnv);
+  const stage = normalizeEnvironment(env);
+
+  if (run?.status === 'RUNNING' || run?.status === 'QUEUED') return 'running';
+  if (run?.status === 'SUCCESS') return 'success';
+  if (run?.status === 'FAILURE' || run?.status === 'FAILED_TO_TRIGGER' || run?.status === 'ABORTED') return 'failed';
+  if (stage === selectedStage && canExecute) return 'ready';
+
+  return 'pending';
+}
+
+function stageStatusLabel(status: string) {
+  if (status === 'success') return 'Completado';
+  if (status === 'running') return 'En ejecución';
+  if (status === 'failed') return 'Fallido';
+  if (status === 'ready') return 'Listo';
+  return 'Pendiente';
+}
+
+function stageClass(status: string) {
+  return `envStage ${status}`;
+}
+
 function isPapReady(change?: Change | null) {
   if (!change) return false;
   const steps = change.pap_steps || [];
@@ -162,6 +204,7 @@ function getPipelineUrlFromBuildUrl(buildUrl?: string | null) {
 
 export default function DeployCenterPage() {
   
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 const [changes, setChanges] = useState<Change[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [jobs, setJobs] = useState<JenkinsJob[]>([]);
@@ -192,6 +235,22 @@ const [changes, setChanges] = useState<Change[]>([]);
   const rdcExecutable = Boolean(selected && ['APROBADO_PARA_EJECUCION', 'PAP_CREADO', 'EN_IMPLEMENTACION'].includes(selected.status));
 
   const canExecute = Boolean(cabReady && papReady && roleReady && jobReady && rdcExecutable);
+  const environmentStages = useMemo(() => {
+    return ['DEV', 'QA', 'PROD'].map((stage) => {
+      const run = latestRunForEnv(selected, stage);
+      const status = stageStatusForEnv(selected, stage, environment, canExecute);
+
+      return {
+        key: stage,
+        title: stage,
+        subtitle: stage === 'DEV' ? 'Desarrollo' : stage === 'QA' ? 'Validación' : 'Producción',
+        status,
+        run,
+        jobs: run ? 1 : stage === normalizeEnvironment(environment) ? 1 : 0,
+        tasks: stage === normalizeEnvironment(environment) ? 2 : run ? 2 : 0,
+      };
+    });
+  }, [selected, environment, canExecute]);
   const papSteps = selected?.pap_steps || [];
   const papPercent = papSteps.length ? Math.round((completedPap(selected) / papSteps.length) * 100) : 0;
 
@@ -406,7 +465,50 @@ const [changes, setChanges] = useState<Change[]>([]);
   }
 
   return (
-    <main className="deploy">
+    <div className={sidebarCollapsed ? 'deployShell sidebarCollapsed' : 'deployShell'}>
+
+      <aside className={sidebarCollapsed ? 'deploySidebar collapsed' : 'deploySidebar'}>
+        <div className="sidebarTop">
+          <button
+            className="hamburgerBtn"
+            type="button"
+            aria-label="Abrir o cerrar menú"
+            onClick={() => setSidebarCollapsed((value) => !value)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+
+          <a className="sidebarBrand" href="/">
+            <strong>klap</strong>
+            <span>RELEASE</span>
+          </a>
+        </div>
+
+        <nav className="sidebarNav" aria-label="Navegación principal">
+          <a href="/" className="sidebarLink"><span>⌂</span><b>Inicio</b></a>
+          <a href="/rdc" className="sidebarLink"><span>＋</span><b>Nuevo RDC</b></a>
+          <a href="/mis-cambios" className="sidebarLink"><span>◇</span><b>Mis Cambios</b></a>
+          <a href="/release" className="sidebarLink"><span>○</span><b>Release</b></a>
+          <a href="/aprobaciones" className="sidebarLink"><span>✓</span><b>Aprobaciones</b></a>
+          <a href="/cab" className="sidebarLink"><span>▣</span><b>Agenda CAB</b></a>
+          <a href="/pap" className="sidebarLink"><span>□</span><b>Plan PAP</b></a>
+          <a href="/deploy" className="sidebarLink active"><span>↗</span><b>Deploy Center</b></a>
+          <a href="/cierre" className="sidebarLink"><span>⚑</span><b>Cierre</b></a>
+          <a href="/dashboard" className="sidebarLink"><span>⌁</span><b>Dashboard DORA</b></a>
+        </nav>
+
+        <div className="sidebarUser">
+          <div className="avatar">PE</div>
+          <div>
+            <b>Pablo Encina</b>
+            <span>Release Manager</span>
+          </div>
+        </div>
+      </aside>
+
+      <main className="deploy">
       <header className="head">
         <div>
           <p className="kicker">RELEASE EXECUTION</p>
@@ -556,6 +658,41 @@ const [changes, setChanges] = useState<Change[]>([]);
                     </div>
                   </div>
 
+                  <div className="environmentPipeline" aria-label="Flujo de ambientes Jenkins">
+                    <div className="environmentPipelineHead">
+                      <div>
+                        <p className="kicker">Flujo por ambiente</p>
+                        <h4>DEV → QA → PROD</h4>
+                      </div>
+                      <span>{normalizeEnvironment(environment)} seleccionado</span>
+                    </div>
+
+                    <div className="environmentStageFlow">
+                      {environmentStages.map((stage, index) => (
+                        <div className="envStageWrap" key={stage.key}>
+                          <article className={stageClass(stage.status)}>
+                            <div className="envStageTopLine" />
+                            <div className="envStageIcon" aria-hidden="true">
+                              {stage.status === 'success' ? '✓' : stage.status === 'failed' ? '!' : stage.status === 'running' ? '…' : '↯'}
+                            </div>
+                            <div className="envStageBody">
+                              <b>{stage.title}</b>
+                              <small>{stage.jobs} job, {stage.tasks} tasks</small>
+                              <span>{stageStatusLabel(stage.status)}</span>
+                            </div>
+                            {stage.run?.build_url ? (
+                              <a className="envStageOpen" href={stage.run.build_url} target="_blank" rel="noreferrer" aria-label={`Abrir build ${stage.title}`}>
+                                ↗
+                              </a>
+                            ) : null}
+                          </article>
+
+                          {index < environmentStages.length - 1 ? <div className="envStageConnector" /> : null}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                   {jobsWarning ? <div className="jobsWarning">{jobsWarning}</div> : null}
 
                   <div className="deployForm">
@@ -576,6 +713,7 @@ const [changes, setChanges] = useState<Change[]>([]);
                       <select value={environment} onChange={(e) => setEnvironment(e.target.value)}>
                         <option>Producción</option>
                         <option>QA</option>
+                        <option>DEV</option>
                         <option>Staging</option>
                       </select>
                     </label>
@@ -749,7 +887,7 @@ const [changes, setChanges] = useState<Change[]>([]);
         </section>
       ) : null}
 
-      <style jsx>{`
+      <style jsx global>{`
         .deploy { max-width: 1360px; margin: 0 auto; padding: 32px 5vw 64px; }
         .head { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:24px; }
         .headActions { display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
@@ -1381,9 +1519,515 @@ const [changes, setChanges] = useState<Change[]>([]);
           }
         }
 
+      
+        /* Left hamburger sidebar layout */
+        .deployShell {
+          --sidebar-w: 280px;
+          min-height:100vh;
+          background:#f4f8fb;
+        }
+
+        .deploySidebar {
+          position:fixed;
+          inset:0 auto 0 0;
+          width:var(--sidebar-w);
+          background:#fff;
+          border-right:1px solid #dfeaf0;
+          box-shadow:12px 0 34px rgba(7,59,93,.04);
+          z-index:50;
+          display:flex;
+          flex-direction:column;
+          padding:18px 14px;
+          transition:width .2s ease;
+        }
+
+        .sidebarTop {
+          display:flex;
+          align-items:center;
+          gap:14px;
+          padding:0 4px 18px;
+          border-bottom:1px solid #edf3f7;
+          margin-bottom:14px;
+        }
+
+        .hamburgerBtn {
+          width:38px;
+          height:38px;
+          border:1px solid #dfeaf0;
+          background:#fff;
+          border-radius:12px;
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          flex-direction:column;
+          gap:4px;
+          flex-shrink:0;
+        }
+
+        .hamburgerBtn span {
+          width:16px;
+          height:2px;
+          background:#073b5d;
+          border-radius:999px;
+          display:block;
+        }
+
+        .sidebarBrand {
+          display:flex;
+          align-items:baseline;
+          gap:8px;
+          white-space:nowrap;
+        }
+
+        .sidebarBrand strong {
+          color:#009f63;
+          font-size:26px;
+          letter-spacing:-.04em;
+          line-height:1;
+        }
+
+        .sidebarBrand span {
+          color:#425d76;
+          font-size:12px;
+          font-weight:900;
+          letter-spacing:.18em;
+        }
+
+        .sidebarNav {
+          display:flex;
+          flex-direction:column;
+          gap:6px;
+          padding:4px 0;
+          flex:1;
+        }
+
+        .sidebarLink {
+          min-height:46px;
+          display:flex;
+          align-items:center;
+          gap:12px;
+          padding:0 14px;
+          border-radius:14px;
+          color:#425d76;
+          font-weight:800;
+          border:1px solid transparent;
+          transition:background .15s ease, color .15s ease, border-color .15s ease;
+        }
+
+        .sidebarLink span {
+          width:22px;
+          height:22px;
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          color:#31516d;
+          font-size:15px;
+          flex-shrink:0;
+        }
+
+        .sidebarLink b {
+          font-size:14px;
+          white-space:nowrap;
+        }
+
+        .sidebarLink:hover {
+          background:#f4f8fb;
+          color:#073b5d;
+        }
+
+        .sidebarLink.active {
+          background:#e8fff3;
+          border-color:#bbf7d0;
+          color:#008f57;
+        }
+
+        .sidebarLink.active span {
+          color:#008f57;
+        }
+
+        .sidebarUser {
+          display:flex;
+          align-items:center;
+          gap:12px;
+          border:1px solid #dfeaf0;
+          border-radius:16px;
+          padding:12px;
+          background:#fff;
+          box-shadow:0 10px 24px rgba(7,59,93,.03);
+        }
+
+        .avatar {
+          width:38px;
+          height:38px;
+          border-radius:999px;
+          background:#00b86b;
+          color:#fff;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          font-size:13px;
+          font-weight:900;
+          flex-shrink:0;
+        }
+
+        .sidebarUser b {
+          display:block;
+          color:#073b5d;
+          font-size:13px;
+          line-height:1.2;
+        }
+
+        .sidebarUser span {
+          display:block;
+          color:#60748a;
+          font-size:12px;
+          margin-top:2px;
+        }
+
+        .deployShell .deploy {
+          margin-left:var(--sidebar-w);
+          width:calc(100% - var(--sidebar-w));
+          max-width:none;
+          padding-left:36px;
+          padding-right:36px;
+          transition:margin-left .2s ease, width .2s ease;
+        }
+
+        .deployShell.sidebarCollapsed {
+          --sidebar-w: 86px;
+        }
+
+        .deployShell.sidebarCollapsed .sidebarBrand span,
+        .deployShell.sidebarCollapsed .sidebarLink b,
+        .deployShell.sidebarCollapsed .sidebarUser div {
+          display:none;
+        }
+
+        .deployShell.sidebarCollapsed .deploySidebar {
+          align-items:center;
+        }
+
+        .deployShell.sidebarCollapsed .sidebarTop {
+          flex-direction:column;
+        }
+
+        .deployShell.sidebarCollapsed .sidebarLink {
+          justify-content:center;
+          padding:0;
+          width:52px;
+        }
+
+        .deployShell.sidebarCollapsed .sidebarUser {
+          justify-content:center;
+          padding:10px;
+        }
+
+        @media(max-width:980px){
+          .deployShell {
+            --sidebar-w: 86px;
+          }
+
+          .deploySidebar {
+            align-items:center;
+          }
+
+          .sidebarBrand span,
+          .sidebarLink b,
+          .sidebarUser div {
+            display:none;
+          }
+
+          .sidebarTop {
+            flex-direction:column;
+          }
+
+          .sidebarLink {
+            justify-content:center;
+            padding:0;
+            width:52px;
+          }
+
+          .sidebarUser {
+            justify-content:center;
+            padding:10px;
+          }
+
+          .deployShell .deploy {
+            padding-left:22px;
+            padding-right:22px;
+          }
+        }
+
+        @media(max-width:720px){
+          .deploySidebar {
+            transform:translateX(-100%);
+          }
+
+          .deployShell .deploy {
+            margin-left:0;
+            width:100%;
+          }
+        }
+
+      
+        /* Deploy page shell fix: hide old top menu and force sidebar styling */
+        body:has(.deployShell) > header,
+        body:has(.deployShell) .topbar,
+        body:has(.deployShell) .navbar,
+        body:has(.deployShell) .mainNav,
+        body:has(.deployShell) nav[aria-label="Principal"],
+        body:has(.deployShell) nav[aria-label="principal"],
+        body:has(.deployShell) header:has(a[href="/deploy"]) {
+          display:none !important;
+        }
+
+        body:has(.deployShell) {
+          background:#f4f8fb !important;
+        }
+
+        .deployShell {
+          display:block !important;
+          min-height:100vh !important;
+          background:#f4f8fb !important;
+        }
+
+        .deploySidebar {
+          position:fixed !important;
+          left:0 !important;
+          top:0 !important;
+          bottom:0 !important;
+          width:280px !important;
+          background:#fff !important;
+          border-right:1px solid #dfeaf0 !important;
+          box-shadow:12px 0 34px rgba(7,59,93,.04) !important;
+          z-index:999 !important;
+          display:flex !important;
+          flex-direction:column !important;
+          padding:18px 14px !important;
+        }
+
+        .deployShell.sidebarCollapsed .deploySidebar {
+          width:86px !important;
+        }
+
+        .deployShell .deploy {
+          margin-left:280px !important;
+          width:calc(100% - 280px) !important;
+          max-width:none !important;
+        }
+
+        .deployShell.sidebarCollapsed .deploy {
+          margin-left:86px !important;
+          width:calc(100% - 86px) !important;
+        }
+
+
+        /* Jenkins environment stages: DEV -> QA -> PROD */
+        .environmentPipeline {
+          margin:18px 0 18px;
+          padding:18px;
+          border:1px solid #dfeaf0;
+          border-radius:18px;
+          background:linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%);
+        }
+
+        .environmentPipelineHead {
+          display:flex;
+          align-items:flex-start;
+          justify-content:space-between;
+          gap:16px;
+          margin-bottom:18px;
+        }
+
+        .environmentPipelineHead h4 {
+          margin:3px 0 0;
+          color:var(--navy);
+          font-size:18px;
+          letter-spacing:-.03em;
+        }
+
+        .environmentPipelineHead > span {
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          min-height:32px;
+          padding:7px 12px;
+          border-radius:999px;
+          background:#e8fff3;
+          color:#008f57;
+          font-size:12px;
+          font-weight:900;
+          white-space:nowrap;
+        }
+
+        .environmentStageFlow {
+          display:grid;
+          grid-template-columns:1fr auto 1fr auto 1fr;
+          align-items:center;
+          gap:0;
+        }
+
+        .envStageWrap {
+          display:contents;
+        }
+
+        .envStage {
+          position:relative;
+          min-height:96px;
+          border:1px solid #dfeaf0;
+          border-radius:16px;
+          background:#fff;
+          box-shadow:0 14px 30px rgba(7,59,93,.05);
+          display:grid;
+          grid-template-columns:42px 1fr auto;
+          align-items:center;
+          gap:12px;
+          padding:18px 14px 14px;
+          overflow:hidden;
+        }
+
+        .envStageTopLine {
+          position:absolute;
+          inset:0 0 auto 0;
+          height:4px;
+          background:#c8d8e4;
+        }
+
+        .envStageIcon {
+          width:32px;
+          height:32px;
+          border-radius:999px;
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          background:#f2f7fa;
+          color:#60748a;
+          font-weight:900;
+          border:1px solid #dfeaf0;
+        }
+
+        .envStageBody {
+          display:flex;
+          flex-direction:column;
+          gap:4px;
+          min-width:0;
+        }
+
+        .envStageBody b {
+          color:var(--navy);
+          font-size:16px;
+          letter-spacing:-.02em;
+        }
+
+        .envStageBody small {
+          color:#60748a;
+          font-size:12px;
+          font-weight:800;
+        }
+
+        .envStageBody span {
+          color:#60748a;
+          font-size:11px;
+          font-weight:900;
+          text-transform:uppercase;
+          letter-spacing:.08em;
+        }
+
+        .envStageOpen {
+          width:30px;
+          height:30px;
+          border-radius:999px;
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          border:1px solid #dfeaf0;
+          color:var(--navy);
+          background:#fff;
+          font-weight:900;
+        }
+
+        .envStageConnector {
+          height:2px;
+          width:42px;
+          background:#c8d8e4;
+          justify-self:center;
+        }
+
+        .envStage.ready .envStageTopLine,
+        .envStage.success .envStageTopLine {
+          background:#00b86b;
+        }
+
+        .envStage.ready {
+          border-color:#bbf7d0;
+          background:#fbfffd;
+        }
+
+        .envStage.ready .envStageIcon,
+        .envStage.success .envStageIcon {
+          background:#e8fff3;
+          color:#008f57;
+          border-color:#bbf7d0;
+        }
+
+        .envStage.ready .envStageBody span,
+        .envStage.success .envStageBody span {
+          color:#008f57;
+        }
+
+        .envStage.running .envStageTopLine {
+          background:#2563eb;
+        }
+
+        .envStage.running .envStageIcon {
+          background:#eff6ff;
+          color:#1d4ed8;
+          border-color:#bfdbfe;
+        }
+
+        .envStage.running .envStageBody span {
+          color:#1d4ed8;
+        }
+
+        .envStage.failed .envStageTopLine {
+          background:#dc2626;
+        }
+
+        .envStage.failed .envStageIcon {
+          background:#fff1f2;
+          color:#b91c1c;
+          border-color:#fecdd3;
+        }
+
+        .envStage.failed .envStageBody span {
+          color:#b91c1c;
+        }
+
+        @media(max-width:920px){
+          .environmentStageFlow {
+            grid-template-columns:1fr;
+            gap:10px;
+          }
+
+          .envStageWrap {
+            display:block;
+          }
+
+          .envStageConnector {
+            width:2px;
+            height:22px;
+            margin:0 auto;
+          }
+
+          .environmentPipelineHead {
+            flex-direction:column;
+          }
+        }
+
 
       `}</style>
-    </main>
+      </main>
+    </div>
   );
 }
 
