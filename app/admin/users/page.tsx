@@ -10,6 +10,8 @@ type UserRow = {
   role?: string | null;
   is_active?: boolean;
   source?: string;
+  modulePermissions?: { module_key: string; can_view: boolean }[];
+  actionPermissions?: { permission_key: string; allowed: boolean }[];
 };
 
 const ROLE_OPTIONS: { value: AppRole; label: string; description: string }[] = [
@@ -50,8 +52,24 @@ export default function AdminUsersPage() {
       const response = await fetch(`/api/admin/users?q=${encodeURIComponent(query)}`);
       const data = await response.json().catch(() => null);
       if (!response.ok || !data?.ok) throw new Error(data?.error || 'No fue posible buscar usuarios');
-      setUsers(data.users || []);
-      if (!(data.users || []).length) setStatus('No se encontraron usuarios. Puedes escribir el correo y guardar para crearlo.');
+
+      const resultUsers: UserRow[] = data.users || [];
+      setUsers(resultUsers);
+
+      if (resultUsers.length === 1) {
+        selectUser(resultUsers[0]);
+        return;
+      }
+
+      if (!resultUsers.length) {
+        setSelected(null);
+        setFullName('');
+        setRole('client');
+        setIsActive(true);
+        setModuleKeys(new Set(ROLE_DEFAULT_MODULES.client));
+        setActionKeys(new Set(ROLE_DEFAULT_ACTIONS.client));
+        setStatus('No se encontró en la base. Puedes completar el nombre, rol y guardar para crearlo.');
+      }
     } catch (error: any) {
       setStatus(error?.message || 'Error buscando usuarios');
     } finally {
@@ -61,12 +79,22 @@ export default function AdminUsersPage() {
 
   function selectUser(user: UserRow) {
     const nextRole = normalizeAppRole(user.role);
+
+    const savedModules = Array.isArray(user.modulePermissions)
+      ? user.modulePermissions.filter((item) => item.can_view).map((item) => item.module_key)
+      : [];
+
+    const savedActions = Array.isArray(user.actionPermissions)
+      ? user.actionPermissions.filter((item) => item.allowed).map((item) => item.permission_key)
+      : [];
+
     setSelected(user);
+    setQuery(user.email);
     setRole(nextRole);
     setFullName(user.full_name || '');
     setIsActive(user.is_active !== false);
-    setModuleKeys(new Set(ROLE_DEFAULT_MODULES[nextRole] || []));
-    setActionKeys(new Set(ROLE_DEFAULT_ACTIONS[nextRole] || []));
+    setModuleKeys(new Set(savedModules.length ? savedModules : ROLE_DEFAULT_MODULES[nextRole] || []));
+    setActionKeys(new Set(savedActions.length ? savedActions : ROLE_DEFAULT_ACTIONS[nextRole] || []));
     setStatus('');
   }
 
@@ -96,8 +124,9 @@ export default function AdminUsersPage() {
     try {
       setLoading(true);
       setStatus('');
-      const email = selected?.email || query;
+      const email = String(selected?.email || query || '').trim().toLowerCase();
       if (!email) throw new Error('Selecciona o escribe un correo para guardar permisos.');
+      if (!email.includes('@')) throw new Error('Ingresa un correo válido.');
 
       const response = await fetch('/api/admin/users', {
         method: 'POST',
@@ -115,7 +144,20 @@ export default function AdminUsersPage() {
       const data = await response.json().catch(() => null);
       if (!response.ok || !data?.ok) throw new Error(data?.error || 'No fue posible guardar permisos');
 
-      setSelected(data.user);
+      const updatedUser: UserRow = {
+        ...data.user,
+        modulePermissions: data.modulePermissions || [],
+        actionPermissions: data.actionPermissions || [],
+      };
+
+      setSelected(updatedUser);
+      setQuery(updatedUser.email);
+      setFullName(updatedUser.full_name || '');
+      setUsers((current) => {
+        const without = current.filter((item) => item.email !== updatedUser.email);
+        return [updatedUser, ...without];
+      });
+
       setStatus('Permisos guardados correctamente. El usuario verá el menú actualizado al refrescar o cambiar de página.');
     } catch (error: any) {
       setStatus(error?.message || 'Error guardando permisos');
@@ -166,7 +208,12 @@ export default function AdminUsersPage() {
           <div className="formGrid">
             <label>
               Nombre visible
-              <input value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Nombre Apellido" />
+              <input
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+                placeholder="Nombre Apellido"
+                autoComplete="name"
+              />
             </label>
             <label>
               Rol base
@@ -222,7 +269,7 @@ export default function AdminUsersPage() {
           {status ? <div className={status.includes('correctamente') ? 'status ok' : 'status'}>{status}</div> : null}
 
           <div className="saveBar">
-            <button type="button" onClick={savePermissions} disabled={loading}>{loading ? 'Guardando…' : 'Guardar permisos'}</button>
+            <button type="button" onClick={savePermissions} disabled={loading || (!selected?.email && !query)}>{loading ? 'Guardando…' : 'Guardar permisos'}</button>
           </div>
         </section>
       </section>

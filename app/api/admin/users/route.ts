@@ -10,7 +10,26 @@ function normalizeEmail(value?: string | null) {
 }
 
 function displayNameFromEmail(email: string) {
-  return email.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+  return String(email || '')
+    .split('@')[0]
+    .replace(/[._-]+/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+async function hydrateUsersWithPermissions(supabase: any, users: any[]) {
+  const ids = users.map((user) => user.id).filter(Boolean);
+  if (!ids.length) return users;
+
+  const [{ data: moduleRows }, { data: actionRows }] = await Promise.all([
+    supabase.from('user_module_permissions').select('user_id, module_key, can_view').in('user_id', ids),
+    supabase.from('user_action_permissions').select('user_id, permission_key, allowed').in('user_id', ids),
+  ]);
+
+  return users.map((user) => ({
+    ...user,
+    modulePermissions: (moduleRows || []).filter((row: any) => row.user_id === user.id),
+    actionPermissions: (actionRows || []).filter((row: any) => row.user_id === user.id),
+  }));
 }
 
 async function upsertUserByEmail(supabase: any, payload: any) {
@@ -73,7 +92,8 @@ export async function GET(req: Request) {
     (authUsers || []).forEach((user) => merged.set(user.email, user));
     (appUsers || []).forEach((user: any) => merged.set(user.email, { ...user, source: 'app_users' }));
 
-    return NextResponse.json({ ok: true, users: Array.from(merged.values()) });
+    const users = await hydrateUsersWithPermissions(supabase, Array.from(merged.values()));
+    return NextResponse.json({ ok: true, users });
   } catch (error: any) {
     return NextResponse.json({ ok: false, error: error?.message || 'Error consultando usuarios' }, { status: 500 });
   }
@@ -126,10 +146,22 @@ export async function POST(req: Request) {
       payload: body,
     });
 
+    const { data: savedModulePermissions } = await supabase
+      .from('user_module_permissions')
+      .select('module_key, can_view')
+      .eq('user_id', appUser.id);
+
+    const { data: savedActionPermissions } = await supabase
+      .from('user_action_permissions')
+      .select('permission_key, allowed')
+      .eq('user_id', appUser.id);
+
     const effectiveRole = normalizeAppRole(appUser.role);
     return NextResponse.json({
       ok: true,
       user: appUser,
+      modulePermissions: savedModulePermissions || [],
+      actionPermissions: savedActionPermissions || [],
       defaultModules: modulesForRole(effectiveRole),
       defaultActions: actionsForRole(effectiveRole),
     });
