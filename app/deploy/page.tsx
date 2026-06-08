@@ -2781,6 +2781,356 @@ const [changes, setChanges] = useState<Change[]>([]);
         }
 
 
+        /* Deploy Center final alignment fix (desktop 100% zoom + responsive) */
+        .deploy {
+          max-width:none !important;
+          width:100% !important;
+          padding:24px 28px 60px !important;
+          box-sizing:border-box !important;
+        }
+
+        .head {
+          gap:24px !important;
+          margin-bottom:20px !important;
+        }
+
+        .headActions {
+          flex-shrink:0 !important;
+        }
+
+        .layout {
+          display:grid !important;
+          grid-template-columns:minmax(310px, 360px) minmax(0, 1fr) !important;
+          gap:22px !important;
+          align-items:start !important;
+        }
+
+        .queue {
+          position:sticky !important;
+          top:24px !important;
+          align-self:start !important;
+          padding:22px !important;
+        }
+
+        .queueHead h2 {
+          font-size:clamp(24px, 1.8vw, 34px) !important;
+          line-height:1.06 !important;
+        }
+
+        .queueList {
+          display:grid !important;
+          grid-template-columns:1fr !important;
+          gap:12px !important;
+        }
+
+        .queueItem {
+          min-height:118px !important;
+          padding:18px 18px 16px !important;
+          display:flex !important;
+          flex-direction:column !important;
+          justify-content:center !important;
+          gap:6px !important;
+        }
+
+        .queueItem strong {
+          font-size:14px !important;
+          line-height:1.22 !important;
+        }
+
+        .content {
+          min-width:0 !important;
+          display:grid !important;
+          gap:18px !important;
+        }
+
+        .content > * {
+          min-width:0 !important;
+        }
+
+        .heroCard {
+          display:grid !important;
+          grid-template-columns:minmax(0, 1fr) auto !important;
+          align-items:start !important;
+          gap:20px !important;
+          padding:24px 26px !important;
+        }
+
+        .heroCard h2 {
+          font-size:clamp(30px, 3.2vw, 52px) !important;
+          line-height:1.05 !important;
+          letter-spacing:-.05em !important;
+          max-width:14ch !important;
+          word-break:break-word !important;
+          margin-bottom:10px !important;
+        }
+
+        .heroCard p {
+          max-width:900px !important;
+        }
+
+        .heroActions {
+          align-items:flex-end !important;
+          gap:10px !important;
+        }
+
+        .heroActions a,
+        .readyBadge,
+        .blockedBadge {
+          min-height:44px !important;
+          display:inline-flex !important;
+          align-items:center !important;
+          justify-content:center !important;
+        }
+
+        .summaryGrid {
+          display:grid !important;
+          grid-template-columns:repeat(4, minmax(0, 1fr)) !important;
+          gap:14px !important;
+        }
+
+        .summaryGrid div {
+          min-height:92px !important;
+          padding:18px 20px !important;
+          display:flex !important;
+          flex-direction:column !important;
+          justify-content:center !important;
+        }
+
+        .summaryGrid b {
+          font-size:22px !important;
+          line-height:1.12 !important;
+          letter-spacing:-.03em !important;
+        }
+
+        .conditionsCard,
+        .pipelineCard,
+        .runs {
+          padding:22px !important;
+        }
+
+        .environmentPipeline {
+          margin:18px 0 16px !important;
+          padding:22px !important;
+          border-radius:22px !important;
+          overflow:hidden !important;
+          background:radial-gradient(circle at left top, rgba(0,184,107,.08), transparent 35%), linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%) !important;
+        }
+
+        .environmentPipelineHead {
+          align-items:center !important;
+          gap:16px !important;
+          margin-bottom:22px !important;
+        }
+
+        .environmentPipelineHead h4 {
+          font-size:clamp(22px, 2vw, 32px) !important;
+          line-height:1.08 !important;
+          letter-spacing:-.04em !important;
+        }
+
+        .environmentStageFlow {
+          display:grid !important;
+          grid-template-columns:minmax(0, 1fr) 42px minmax(0, 1fr) 42px minmax(0, 1fr) !important;
+          align-items:stretch !important;
+          gap:0 !important;
+        }
+
+        .envStageWrap {
+          display:contents !important;
+        }
+
+        .envStage {
+          min-width:0 !important;
+          min-height:126px !important;
+          border-radius:20px !important;
+          display:grid !important;
+          grid-template-columns:44px minmax(0, 1fr) 36px !important;
+          align-items:center !important;
+          gap:14px !important;
+          padding:18px 18px 16px !important;
+          box-shadow:0 14px 32px rgba(7,59,93,.05) !important;
+        }
+
+        .envStageBody {
+          min-width:0 !important;
+        }
+
+        .envStageBody b {
+          font-size:18px !important;
+          line-height:1.08 !important;
+          letter-spacing:-.03em !important;
+        }
+
+        .envStageBody small {
+          font-size:12px !important;
+          line-height:1.25 !important;
+        }
+
+        .envStageBody span {
+          font-size:12px !important;
+          line-height:1.2 !important;
+        }
+
+        .envStageConnector {
+          width:42px !important;
+          height:2px !important;
+          align-self:center !important;
+          justify-self:center !important;
+          position:relative !important;
+          background:linear-gradient(90deg, #c8d8e4, #9fb8cc) !important;
+        }
+
+        .envStageConnector::after {
+          content:'' !important;
+          position:absolute !important;
+          right:-1px !important;
+          top:50% !important;
+          width:8px !important;
+          height:8px !important;
+          border-right:2px solid #9fb8cc !important;
+          border-top:2px solid #9fb8cc !important;
+          transform:translateY(-50%) rotate(45deg) !important;
+        }
+
+        .deployForm {
+          display:grid !important;
+          grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+          gap:16px 18px !important;
+        }
+
+        .deployForm label {
+          min-width:0 !important;
+        }
+
+        .deployForm label:nth-child(5) {
+          grid-column:1 / -1 !important;
+        }
+
+        .pipelineCard .primaryAction,
+        .pipelineCard .primaryBtn,
+        .pipelineCard .executeBtn,
+        .pipelineCard button[type="submit"],
+        .pipelineCard button[type="button"].primary {
+          width:100% !important;
+        }
+
+        @media (max-width: 1500px) {
+          .deploy {
+            padding:22px 20px 56px !important;
+          }
+
+          .layout {
+            grid-template-columns:minmax(290px, 340px) minmax(0, 1fr) !important;
+            gap:18px !important;
+          }
+
+          .heroCard h2 {
+            font-size:clamp(28px, 3vw, 46px) !important;
+            max-width:12ch !important;
+          }
+        }
+
+        @media (max-width: 1180px) {
+          .layout {
+            grid-template-columns:1fr !important;
+          }
+
+          .queue {
+            position:relative !important;
+            top:auto !important;
+          }
+
+          .queueList {
+            grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+          }
+
+          .heroCard {
+            grid-template-columns:1fr !important;
+          }
+
+          .heroActions {
+            align-items:flex-start !important;
+            flex-direction:row !important;
+            flex-wrap:wrap !important;
+          }
+        }
+
+        @media (max-width: 920px) {
+          .summaryGrid,
+          .deployForm,
+          .conditions {
+            grid-template-columns:1fr 1fr !important;
+          }
+
+          .environmentStageFlow {
+            grid-template-columns:1fr !important;
+            gap:12px !important;
+          }
+
+          .envStageWrap {
+            display:block !important;
+          }
+
+          .envStageConnector {
+            width:2px !important;
+            height:24px !important;
+            margin:0 auto !important;
+          }
+
+          .envStageConnector::after {
+            right:auto !important;
+            left:50% !important;
+            top:auto !important;
+            bottom:-2px !important;
+            transform:translateX(-50%) rotate(135deg) !important;
+          }
+        }
+
+        @media (max-width: 720px) {
+          .deploy {
+            padding:18px 14px 42px !important;
+          }
+
+          .head {
+            flex-direction:column !important;
+            align-items:flex-start !important;
+          }
+
+          .headActions {
+            width:100% !important;
+          }
+
+          .headActions .ghostBtn {
+            flex:1 1 auto !important;
+          }
+
+          .queueList,
+          .summaryGrid,
+          .deployForm,
+          .conditions {
+            grid-template-columns:1fr !important;
+          }
+
+          .heroCard,
+          .conditionsCard,
+          .pipelineCard,
+          .runs,
+          .queue {
+            padding:18px !important;
+          }
+
+          .heroCard h2 {
+            max-width:none !important;
+            font-size:clamp(28px, 8vw, 40px) !important;
+          }
+
+          .summaryGrid div,
+          .envStage {
+            min-height:auto !important;
+          }
+        }
+
+
       `}</style>
       </main>
     </div>
