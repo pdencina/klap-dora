@@ -2025,6 +2025,198 @@ const [changes, setChanges] = useState<Change[]>([]);
         }
 
 
+        /* Deploy Center spacing + stage layout polish */
+        .deploy {
+          max-width:none !important;
+        }
+
+        .deployShell .deploy {
+          margin-left:280px !important;
+          width:auto !important;
+          min-width:0 !important;
+          padding:26px clamp(18px, 2.8vw, 34px) 64px !important;
+        }
+
+        .deployShell.sidebarCollapsed .deploy {
+          margin-left:86px !important;
+          width:auto !important;
+        }
+
+        .layout {
+          grid-template-columns:minmax(300px, 340px) minmax(0, 1fr) !important;
+          gap:24px !important;
+          align-items:start !important;
+        }
+
+        .content {
+          gap:20px !important;
+        }
+
+        .queue,
+        .content > section,
+        .heroCard,
+        .state,
+        .pipelineCard,
+        .conditionsCard,
+        .runs {
+          border-radius:24px !important;
+        }
+
+        .pipelineCard {
+          padding:24px !important;
+          overflow:hidden !important;
+        }
+
+        .pipelineHead {
+          gap:22px !important;
+          padding-bottom:18px !important;
+          margin-bottom:18px !important;
+        }
+
+        .pipelineHead p {
+          max-width:720px !important;
+        }
+
+        .pipelineHeadActions {
+          min-width:280px !important;
+        }
+
+        .pipelineLink {
+          min-height:42px !important;
+          padding:10px 18px !important;
+        }
+
+        .environmentPipeline {
+          margin:0 0 20px !important;
+          padding:22px !important;
+          border-radius:22px !important;
+        }
+
+        .environmentPipelineHead {
+          margin-bottom:20px !important;
+        }
+
+        .environmentPipelineHead h4 {
+          font-size:22px !important;
+          line-height:1.1 !important;
+        }
+
+        .environmentStageFlow {
+          grid-template-columns:minmax(0, 1fr) 56px minmax(0, 1fr) 56px minmax(0, 1fr) !important;
+          align-items:stretch !important;
+        }
+
+        .envStage {
+          min-height:116px !important;
+          grid-template-columns:44px minmax(0, 1fr) 32px !important;
+          gap:14px !important;
+          padding:20px 16px 16px !important;
+          border-radius:18px !important;
+        }
+
+        .envStageIcon {
+          width:36px !important;
+          height:36px !important;
+          font-size:15px !important;
+        }
+
+        .envStageBody b {
+          font-size:22px !important;
+          line-height:1 !important;
+        }
+
+        .envStageBody small {
+          font-size:12px !important;
+          line-height:1.35 !important;
+        }
+
+        .envStageBody span {
+          font-size:11px !important;
+          line-height:1.2 !important;
+        }
+
+        .envStageOpen {
+          width:32px !important;
+          height:32px !important;
+        }
+
+        .envStageConnector {
+          width:56px !important;
+        }
+
+        .pipelineForm,
+        .deployForm {
+          grid-template-columns:repeat(2, minmax(240px, 1fr)) !important;
+          gap:14px !important;
+        }
+
+        .pipelineForm input,
+        .pipelineForm select,
+        .deployForm input,
+        .deployForm select {
+          min-height:48px !important;
+        }
+
+        .pipelineCard button.primary,
+        .pipelineCard .primary {
+          min-height:52px !important;
+          margin-top:16px !important;
+        }
+
+        @media(max-width:1280px){
+          .environmentStageFlow {
+            grid-template-columns:1fr !important;
+            gap:12px !important;
+          }
+
+          .envStageWrap {
+            display:block !important;
+          }
+
+          .envStageConnector {
+            width:2px !important;
+            height:22px !important;
+            margin:0 auto !important;
+          }
+        }
+
+        @media(max-width:1100px){
+          .layout {
+            grid-template-columns:1fr !important;
+          }
+
+          .deployShell .deploy {
+            padding-left:20px !important;
+            padding-right:20px !important;
+          }
+        }
+
+        @media(max-width:860px){
+          .pipelineHeadActions {
+            min-width:0 !important;
+          }
+
+          .environmentPipeline {
+            padding:18px !important;
+          }
+
+          .environmentPipelineHead {
+            flex-direction:column !important;
+            align-items:flex-start !important;
+          }
+        }
+
+        @media(max-width:720px){
+          .deployShell .deploy,
+          .deployShell.sidebarCollapsed .deploy {
+            margin-left:0 !important;
+            width:100% !important;
+            padding-left:16px !important;
+            padding-right:16px !important;
+          }
+        }
+
+
       `}</style>
       </main>
     </div>
