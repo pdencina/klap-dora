@@ -2217,6 +2217,161 @@ const [changes, setChanges] = useState<Change[]>([]);
         }
 
 
+        /* Deploy Center responsive tuning */
+        @media(max-width:1680px){
+          .layout {
+            grid-template-columns:minmax(300px, 330px) minmax(0, 1fr) !important;
+            gap:20px !important;
+          }
+
+          .heroCard h2 {
+            font-size:clamp(34px, 3vw, 52px) !important;
+          }
+        }
+
+        @media(max-width:1440px){
+          .deploy {
+            padding:24px clamp(16px, 2.2vw, 24px) 56px !important;
+          }
+
+          .layout {
+            grid-template-columns:1fr !important;
+          }
+
+          .queue {
+            order:1 !important;
+          }
+
+          .content {
+            order:2 !important;
+          }
+
+          .queueList {
+            grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+          }
+
+          .heroCard {
+            flex-direction:column !important;
+          }
+
+          .heroActions {
+            width:100% !important;
+            flex-direction:row !important;
+            flex-wrap:wrap !important;
+            justify-content:flex-start !important;
+            align-items:center !important;
+          }
+
+          .summaryGrid {
+            grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+          }
+
+          .pipelineHead {
+            flex-direction:column !important;
+            align-items:flex-start !important;
+          }
+
+          .pipelineHeadActions {
+            width:100% !important;
+            align-items:flex-start !important;
+          }
+
+          .stageFlow {
+            flex-wrap:wrap !important;
+          }
+        }
+
+        @media(max-width:1180px){
+          .queueList {
+            grid-template-columns:1fr !important;
+          }
+
+          .deployForm {
+            grid-template-columns:1fr !important;
+          }
+
+          .conditions {
+            grid-template-columns:1fr !important;
+          }
+
+          .environmentStageFlow {
+            grid-template-columns:1fr !important;
+            gap:12px !important;
+          }
+
+          .envStageWrap {
+            display:block !important;
+          }
+
+          .envStageConnector {
+            width:2px !important;
+            height:22px !important;
+            margin:0 auto !important;
+          }
+        }
+
+        @media(max-width:900px){
+          .deploy {
+            padding:18px 14px 44px !important;
+          }
+
+          .head,
+          .heroCard,
+          .pipelineHead,
+          .conditionsHead,
+          .blockReasonBox {
+            flex-direction:column !important;
+            align-items:flex-start !important;
+          }
+
+          .headActions,
+          .heroActions {
+            width:100% !important;
+            justify-content:flex-start !important;
+          }
+
+          .heroActions a,
+          .headActions button,
+          .headActions a,
+          .pipelineLink {
+            width:100% !important;
+            text-align:center !important;
+          }
+
+          .summaryGrid {
+            grid-template-columns:1fr !important;
+          }
+
+          .queue,
+          .heroCard,
+          .pipelineCard,
+          .conditionsCard,
+          .runs,
+          .state {
+            border-radius:20px !important;
+          }
+
+          .run {
+            grid-template-columns:1fr !important;
+          }
+        }
+
+        @media(max-width:640px){
+          .deploy {
+            padding:16px 12px 40px !important;
+          }
+
+          h1 {
+            font-size:clamp(30px, 12vw, 46px) !important;
+          }
+
+          .queueHead h2,
+          .heroCard h2 {
+            font-size:clamp(26px, 8vw, 36px) !important;
+          }
+        }
+
+
       `}</style>
       </main>
     </div>
