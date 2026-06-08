@@ -3131,6 +3131,139 @@ const [changes, setChanges] = useState<Change[]>([]);
         }
 
 
+        /* Fix quirúrgico: Cambio seleccionado + métricas */
+        .heroCard {
+          display:grid !important;
+          grid-template-columns:minmax(0, 1fr) auto !important;
+          align-items:start !important;
+          gap:24px !important;
+          padding:26px 28px !important;
+        }
+
+        .heroCard > div:first-child {
+          min-width:0 !important;
+          max-width:100% !important;
+        }
+
+        .heroCard h2 {
+          max-width:100% !important;
+          width:100% !important;
+          font-size:clamp(30px, 2.7vw, 46px) !important;
+          line-height:1.08 !important;
+          letter-spacing:-.045em !important;
+          word-break:normal !important;
+          overflow-wrap:break-word !important;
+          hyphens:none !important;
+          margin:0 0 12px !important;
+        }
+
+        .heroCard p {
+          font-size:17px !important;
+          line-height:1.35 !important;
+          max-width:100% !important;
+        }
+
+        .heroActions {
+          display:flex !important;
+          flex-direction:row !important;
+          flex-wrap:wrap !important;
+          align-items:flex-start !important;
+          justify-content:flex-end !important;
+          gap:10px !important;
+          min-width:330px !important;
+          max-width:390px !important;
+        }
+
+        .heroActions .readyBadge,
+        .heroActions .blockedBadge,
+        .heroActions a {
+          min-height:44px !important;
+          padding:11px 18px !important;
+          border-radius:999px !important;
+          white-space:nowrap !important;
+          flex:0 0 auto !important;
+        }
+
+        .summaryGrid {
+          display:grid !important;
+          grid-template-columns:repeat(4, minmax(0, 1fr)) !important;
+          gap:14px !important;
+          width:100% !important;
+        }
+
+        .summaryGrid div {
+          min-width:0 !important;
+          min-height:88px !important;
+          padding:18px 20px !important;
+          border-radius:18px !important;
+        }
+
+        .summaryGrid span {
+          font-size:12px !important;
+          line-height:1.15 !important;
+          margin-bottom:8px !important;
+        }
+
+        .summaryGrid b,
+        .summaryGrid strong {
+          display:block !important;
+          font-size:clamp(20px, 1.55vw, 26px) !important;
+          line-height:1.1 !important;
+          letter-spacing:-.03em !important;
+          word-break:normal !important;
+          overflow-wrap:break-word !important;
+          hyphens:none !important;
+        }
+
+        @media(max-width:1380px){
+          .heroCard {
+            grid-template-columns:1fr !important;
+          }
+
+          .heroActions {
+            min-width:0 !important;
+            max-width:100% !important;
+            justify-content:flex-start !important;
+          }
+
+          .heroCard h2 {
+            font-size:clamp(30px, 3.6vw, 44px) !important;
+          }
+        }
+
+        @media(max-width:980px){
+          .summaryGrid {
+            grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+          }
+        }
+
+        @media(max-width:640px){
+          .heroCard {
+            padding:20px !important;
+          }
+
+          .heroCard h2 {
+            font-size:clamp(28px, 8vw, 38px) !important;
+          }
+
+          .heroActions {
+            flex-direction:column !important;
+            align-items:stretch !important;
+          }
+
+          .heroActions .readyBadge,
+          .heroActions .blockedBadge,
+          .heroActions a {
+            width:100% !important;
+            justify-content:center !important;
+          }
+
+          .summaryGrid {
+            grid-template-columns:1fr !important;
+          }
+        }
+
+
       `}</style>
       </main>
     </div>
