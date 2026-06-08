@@ -12,7 +12,7 @@ type NavLink = {
   label: string;
   icon: string;
   rm?: boolean;
-  section?: 'OPERACIÓN' | 'CONTROL' | 'EJECUCIÓN' | 'MÉTRICAS';
+  section?: 'OPERACIÓN' | 'CONTROL' | 'EJECUCIÓN' | 'MÉTRICAS' | 'ADMINISTRACIÓN';
 };
 
 const CLIENT_LINKS: NavLink[] = [
@@ -49,6 +49,8 @@ const RM_LINKS: NavLink[] = [
   { href: '/cierre', label: 'Cierre', icon: '⚑', rm: true, section: 'EJECUCIÓN' },
 
   { href: '/dashboard', label: 'Dashboard DORA', icon: '⌁', rm: true, section: 'MÉTRICAS' },
+
+  { href: '/admin/users', label: 'Usuarios y permisos', icon: '⚙', rm: true, section: 'ADMINISTRACIÓN' },
 ];
 
 const ROLE_LABEL: Record<Role, string> = {
@@ -86,7 +88,7 @@ export default function TopNav({ role, email }: { role: Role; email: string }) {
   const links = role === 'super_admin'
     ? RM_LINKS
     : role === 'rm'
-      ? RM_LINKS
+      ? RM_LINKS.filter((link) => link.section !== 'ADMINISTRACIÓN')
       : role === 'deployment' || isDeploymentApprover
         ? DEPLOYMENT_LINKS
         : role === 'approver'
