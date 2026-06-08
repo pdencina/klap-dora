@@ -3355,6 +3355,409 @@ const [changes, setChanges] = useState<Change[]>([]);
         @media(max-width:680px){ .deploy { padding:18px 14px 44px !important; } .queueList { grid-template-columns:1fr; } .mockHeader h1 { font-size:40px; } .stageInspector dl div { grid-template-columns:1fr; gap:4px; } }
 
 
+        /* Pipeline View polish: balance, compact title and desktop 100% alignment */
+        .mockLayout {
+          grid-template-columns:minmax(270px, 310px) minmax(0, 1fr) !important;
+          gap:18px !important;
+        }
+
+        .mockQueue {
+          padding:20px !important;
+        }
+
+        .mockQueue .queueHead h2 {
+          font-size:clamp(22px, 1.7vw, 30px) !important;
+          line-height:1.08 !important;
+        }
+
+        .mockQueue .queueItem {
+          min-height:104px !important;
+          padding:15px 16px !important;
+          border-radius:16px !important;
+        }
+
+        .mockQueue .queueItem strong {
+          font-size:13.5px !important;
+          line-height:1.22 !important;
+        }
+
+        .mockQueue .queueItem small,
+        .mockQueue .queueItem em {
+          font-size:11.5px !important;
+          line-height:1.25 !important;
+        }
+
+        .mockContent {
+          grid-template-columns:minmax(0, 1fr) minmax(280px, 310px) !important;
+          gap:16px !important;
+        }
+
+        .pipelineCanvas {
+          grid-template-columns:minmax(190px, 220px) minmax(0, 1fr) !important;
+          gap:18px !important;
+          padding:20px !important;
+          min-height:auto !important;
+        }
+
+        .artifactColumn {
+          padding-right:18px !important;
+        }
+
+        .artifactColumn h3 {
+          font-size:16px !important;
+          margin-bottom:12px !important;
+        }
+
+        .artifactCard {
+          min-height:92px !important;
+          padding:14px !important;
+          border-radius:12px !important;
+          gap:6px !important;
+        }
+
+        .artifactCard b {
+          font-size:13.5px !important;
+          line-height:1.22 !important;
+          overflow-wrap:anywhere !important;
+        }
+
+        .artifactCard small {
+          font-size:12px !important;
+          line-height:1.25 !important;
+          overflow-wrap:anywhere !important;
+        }
+
+        .artifactSchedule {
+          margin-top:14px !important;
+          font-size:13px !important;
+          line-height:1.25 !important;
+        }
+
+        .pipelineTitleRow {
+          display:grid !important;
+          grid-template-columns:minmax(0, 1fr) auto !important;
+          gap:16px !important;
+          align-items:start !important;
+          margin-bottom:18px !important;
+        }
+
+        .pipelineTitleRow h2 {
+          font-size:clamp(22px, 1.75vw, 30px) !important;
+          line-height:1.08 !important;
+          letter-spacing:-.04em !important;
+          max-width:100% !important;
+          word-break:normal !important;
+          overflow-wrap:break-word !important;
+          margin-bottom:6px !important;
+        }
+
+        .pipelineTitleRow small {
+          font-size:14px !important;
+          line-height:1.25 !important;
+        }
+
+        .pipelineActions {
+          min-width:230px !important;
+          max-width:270px !important;
+          justify-content:flex-end !important;
+          gap:9px !important;
+        }
+
+        .pipelineActions .readyBadge,
+        .pipelineActions .blockedBadge,
+        .pipelineActions a {
+          min-height:38px !important;
+          padding:9px 14px !important;
+          font-size:13px !important;
+          white-space:nowrap !important;
+        }
+
+        .visualPipeline {
+          grid-template-columns:minmax(0, 1fr) 28px minmax(0, 1fr) 28px minmax(0, 1fr) !important;
+          align-items:stretch !important;
+        }
+
+        .mockStage {
+          min-height:150px !important;
+          padding:14px !important;
+          border-radius:14px !important;
+          gap:9px !important;
+        }
+
+        .stageTop {
+          gap:8px !important;
+        }
+
+        .stageTop b {
+          font-size:18px !important;
+          line-height:1.1 !important;
+        }
+
+        .stageNumber,
+        .stageIcon {
+          width:28px !important;
+          height:28px !important;
+          font-size:12px !important;
+        }
+
+        .stagePill {
+          padding:6px 10px !important;
+          font-size:11px !important;
+          border-radius:9px !important;
+        }
+
+        .mockStage small {
+          font-size:11.5px !important;
+          line-height:1.25 !important;
+        }
+
+        .stageFoot {
+          padding-top:9px !important;
+          gap:8px !important;
+          font-size:10.5px !important;
+          line-height:1.2 !important;
+          flex-wrap:wrap !important;
+        }
+
+        .stageConnector {
+          width:28px !important;
+        }
+
+        .stageInspector {
+          padding:22px !important;
+          border-radius:22px !important;
+        }
+
+        .stageInspector h3 {
+          font-size:18px !important;
+          line-height:1.2 !important;
+          margin-bottom:18px !important;
+        }
+
+        .stageInspector dl {
+          gap:12px !important;
+        }
+
+        .stageInspector dl div {
+          grid-template-columns:96px minmax(0, 1fr) !important;
+          gap:10px !important;
+          padding-bottom:10px !important;
+          border-bottom:1px solid #edf3f7 !important;
+        }
+
+        .stageInspector dl div:last-child {
+          border-bottom:0 !important;
+          padding-bottom:0 !important;
+        }
+
+        .stageInspector dt {
+          font-size:12px !important;
+          line-height:1.25 !important;
+        }
+
+        .stageInspector dd {
+          font-size:13px !important;
+          line-height:1.25 !important;
+        }
+
+        .blueAction,
+        .greenAction {
+          min-height:44px !important;
+          border-radius:12px !important;
+          font-size:13px !important;
+        }
+
+        .mockBelowGrid {
+          grid-template-columns:minmax(0, 1fr) minmax(260px, .62fr) !important;
+          gap:16px !important;
+        }
+
+        .traceCard,
+        .repoCard,
+        .pipelineConfigCard,
+        .executionTableCard {
+          padding:20px !important;
+          border-radius:22px !important;
+        }
+
+        .traceFlow {
+          grid-template-columns:repeat(5, minmax(0, 1fr)) !important;
+          gap:10px !important;
+        }
+
+        .traceItemWrap {
+          display:block !important;
+        }
+
+        .traceConnector {
+          display:none !important;
+        }
+
+        .traceItem {
+          min-height:104px !important;
+          padding:12px !important;
+        }
+
+        .traceItem span {
+          width:34px !important;
+          height:34px !important;
+        }
+
+        .traceItem b {
+          font-size:13px !important;
+        }
+
+        .traceItem small {
+          font-size:11px !important;
+          line-height:1.2 !important;
+          overflow-wrap:anywhere !important;
+        }
+
+        .repoTree {
+          gap:8px !important;
+          font-size:13px !important;
+        }
+
+        .configHead {
+          align-items:flex-start !important;
+        }
+
+        .configHead h3 {
+          font-size:20px !important;
+        }
+
+        .deployForm {
+          gap:12px !important;
+        }
+
+        .executionTableCard table {
+          min-width:720px !important;
+        }
+
+        @media(max-width:1500px){
+          .mockContent {
+            grid-template-columns:minmax(0, 1fr) minmax(260px, 290px) !important;
+          }
+
+          .pipelineCanvas {
+            grid-template-columns:190px minmax(0, 1fr) !important;
+          }
+
+          .pipelineTitleRow {
+            grid-template-columns:1fr !important;
+          }
+
+          .pipelineActions {
+            min-width:0 !important;
+            max-width:100% !important;
+            justify-content:flex-start !important;
+          }
+        }
+
+        @media(max-width:1280px){
+          .mockLayout {
+            grid-template-columns:1fr !important;
+          }
+
+          .mockQueue {
+            position:relative !important;
+            top:auto !important;
+          }
+
+          .queueList {
+            grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+          }
+        }
+
+        @media(max-width:1120px){
+          .mockContent {
+            grid-template-columns:1fr !important;
+          }
+
+          .stageInspector {
+            grid-column:1 !important;
+            grid-row:auto !important;
+            position:relative !important;
+            top:auto !important;
+          }
+
+          .pipelineCanvas,
+          .mockBelowGrid {
+            grid-template-columns:1fr !important;
+          }
+
+          .artifactColumn {
+            border-right:0 !important;
+            border-bottom:1px dashed #c8d8e4 !important;
+            padding-right:0 !important;
+            padding-bottom:16px !important;
+          }
+
+          .visualPipeline {
+            grid-template-columns:1fr !important;
+            gap:12px !important;
+          }
+
+          .stageWrap {
+            display:block !important;
+          }
+
+          .stageConnector {
+            width:2px !important;
+            height:22px !important;
+            margin:0 auto !important;
+          }
+
+          .stageConnector::after {
+            right:auto !important;
+            left:50% !important;
+            top:auto !important;
+            bottom:-2px !important;
+            transform:translateX(-50%) rotate(135deg) !important;
+          }
+        }
+
+        @media(max-width:760px){
+          .mockHeader {
+            flex-direction:column !important;
+          }
+
+          .mockSearchArea {
+            width:100% !important;
+            min-width:0 !important;
+            justify-content:flex-start !important;
+          }
+
+          .mockSearch,
+          .mockSearchArea button {
+            width:100% !important;
+          }
+
+          .queueList,
+          .traceFlow,
+          .deployForm {
+            grid-template-columns:1fr !important;
+          }
+
+          .pipelineActions {
+            flex-direction:column !important;
+            align-items:stretch !important;
+          }
+
+          .pipelineActions .readyBadge,
+          .pipelineActions .blockedBadge,
+          .pipelineActions a {
+            width:100% !important;
+            justify-content:center !important;
+          }
+
+          .stageInspector dl div {
+            grid-template-columns:1fr !important;
+            gap:4px !important;
+          }
+        }
+
+
       `}</style>
       </main>
     </div>
