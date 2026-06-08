@@ -3758,6 +3758,227 @@ const [changes, setChanges] = useState<Change[]>([]);
         }
 
 
+        /* Zoom resilience fix: prevents visual pipeline collapse at 80/90/100/110% */
+        .mockLayout,
+        .mockContent,
+        .pipelineCanvas,
+        .stagesColumn,
+        .pipelineTitleRow,
+        .pipelineTitleRow > div,
+        .visualPipeline,
+        .mockStage,
+        .stageInspector,
+        .mockBelowGrid,
+        .traceCard,
+        .repoCard,
+        .pipelineConfigCard,
+        .executionTableCard {
+          min-width:0 !important;
+          max-width:100% !important;
+          box-sizing:border-box !important;
+        }
+
+        .deploy {
+          overflow-x:hidden !important;
+        }
+
+        .mockContent {
+          grid-template-columns:minmax(0, 1fr) minmax(270px, 300px) !important;
+        }
+
+        .pipelineCanvas {
+          grid-template-columns:minmax(180px, 215px) minmax(0, 1fr) !important;
+          overflow:hidden !important;
+        }
+
+        .stagesColumn {
+          overflow:hidden !important;
+        }
+
+        .pipelineTitleRow {
+          grid-template-columns:minmax(0, 1fr) auto !important;
+          overflow:hidden !important;
+        }
+
+        .pipelineTitleRow h2 {
+          display:block !important;
+          width:100% !important;
+          max-width:100% !important;
+          font-size:clamp(20px, 1.55vw, 28px) !important;
+          line-height:1.12 !important;
+          letter-spacing:-.035em !important;
+          word-break:break-word !important;
+          overflow-wrap:anywhere !important;
+          hyphens:auto !important;
+        }
+
+        .pipelineTitleRow small {
+          display:block !important;
+          max-width:100% !important;
+          overflow-wrap:anywhere !important;
+        }
+
+        .pipelineActions {
+          flex-shrink:0 !important;
+        }
+
+        .visualPipeline {
+          grid-template-columns:repeat(3, minmax(150px, 1fr)) !important;
+          gap:14px !important;
+          align-items:stretch !important;
+        }
+
+        .stageWrap {
+          display:block !important;
+          min-width:0 !important;
+        }
+
+        .stageConnector {
+          display:none !important;
+        }
+
+        .mockStage {
+          width:100% !important;
+          min-height:142px !important;
+          overflow:hidden !important;
+        }
+
+        .stageTop {
+          min-width:0 !important;
+        }
+
+        .stageTop b {
+          min-width:0 !important;
+          overflow-wrap:anywhere !important;
+        }
+
+        .stageFoot {
+          display:grid !important;
+          grid-template-columns:1fr !important;
+          gap:4px !important;
+        }
+
+        .stageFoot span {
+          min-width:0 !important;
+          overflow-wrap:anywhere !important;
+        }
+
+        .stageInspector {
+          overflow:hidden !important;
+        }
+
+        .stageInspector dd {
+          overflow-wrap:anywhere !important;
+          word-break:break-word !important;
+        }
+
+        .artifactCard b,
+        .artifactCard small,
+        .repoTree,
+        .traceItem small {
+          overflow-wrap:anywhere !important;
+          word-break:break-word !important;
+        }
+
+        @media(max-width:1600px){
+          .mockContent {
+            grid-template-columns:minmax(0, 1fr) minmax(250px, 280px) !important;
+          }
+
+          .pipelineCanvas {
+            grid-template-columns:minmax(160px, 190px) minmax(0, 1fr) !important;
+            gap:16px !important;
+          }
+
+          .artifactCard {
+            padding:12px !important;
+          }
+
+          .pipelineTitleRow {
+            grid-template-columns:1fr !important;
+          }
+
+          .pipelineActions {
+            min-width:0 !important;
+            max-width:100% !important;
+            justify-content:flex-start !important;
+          }
+        }
+
+        @media(max-width:1450px){
+          .mockContent {
+            grid-template-columns:1fr !important;
+          }
+
+          .stageInspector {
+            grid-column:1 !important;
+            grid-row:auto !important;
+            position:relative !important;
+            top:auto !important;
+          }
+
+          .stageInspector dl {
+            grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+          }
+
+          .stageInspector dl div {
+            grid-template-columns:92px minmax(0, 1fr) !important;
+          }
+
+          .blueAction,
+          .greenAction {
+            max-width:320px !important;
+          }
+        }
+
+        @media(max-width:1280px){
+          .pipelineCanvas {
+            grid-template-columns:1fr !important;
+          }
+
+          .artifactColumn {
+            border-right:0 !important;
+            border-bottom:1px dashed #c8d8e4 !important;
+            padding-right:0 !important;
+            padding-bottom:16px !important;
+          }
+
+          .visualPipeline {
+            grid-template-columns:repeat(3, minmax(130px, 1fr)) !important;
+          }
+
+          .mockStage {
+            min-height:132px !important;
+          }
+        }
+
+        @media(max-width:980px){
+          .visualPipeline {
+            grid-template-columns:1fr !important;
+          }
+
+          .mockStage {
+            min-height:auto !important;
+          }
+
+          .stageInspector dl {
+            grid-template-columns:1fr !important;
+          }
+
+          .blueAction,
+          .greenAction {
+            max-width:none !important;
+          }
+        }
+
+        @media(max-width:760px){
+          .pipelineTitleRow h2 {
+            font-size:clamp(24px, 7vw, 36px) !important;
+            overflow-wrap:break-word !important;
+          }
+        }
+
+
       `}</style>
       </main>
     </div>
