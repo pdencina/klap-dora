@@ -139,6 +139,26 @@ function stageStatusLabel(status: string) {
   return 'Pendiente';
 }
 
+function stageToneLabel(status: string) {
+  if (status === 'success') return 'Completado';
+  if (status === 'running') return 'En validación';
+  if (status === 'failed') return 'Fallido';
+  if (status === 'ready') return 'Listo para ejecutar';
+  return 'Pendiente';
+}
+
+function stageOwner(stage: string) {
+  if (stage === 'DEV') return 'DevOps Team';
+  if (stage === 'QA') return 'QA / Validación';
+  return 'Deployment';
+}
+
+function stageAvatar(stage: string) {
+  if (stage === 'DEV') return 'DV';
+  if (stage === 'QA') return 'QA';
+  return 'DP';
+}
+
 function stageClass(status: string) {
   return `envStage ${status}`;
 }
@@ -210,6 +230,7 @@ const [changes, setChanges] = useState<Change[]>([]);
   const [jobs, setJobs] = useState<JenkinsJob[]>([]);
   const [jobsLoading, setJobsLoading] = useState(false);
   const [jobsWarning, setJobsWarning] = useState('');
+  const [selectedStage, setSelectedStage] = useState<'DEV' | 'QA' | 'PROD'>('PROD');
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
   const [syncingRunId, setSyncingRunId] = useState('');
@@ -251,6 +272,17 @@ const [changes, setChanges] = useState<Change[]>([]);
       };
     });
   }, [selected, environment, canExecute]);
+  const selectedPipelineStage = environmentStages.find((stage) => stage.key === selectedStage) || environmentStages[2] || environmentStages[0];
+  const selectedStageRun = selectedPipelineStage?.run;
+  const pipelineName = jobName || selected?.title || 'ticketing-efe-pipeline';
+  const artifactName = selected?.jira_key || selected?.jira_origin || selected?.title || 'RDC';
+  const traceItems = [
+    { key: 'RDC', label: 'RDC', value: artifactName, ok: Boolean(selected), icon: '▣' },
+    { key: 'CAB', label: 'CAB', value: `${approvedCount(selected)}/${totalApprovals(selected)}`, ok: cabReady, icon: '✓' },
+    { key: 'PAP', label: 'PAP', value: papReady ? 'Completo' : 'Pendiente', ok: papReady, icon: '□' },
+    { key: 'Jenkins', label: 'Jenkins', value: selectedStageRun?.build_number ? `#${selectedStageRun.build_number}` : 'Pendiente', ok: selectedStageRun?.status === 'SUCCESS', icon: '⚙' },
+    { key: 'Cierre', label: 'Cierre', value: selected?.status === 'CERRADO' ? 'Cerrado' : 'Pendiente', ok: selected?.status === 'CERRADO', icon: '⚑' },
+  ];
   const papSteps = selected?.pap_steps || [];
   const papPercent = papSteps.length ? Math.round((completedPap(selected) / papSteps.length) * 100) : 0;
 
@@ -509,26 +541,35 @@ const [changes, setChanges] = useState<Change[]>([]);
       </aside>
 
       <main className="deploy">
-      <header className="head">
+      <header className="mockHeader">
         <div>
           <p className="kicker">RELEASE EXECUTION</p>
           <h1>Deploy Center</h1>
           <p className="sub">
-            Ejecuta y monitorea pipelines Jenkins asociados a cambios aprobados, con controles claros antes de producción.
+            Ejecuta y monitorea pipelines asociados a cambios aprobados, con trazabilidad completa entre RDC, PAP, Jenkins y ambientes.
           </p>
         </div>
-        <div className="headActions">
+
+        <div className="mockSearchArea">
+          <div className="mockSearch">⌕ Buscar...</div>
           <button className="ghostBtn" type="button" onClick={loadJobs}>Actualizar Jobs</button>
           <button className="ghostBtn" type="button" onClick={load}>Actualizar</button>
         </div>
       </header>
 
+      <nav className="deployTabs" aria-label="Vistas del Deploy Center">
+        <button type="button"><span>▦</span> Resumen</button>
+        <button className="active" type="button"><span>⌘</span> Pipeline</button>
+        <button type="button"><span>▶</span> Ejecuciones</button>
+        <button type="button"><span>▰</span> Repositorio</button>
+      </nav>
+
       {loading ? <div className="state">Cargando cambios listos para ejecución…</div> : null}
       {error ? <div className="state error">{error}</div> : null}
 
       {!loading && !error ? (
-        <section className="layout">
-          <aside className="queue">
+        <section className="mockLayout">
+          <aside className="mockQueue">
             <div className="queueHead">
               <h2>Listos para ejecución</h2>
               <span>{changes.length}</span>
@@ -557,148 +598,109 @@ const [changes, setChanges] = useState<Change[]>([]);
             )}
           </aside>
 
-          <section className="content">
+          <section className="mockContent">
             {selected ? (
               <>
-                <div className="heroCard">
-                  <div>
-                    <p className="kicker">Cambio seleccionado</p>
-                    <h2>{selected.title}</h2>
-                    <p>{selected.system || 'Sin sistema'} · {selected.cell || 'Sin célula'} · {selected.category || 'Sin categoría'}</p>
+                <section className="pipelineCanvas">
+                  <div className="artifactColumn">
+                    <h3>Origen / Artefacto</h3>
+                    <article className="artifactCard">
+                      <span className="artifactIcon">▣</span>
+                      <b>{pipelineName}</b>
+                      <small>{branchOrTag || `release/${artifactName}`}</small>
+                    </article>
+                    <p className="artifactSchedule">◷ Schedule<br />not set</p>
                   </div>
 
-                  <div className="heroActions">
-                    <span className={canExecute ? 'readyBadge' : 'blockedBadge'}>{canExecute ? 'Listo para Deploy' : !papReady ? 'Pendiente Plan PAP' : 'No ejecutable todavía'}</span>
-                    <a href={`/pap?rdcId=${selected.id}`}>{papReady ? 'Editar Plan PAP →' : 'Ir a Plan PAP →'}</a>
+                  <div className="stagesColumn">
+                    <div className="pipelineTitleRow">
+                      <div>
+                        <p className="kicker">Pipeline visual</p>
+                        <h2>{selected.title}</h2>
+                        <small>{selected.system || 'Sin sistema'} · {selected.cell || 'Sin célula'} · {selected.category || 'Sin categoría'}</small>
+                      </div>
+                      <div className="pipelineActions">
+                        <span className={canExecute ? 'readyBadge' : 'blockedBadge'}>{canExecute ? 'Listo para Deploy' : !papReady ? 'Pendiente Plan PAP' : 'No ejecutable todavía'}</span>
+                        <a href={`/pap?rdcId=${selected.id}`}>{papReady ? 'Editar Plan PAP →' : 'Ir a Plan PAP →'}</a>
+                      </div>
+                    </div>
+
+                    <div className="visualPipeline">
+                      {environmentStages.map((stage, index) => (
+                        <div className="stageWrap" key={stage.key}>
+                          <button
+                            type="button"
+                            className={`mockStage ${stage.status} ${selectedStage === stage.key ? 'selected' : ''}`}
+                            onClick={() => setSelectedStage(stage.key as 'DEV' | 'QA' | 'PROD')}
+                          >
+                            <div className="stageTop">
+                              <span className="stageNumber">{index + 1}</span>
+                              <b>{stage.title}</b>
+                              <span className="stageIcon">{stage.status === 'success' ? '✓' : stage.status === 'failed' ? '!' : stage.status === 'running' ? '◷' : '▶'}</span>
+                            </div>
+
+                            <span className={`stagePill ${stage.status}`}>{stageToneLabel(stage.status)}</span>
+                            <small>{stage.jobs || 1} job · {stage.tasks || (stage.key === 'PROD' ? 2 : 1)} tasks</small>
+
+                            <div className="stageFoot">
+                              <span>▣ {stage.run?.triggered_at ? new Date(stage.run.triggered_at).toLocaleDateString('es-CL') : 'Pendiente'}</span>
+                              <span>◉ {stageOwner(stage.key)}</span>
+                            </div>
+                          </button>
+
+                          {index < environmentStages.length - 1 ? <div className="stageConnector" /> : null}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                </section>
 
-                <div className="summaryGrid">
-                  <div><span>Aprobaciones CAB</span><b>{approvedCount(selected)}/{totalApprovals(selected)}</b></div>
-                  <div><span>Plan PAP</span><b>{papPercent}%</b></div>
-                  <div><span>Estado RDC</span><b>{humanRdcStatus(selected.status)}</b></div>
-                  <div><span>Última ejecución</span><b>{selectedLastRun ? (STATUS_LABEL[selectedLastRun.status] || selectedLastRun.status) : 'Sin ejecución Jenkins'}</b></div>
-                </div>
-
-                              <section className="conditionsCard">
-                <div className="conditionsHead">
-                  <div>
-                    <small>Control previo</small>
-                    <h3>Condiciones para ejecutar</h3>
-                  </div>
-                  <span className={canExecute ? 'okBadge' : 'reviewBadge'}>{canExecute ? 'Todo listo' : 'Revisión requerida'}</span>
-                </div>
-
-                <div className="controlGrid">
-                  <article className="controlItem">
-                    <div className="controlIcon">✓</div>
-                    <div>
-                      <b>CAB aprobado</b>
-                      <span>{approvedCount(selected)}/{totalApprovals(selected)} áreas aprobadoras listas</span>
+                <section className="mockBelowGrid">
+                  <article className="traceCard">
+                    <h3>Trazabilidad del cambio</h3>
+                    <div className="traceFlow">
+                      {traceItems.map((item, index) => (
+                        <div className="traceItemWrap" key={item.key}>
+                          <div className={item.ok ? 'traceItem ok' : 'traceItem pending'}>
+                            <span>{item.icon}</span>
+                            <b>{item.label}</b>
+                            <small>{item.value}</small>
+                            <em>{item.ok ? '✓' : '○'}</em>
+                          </div>
+                          {index < traceItems.length - 1 ? <div className="traceConnector" /> : null}
+                        </div>
+                      ))}
                     </div>
                   </article>
 
-                  <article className="controlItem">
-                    <div className="controlIcon">▣</div>
-                    <div>
-                      <b>{papReady ? 'Plan PAP completo' : 'Plan PAP pendiente'}</b>
-                      <span>{papReady ? 'Actividades validadas para ejecución' : 'Completa y valida el Plan PAP'}</span>
+                  <article className="repoCard">
+                    <h3>Repositorio asociado</h3>
+                    <div className="repoTree">
+                      <b>⌄ ▰ {pipelineName}</b>
+                      <span>› 📁 pipelines</span>
+                      <span>› 📁 scripts</span>
+                      <span>› 📁 manifests</span>
+                      <span>□ README.md</span>
                     </div>
                   </article>
+                </section>
 
-                  <article className="controlItem">
-                    <div className="controlIcon">⚙</div>
-                    <div>
-                      <b>Job Jenkins configurado</b>
-                      <span>{jobName || 'Sin job asociado'}</span>
-                    </div>
-                  </article>
-
-                  <article className="controlItem">
-                    <div className="controlIcon">◎</div>
-                    <div>
-                      <b>Rol Release Manager</b>
-                      <span>{roleReady ? 'Usuario autorizado para ejecutar' : 'Usuario no autorizado para ejecutar'}</span>
-                    </div>
-                  </article>
-                </div>                {!canExecute ? (
-                  <div className="blockReasonBox">
-                    <div className="blockReasonText">
-                      <b>Revisión requerida</b>
-                      <span>{executionBlockReason()}</span>
-                    </div>
-                    {!papReady ? <a href={`/pap?rdcId=${selected.id}`}>Ir a Plan PAP →</a> : null}
-                  </div>
-                ) : null}
-              </section>
-
-<section className="pipelineCard">
-                  <div className="pipelineHead">
+                <section className="pipelineConfigCard">
+                  <div className="configHead">
                     <div>
                       <p className="kicker">Jenkins Pipeline</p>
                       <h3>Ejecutar despliegue</h3>
                       <p>La ejecución queda asociada al RDC, usuario ejecutor, parámetros y resultado.</p>
                     </div>
-
-                    <div className="pipelineHeadActions">
-                      {pipelineUrl ? (
-                        <a className="pipelineLink" href={pipelineUrl} target="_blank" rel="noreferrer">
-                          Abrir pipeline Jenkins ↗
-                        </a>
-                      ) : null}
-                      <div className="stageFlow">
-                      <span className={cabReady ? 'done' : ''}>CAB</span>
-                      <i />
-                      <span className={papReady ? 'done' : ''}>PAP</span>
-                      <i />
-                      <span className={selectedLastRun ? 'done' : ''}>Jenkins</span>
-                      <i />
-                      <span>Cierre</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="environmentPipeline" aria-label="Flujo de ambientes Jenkins">
-                    <div className="environmentPipelineHead">
-                      <div>
-                        <p className="kicker">Flujo por ambiente</p>
-                        <h4>DEV → QA → PROD</h4>
-                      </div>
-                      <span>{normalizeEnvironment(environment)} seleccionado</span>
-                    </div>
-
-                    <div className="environmentStageFlow">
-                      {environmentStages.map((stage, index) => (
-                        <div className="envStageWrap" key={stage.key}>
-                          <article className={stageClass(stage.status)}>
-                            <div className="envStageTopLine" />
-                            <div className="envStageIcon" aria-hidden="true">
-                              {stage.status === 'success' ? '✓' : stage.status === 'failed' ? '!' : stage.status === 'running' ? '…' : '↯'}
-                            </div>
-                            <div className="envStageBody">
-                              <b>{stage.title}</b>
-                              <small>{stage.jobs} job, {stage.tasks} tasks</small>
-                              <span>{stageStatusLabel(stage.status)}</span>
-                            </div>
-                            {stage.run?.build_url ? (
-                              <a className="envStageOpen" href={stage.run.build_url} target="_blank" rel="noreferrer" aria-label={`Abrir build ${stage.title}`}>
-                                ↗
-                              </a>
-                            ) : null}
-                          </article>
-
-                          {index < environmentStages.length - 1 ? <div className="envStageConnector" /> : null}
-                        </div>
-                      ))}
-                    </div>
+                    {pipelineUrl ? <a className="pipelineLink" href={pipelineUrl} target="_blank" rel="noreferrer">Abrir pipeline Jenkins ↗</a> : null}
                   </div>
 
                   {jobsWarning ? <div className="jobsWarning">{jobsWarning}</div> : null}
 
                   <div className="deployForm">
                     <label>
-                      Job Jenkins
-                      <select value={jobName} onChange={(e) => setJobName(e.target.value)} disabled={jobsLoading && jobs.length === 0}>
+                      <span>Job Jenkins</span>
+                      <select value={jobName} onChange={(e) => setJobName(e.target.value)} disabled={jobsLoading}>
                         <option value="">{jobsLoading ? 'Cargando jobs…' : 'Selecciona job Jenkins'}</option>
                         {jobs.map((job) => (
                           <option key={job.name} value={job.name}>
@@ -708,8 +710,9 @@ const [changes, setChanges] = useState<Change[]>([]);
                         {!jobs.some((job) => job.name === jobName) && jobName ? <option value={jobName}>{jobName}</option> : null}
                       </select>
                     </label>
+
                     <label>
-                      Ambiente
+                      <span>Ambiente</span>
                       <select value={environment} onChange={(e) => setEnvironment(e.target.value)}>
                         <option>Producción</option>
                         <option>QA</option>
@@ -717,91 +720,93 @@ const [changes, setChanges] = useState<Change[]>([]);
                         <option>Staging</option>
                       </select>
                     </label>
+
                     <label>
-                      Versión
+                      <span>Versión</span>
                       <input value={version} onChange={(e) => setVersion(e.target.value)} placeholder="v1.0.0 / PAP-123" />
                     </label>
+
                     <label>
-                      Rama / Tag
+                      <span>Rama / Tag</span>
                       <input value={branchOrTag} onChange={(e) => setBranchOrTag(e.target.value)} placeholder="release/v1.0.0" />
+                    </label>
+
+                    <label>
+                      <span>Job manual, si no aparece en el listado</span>
+                      <input value={jobName} onChange={(e) => setJobName(e.target.value)} placeholder="Nombre exacto del job Jenkins" />
                     </label>
                   </div>
 
-                  <label className="manualJob">
-                    Job manual, si no aparece en el listado
-                    <input value={jobName} onChange={(e) => setJobName(e.target.value)} placeholder="Nombre exacto del job Jenkins" />
-                  </label>
-
                   <button className="primary" type="button" disabled={!canExecute || triggering} onClick={requestPipelineExecution}>
-                    {triggering ? 'Enviando a Jenkins…' : canExecute ? 'Ejecutar Pipeline Jenkins' : 'Valida condiciones antes de ejecutar'}
+                    {triggering ? 'Enviando a Jenkins…' : canExecute ? 'Ejecutar despliegue' : 'Valida condiciones antes de ejecutar'}
                   </button>
-
-                  <p className="helper">Solo disponible para cambios aprobados por CAB, con Plan PAP validado y rol Release Manager.</p>
+                  <p className="deployHint">Solo disponible para cambios aprobados por CAB, con Plan PAP validado y rol autorizado.</p>
                 </section>
 
-                <section className="runs">
-                  <div className="runsHead">
-                    <h3>Historial de ejecución</h3>
-                    <span>{selected.deployment_runs?.length || 0} registros</span>
+                <aside className="stageInspector">
+                  <div className="inspectorInner">
+                    <h3>Detalle del stage: <span>{selectedPipelineStage?.title || 'PROD'}</span></h3>
+                    <dl>
+                      <div><dt>Job Jenkins</dt><dd>{pipelineName}</dd></div>
+                      <div><dt>Ambiente</dt><dd>{normalizeEnvironment(environment) === 'PROD' ? 'Producción' : normalizeEnvironment(environment)}</dd></div>
+                      <div><dt>Versión</dt><dd>{version || 'v1.0.0'}</dd></div>
+                      <div><dt>Rama/Tag</dt><dd>{branchOrTag || 'release/PAP-DEMO-001'}</dd></div>
+                      <div><dt>Última ejecución</dt><dd>{selectedStageRun?.triggered_at ? new Date(selectedStageRun.triggered_at).toLocaleString('es-CL') : '—'}</dd></div>
+                      <div><dt>Responsable</dt><dd><span className="avatarSmall">{stageAvatar(selectedPipelineStage?.key || 'PROD')}</span> {stageOwner(selectedPipelineStage?.key || 'PROD')}</dd></div>
+                    </dl>
+
+                    {pipelineUrl ? <a className="blueAction" href={pipelineUrl} target="_blank" rel="noreferrer">Abrir pipeline Jenkins</a> : null}
+                    <button className="greenAction" type="button" onClick={requestPipelineExecution} disabled={!canExecute || triggering}>▶ Ejecutar despliegue</button>
+                  </div>
+                </aside>
+
+                <section className="executionTableCard">
+                  <div className="tableHead">
+                    <h3>Historial de ejecuciones</h3>
+                    <button type="button" onClick={load}>Ver todas →</button>
                   </div>
 
-                  {(!selected.deployment_runs || selected.deployment_runs.length === 0) ? (
-                    <p className="empty">Aún no hay ejecuciones para este cambio.</p>
-                  ) : (
-                    <div className="runList">
-                      {[...(selected.deployment_runs || [])]
-                        .sort((a, b) => new Date(b.triggered_at || 0).getTime() - new Date(a.triggered_at || 0).getTime())
-                        .map((run) => (
-                          <article className="run" key={run.id}>
-                            <div className="runInfo">
-                              <b>{run.job_name}</b>
-                              <small>{formatDate(run.triggered_at)} · {run.triggered_by || 'No informado'}</small>
-                            </div>
-
-                            <div className="runState">
-                              <span className={`runStatus ${run.result === 'FAILURE' || run.status === 'FAILED_TO_TRIGGER' ? 'bad' : run.status === 'SUCCESS' || run.result === 'SUCCESS' ? 'ok' : 'pending'}`}>
-                                {STATUS_LABEL[run.status] || run.status}
-                              </span>
-                            </div>
-
-                            <div className="runActionsPanel">
-                              <div className="runActionGroup runActionLinks">
-                              {run.build_url ? <a href={run.build_url} target="_blank" rel="noreferrer">Revisar log Jenkins ↗</a> : run.queue_url ? <a href={run.queue_url} target="_blank" rel="noreferrer">Ver cola ↗</a> : null}
-                              {getPipelineUrlFromBuildUrl(run.build_url) ? (
-                                <a className="pipelineMiniLink" href={getPipelineUrlFromBuildUrl(run.build_url)} target="_blank" rel="noreferrer">Abrir pipeline ↗</a>
-                              ) : null}
-                              {run.build_url && (run.status === 'FAILURE' || run.result === 'FAILURE' || run.result === 'UNSTABLE') ? (
-                                <button
-                                  type="button"
-                                  className="syncBtn analyzeBtn"
-                                  onClick={() => analyzeJenkinsRun(run.id)}
-                                  disabled={analyzingRunId === run.id}
-                                >
-                                  {analyzingRunId === run.id ? 'Analizando log…' : 'Analizar fallo'}
-                                </button>
-                              ) : null}
-                            </div>
-
-                              <div className="runActionGroup runActionOps">
-                              <button
-                                type="button"
-                                className="syncBtn primaryAction"
-                                onClick={() => syncJenkinsRun(run.id)}
-                                disabled={syncingRunId === run.id}
-                              >
-                                {syncingRunId === run.id ? 'Actualizando…' : 'Actualizar estado'}
-                              </button>
-                            </div>
-                            </div>
-                          </article>
-                        ))}
-                    </div>
-                  )}
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Ejecución</th>
+                        <th>Pipeline</th>
+                        <th>Ambiente</th>
+                        <th>Estado</th>
+                        <th>Inicio</th>
+                        <th>Responsable</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(selected.deployment_runs || []).slice(0, 5).map((run) => (
+                        <tr key={run.id}>
+                          <td>#{run.build_number || run.id.slice(0, 6)}</td>
+                          <td>{run.job_name}</td>
+                          <td>{run.environment}</td>
+                          <td><span className={`runBadge ${run.result === 'FAILURE' || run.status === 'FAILED_TO_TRIGGER' ? 'fail' : run.status === 'SUCCESS' ? 'ok' : 'info'}`}>{STATUS_LABEL[run.status] || run.status}</span></td>
+                          <td>{run.triggered_at ? new Date(run.triggered_at).toLocaleString('es-CL') : '—'}</td>
+                          <td>{run.triggered_by || 'Sistema'}</td>
+                        </tr>
+                      ))}
+                      {(!selected.deployment_runs || selected.deployment_runs.length === 0) ? (
+                        <tr><td colSpan={6}>Aún no hay ejecuciones registradas para este cambio.</td></tr>
+                      ) : null}
+                    </tbody>
+                  </table>
                 </section>
+
 
                 {message ? <div className="msg">{message}</div> : null}
 
-                {confirmOpen ? (
+              </>
+            ) : (
+              <div className="state">Selecciona un cambio listo para ejecución.</div>
+            )}
+          </section>
+        </section>
+      ) : null}
+
+      {confirmOpen ? (
                   <div className="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
                     <div className="confirmModal">
                       <div className="modalIcon">⚙</div>
@@ -3262,6 +3267,100 @@ const [changes, setChanges] = useState<Change[]>([]);
             grid-template-columns:1fr !important;
           }
         }
+
+
+        /* Azure DevOps inspired Deploy Center mockup */
+        .deploy { max-width:none !important; width:100% !important; padding:24px 28px 60px !important; box-sizing:border-box !important; }
+        .mockHeader { display:flex; justify-content:space-between; align-items:flex-start; gap:24px; margin-bottom:18px; padding-bottom:18px; border-bottom:1px solid #dfeaf0; }
+        .mockHeader h1 { margin:0; color:var(--navy-d); font-size:clamp(34px, 3.5vw, 54px); line-height:.98; letter-spacing:-.06em; }
+        .mockSearchArea { display:flex; align-items:center; justify-content:flex-end; gap:10px; flex-wrap:wrap; min-width:380px; }
+        .mockSearch { min-width:230px; height:42px; border:1px solid #dfeaf0; border-radius:10px; background:#fff; color:#60748a; display:flex; align-items:center; padding:0 14px; font-weight:700; }
+        .deployTabs { display:flex; align-items:center; gap:18px; border-bottom:1px solid #dfeaf0; margin-bottom:18px; overflow:auto; }
+        .deployTabs button { border:0; background:transparent; color:#36556f; font-weight:850; padding:14px 4px; border-bottom:3px solid transparent; cursor:pointer; display:flex; align-items:center; gap:8px; white-space:nowrap; }
+        .deployTabs button.active { color:#0b67d8; border-bottom-color:#0b67d8; }
+        .mockLayout { display:grid; grid-template-columns:minmax(290px, 330px) minmax(0, 1fr); gap:20px; align-items:start; }
+        .mockQueue, .pipelineCanvas, .traceCard, .repoCard, .pipelineConfigCard, .stageInspector, .executionTableCard { background:#fff; border:1px solid #dfeaf0; border-radius:22px; box-shadow:0 18px 45px rgba(7,59,93,.06); }
+        .mockQueue { padding:22px; position:sticky; top:22px; }
+        .mockContent { display:grid; grid-template-columns:minmax(0, 1fr) 320px; gap:18px; align-items:start; min-width:0; }
+        .pipelineCanvas { grid-column:1 / 2; display:grid; grid-template-columns:250px minmax(0, 1fr); gap:22px; min-height:290px; padding:22px; position:relative; }
+        .artifactColumn { border-right:1px dashed #c8d8e4; padding-right:20px; }
+        .artifactColumn h3, .traceCard h3, .repoCard h3, .executionTableCard h3, .stageInspector h3 { margin:0 0 16px; color:var(--navy-d); letter-spacing:-.03em; }
+        .artifactCard { min-height:104px; border:1px solid #dfeaf0; border-radius:12px; background:#fff; box-shadow:0 12px 24px rgba(7,59,93,.08); padding:16px; display:flex; flex-direction:column; gap:8px; }
+        .artifactIcon { width:28px; height:28px; border-radius:8px; background:#eef5f8; display:inline-flex; align-items:center; justify-content:center; }
+        .artifactCard b { color:var(--navy-d); }
+        .artifactCard small, .artifactSchedule { color:#60748a; }
+        .artifactSchedule { margin:18px 0 0; font-weight:700; }
+        .pipelineTitleRow { display:flex; justify-content:space-between; gap:18px; margin-bottom:24px; }
+        .pipelineTitleRow h2 { margin:0 0 8px; color:var(--navy-d); font-size:clamp(22px, 2vw, 34px); line-height:1.06; letter-spacing:-.045em; }
+        .pipelineTitleRow small { color:#60748a; font-size:15px; }
+        .pipelineActions { display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; align-content:flex-start; min-width:280px; }
+        .visualPipeline { display:grid; grid-template-columns:minmax(0,1fr) 38px minmax(0,1fr) 38px minmax(0,1fr); align-items:stretch; }
+        .stageWrap { display:contents; }
+        .mockStage { border:1px solid #dfeaf0; border-top:5px solid #c8d8e4; border-radius:14px; background:#fff; min-height:178px; padding:18px; text-align:left; box-shadow:0 15px 30px rgba(7,59,93,.06); cursor:pointer; display:flex; flex-direction:column; gap:12px; }
+        .mockStage.selected { border-color:#0b67d8; border-top-color:#0b67d8; box-shadow:0 16px 38px rgba(11,103,216,.16); }
+        .mockStage.success { border-top-color:#16a34a; }
+        .mockStage.failed { border-top-color:#dc2626; }
+        .stageTop { display:flex; align-items:center; gap:10px; }
+        .stageTop b { color:var(--navy-d); font-size:20px; }
+        .stageNumber, .stageIcon { width:32px; height:32px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; font-weight:900; }
+        .stageNumber { color:#fff; background:#0b67d8; }
+        .mockStage.success .stageNumber { background:#16a34a; }
+        .mockStage.failed .stageNumber { background:#dc2626; }
+        .stageIcon { margin-left:auto; background:#eef5f8; color:#0b67d8; border:1px solid #dfeaf0; }
+        .stagePill { width:max-content; max-width:100%; border-radius:10px; padding:7px 12px; font-size:12px; font-weight:900; }
+        .stagePill.success { background:#dcfce7; color:#15803d; }
+        .stagePill.running, .stagePill.ready { background:#dbeafe; color:#1d4ed8; }
+        .stagePill.failed { background:#fee2e2; color:#b91c1c; }
+        .stagePill.pending { background:#eef5f8; color:#60748a; }
+        .mockStage small { color:#36556f; font-weight:750; }
+        .stageFoot { margin-top:auto; padding-top:12px; border-top:1px solid #edf3f7; display:flex; justify-content:space-between; gap:10px; color:#60748a; font-size:12px; font-weight:750; }
+        .stageConnector { width:38px; height:2px; align-self:center; background:#7c8b99; position:relative; }
+        .stageConnector::after { content:''; position:absolute; right:-1px; top:50%; width:7px; height:7px; border-top:2px solid #7c8b99; border-right:2px solid #7c8b99; transform:translateY(-50%) rotate(45deg); }
+        .mockBelowGrid { grid-column:1 / 2; display:grid; grid-template-columns:minmax(0, 1fr) minmax(300px, .72fr); gap:18px; }
+        .traceCard, .repoCard, .pipelineConfigCard, .executionTableCard, .stageInspector { padding:22px; }
+        .traceFlow { display:grid; grid-template-columns:1fr 26px 1fr 26px 1fr 26px 1fr 26px 1fr; align-items:center; }
+        .traceItemWrap { display:contents; }
+        .traceItem { min-height:112px; border:1px solid #dfeaf0; border-radius:14px; background:#f8fbfd; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; text-align:center; }
+        .traceItem.ok { background:#f0fff7; border-color:#bbf7d0; }
+        .traceItem span { width:40px; height:40px; border-radius:12px; background:#e7f9ef; display:inline-flex; align-items:center; justify-content:center; }
+        .traceItem b { color:var(--navy-d); }
+        .traceItem small { color:#60748a; font-size:12px; }
+        .traceItem em { font-style:normal; color:#00a86b; font-weight:900; }
+        .traceConnector { height:2px; border-top:2px dotted #9fb8cc; }
+        .repoTree { display:flex; flex-direction:column; gap:10px; color:#36556f; font-weight:750; }
+        .repoTree b { color:var(--navy-d); }
+        .pipelineConfigCard { grid-column:1 / 2; }
+        .configHead { display:flex; justify-content:space-between; gap:18px; margin-bottom:16px; }
+        .configHead h3 { margin:0 0 6px; color:var(--navy-d); letter-spacing:-.03em; }
+        .configHead p { margin:0; color:#60748a; }
+        .deployForm { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:14px; }
+        .deployForm label:nth-child(5) { grid-column:1 / -1; }
+        .deployHint { color:#60748a; margin:10px 0 0; font-size:13px; }
+        .stageInspector { grid-column:2 / 3; grid-row:1 / span 3; position:sticky; top:22px; }
+        .stageInspector h3 span { color:#0b67d8; }
+        .stageInspector dl { margin:0; display:grid; gap:14px; }
+        .stageInspector dl div { display:grid; grid-template-columns:120px minmax(0, 1fr); gap:12px; align-items:center; }
+        .stageInspector dt { color:#60748a; font-weight:850; }
+        .stageInspector dd { margin:0; color:var(--navy-d); font-weight:800; word-break:break-word; }
+        .avatarSmall { width:30px; height:30px; border-radius:999px; background:#16a34a; color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:12px; margin-right:8px; }
+        .blueAction, .greenAction { margin-top:16px; min-height:50px; width:100%; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:900; border:0; text-decoration:none; }
+        .blueAction { background:#0b67d8; color:#fff; }
+        .greenAction { background:#16a34a; color:#fff; }
+        .greenAction:disabled { opacity:.45; cursor:not-allowed; }
+        .executionTableCard { grid-column:1 / -1; overflow:auto; }
+        .tableHead { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
+        .tableHead button { border:0; background:transparent; color:#0b67d8; font-weight:900; cursor:pointer; }
+        .executionTableCard table { width:100%; border-collapse:collapse; min-width:760px; }
+        .executionTableCard th, .executionTableCard td { padding:13px 14px; text-align:left; border-bottom:1px solid #edf3f7; color:#36556f; }
+        .executionTableCard th { font-size:12px; color:#60748a; text-transform:uppercase; letter-spacing:.08em; }
+        .runBadge { display:inline-flex; align-items:center; padding:7px 12px; border-radius:999px; font-weight:900; font-size:12px; }
+        .runBadge.ok { background:#dcfce7; color:#15803d; }
+        .runBadge.fail { background:#fee2e2; color:#b91c1c; }
+        .runBadge.info { background:#dbeafe; color:#1d4ed8; }
+        @media(max-width:1420px){ .mockContent { grid-template-columns:1fr; } .stageInspector { grid-column:1; grid-row:auto; position:relative; top:auto; } }
+        @media(max-width:1180px){ .mockLayout { grid-template-columns:1fr; } .mockQueue { position:relative; top:auto; } .queueList { grid-template-columns:repeat(2, minmax(0, 1fr)); } .pipelineCanvas, .mockBelowGrid { grid-template-columns:1fr; } .artifactColumn { border-right:0; border-bottom:1px dashed #c8d8e4; padding:0 0 18px; } }
+        @media(max-width:920px){ .mockHeader, .pipelineTitleRow, .configHead { flex-direction:column; } .mockSearchArea, .pipelineActions { min-width:0; justify-content:flex-start; } .visualPipeline, .traceFlow { grid-template-columns:1fr; gap:12px; } .stageWrap, .traceItemWrap { display:block; } .stageConnector, .traceConnector { width:2px; height:24px; margin:0 auto; } .deployForm { grid-template-columns:1fr; } }
+        @media(max-width:680px){ .deploy { padding:18px 14px 44px !important; } .queueList { grid-template-columns:1fr; } .mockHeader h1 { font-size:40px; } .stageInspector dl div { grid-template-columns:1fr; gap:4px; } }
 
 
       `}</style>
