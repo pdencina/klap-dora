@@ -2457,6 +2457,74 @@ const [changes, setChanges] = useState<Change[]>([]);
         }
 
 
+        /* Final fix: remove duplicated left offset inside Deploy Center */
+        .deployShell .deploy,
+        .deployShell.sidebarCollapsed .deploy {
+          margin-left:0 !important;
+          width:100% !important;
+          max-width:none !important;
+          padding-left:clamp(18px, 2vw, 28px) !important;
+          padding-right:clamp(18px, 2vw, 28px) !important;
+          box-sizing:border-box !important;
+          overflow-x:hidden !important;
+        }
+
+        .deploy {
+          margin:0 !important;
+          max-width:none !important;
+        }
+
+        .deployShell {
+          width:100% !important;
+          overflow-x:hidden !important;
+        }
+
+        .layout {
+          grid-template-columns:minmax(280px, 330px) minmax(0, 1fr) !important;
+          gap:20px !important;
+          width:100% !important;
+          min-width:0 !important;
+        }
+
+        .queue,
+        .content,
+        .content > section,
+        .heroCard,
+        .pipelineCard,
+        .conditionsCard,
+        .runs {
+          min-width:0 !important;
+          max-width:100% !important;
+          box-sizing:border-box !important;
+        }
+
+        .queueList {
+          grid-template-columns:1fr !important;
+        }
+
+        @media(max-width:1280px){
+          .layout {
+            grid-template-columns:1fr !important;
+          }
+
+          .queueList {
+            grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+          }
+        }
+
+        @media(max-width:820px){
+          .queueList {
+            grid-template-columns:1fr !important;
+          }
+
+          .deployShell .deploy,
+          .deployShell.sidebarCollapsed .deploy {
+            padding-left:14px !important;
+            padding-right:14px !important;
+          }
+        }
+
+
       `}</style>
       </main>
     </div>
