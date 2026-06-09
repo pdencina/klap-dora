@@ -21,6 +21,16 @@ type EcabStatus =
   | 'closed'
   | 'cancelled';
 
+type EcabDecision = {
+  id?: string;
+  stage?: string | null;
+  decision?: 'approve' | 'observe' | 'reject' | 'cancel' | 'close' | string | null;
+  comment?: string | null;
+  actor_email?: string | null;
+  actor_name?: string | null;
+  created_at?: string | null;
+};
+
 type EcabRequest = {
   id: string;
   title: string;
@@ -42,6 +52,7 @@ type EcabRequest = {
   jira_or_erfc_url?: string | null;
   approval_rule?: string | null;
   created_by?: string | null;
+  ecab_decisions?: EcabDecision[];
 };
 
 type FormState = {
@@ -156,7 +167,7 @@ const sampleEcabs: EcabRequest[] = [
 const MANAGEMENT_AUTHORIZERS = [
   { name: 'Rafael Osorio', area: 'Gerencia', status: 'Pendiente' },
   { name: 'Julio Quiroz', area: 'Gerencia', status: 'Pendiente' },
-  { name: 'Cristian Kraus', area: 'Gerencia', status: 'Pendiente' },
+  { name: 'Cristian Krauss', area: 'Gerencia', status: 'Pendiente' },
 ];
 
 const flow = [
@@ -258,6 +269,10 @@ export default function EcabPage() {
   const [decisionComment, setDecisionComment] = useState('');
   const [decisionError, setDecisionError] = useState('');
   const [decisionLoading, setDecisionLoading] = useState(false);
+  const [managementComment, setManagementComment] = useState('');
+  const [managementError, setManagementError] = useState('');
+  const [managementLoading, setManagementLoading] = useState('');
+
 
   useEffect(() => {
     let active = true;
@@ -438,6 +453,58 @@ export default function EcabPage() {
       setDecisionError(error?.message || 'No fue posible registrar la decisión RM.');
     } finally {
       setDecisionLoading(false);
+    }
+  }
+
+  async function submitManagementDecision(approverName: string, decision: 'approve' | 'observe' | 'reject') {
+    if (!selected?.id) return;
+
+    if ((decision === 'observe' || decision === 'reject') && !managementComment.trim()) {
+      setManagementError('Para observar o rechazar, el gerente debe ingresar un comentario.');
+      return;
+    }
+
+    setManagementLoading(`${approverName}-${decision}`);
+    setManagementError('');
+
+    try {
+      const response = await fetch(`/api/ecab/${selected.id}/decision`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          stage: 'management',
+          decision,
+          comment: managementComment,
+          actor_name: approverName,
+        }),
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error || 'No fue posible registrar la autorización gerencial.');
+      }
+
+      const updated = data.ecab as EcabRequest;
+      setEcabs((current) => current.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)));
+      setSelectedId(updated.id);
+      setManagementComment('');
+
+      if (data.ready_for_pap) {
+        setNotice('Autorización gerencial completa. La solicitud eCAB quedó lista para Plan PAP.');
+      } else if (decision === 'approve') {
+        setNotice(`Aprobación registrada para ${approverName}. Avance: ${data.approved_count || managementApprovedCount(updated)} de ${data.required_count || requiredManagementApprovals(updated.approval_rule)}.`);
+      } else if (decision === 'observe') {
+        setNotice(`Observación registrada por ${approverName}.`);
+      } else {
+        setNotice(`Rechazo registrado por ${approverName}.`);
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (error: any) {
+      setManagementError(error?.message || 'No fue posible registrar la autorización gerencial.');
+    } finally {
+      setManagementLoading('');
     }
   }
 
@@ -747,19 +814,71 @@ export default function EcabPage() {
                 <div className="sectionHead compact">
                   <div>
                     <p className="kicker">Autorización gerencial</p>
-                    <h3>Aprobadores siguientes</h3>
+                    <h3>Aprobadores gerenciales</h3>
+                    <small className="decisionHelp">
+                      Esta etapa queda disponible después del OK del Release Manager.
+                    </small>
                   </div>
-                  <span className="completeBadge">{approvalRuleLabel(selected.approval_rule)}</span>
+                  <span className={canAuthorizeManagement(selected) ? 'reviewReadyBadge' : selected.status === 'ready_for_pap' ? 'reviewReadyBadge' : 'reviewLockedBadge'}>
+                    {selected.status === 'ready_for_pap' ? 'Autorización completa' : canAuthorizeManagement(selected) ? managementProgressLabel(selected) : 'Pendiente etapa RM'}
+                  </span>
                 </div>
 
-                <div className="approverList">
-                  {MANAGEMENT_AUTHORIZERS.map((approver) => (
-                    <div key={approver.name}>
-                      <span>{approver.name.slice(0, 2).toUpperCase()}</span>
-                      <b>{approver.name}</b>
-                      <small>{approver.area} · {approver.status}</small>
-                    </div>
-                  ))}
+                <textarea
+                  value={managementComment}
+                  onChange={(event) => {
+                    setManagementComment(event.target.value);
+                    setManagementError('');
+                  }}
+                  placeholder="Comentario gerencial. Obligatorio si observas o rechazas."
+                  disabled={!canAuthorizeManagement(selected) || Boolean(managementLoading)}
+                />
+
+                {managementError ? <div className="formError">{managementError}</div> : null}
+
+                <div className="approverList managementDecisionList">
+                  {MANAGEMENT_AUTHORIZERS.map((approver) => {
+                    const decision = latestManagementDecisionFor(selected, approver.name);
+                    const status = managementStatusLabel(decision);
+                    const statusClass = managementStatusClass(decision);
+                    const disabled = !canAuthorizeManagement(selected) || Boolean(managementLoading) || status === 'Aprobado' || status === 'Rechazado';
+
+                    return (
+                      <div key={approver.name} className={`approverDecisionCard ${statusClass}`}>
+                        <span>{approver.name.slice(0, 2).toUpperCase()}</span>
+                        <b>{approver.name}</b>
+                        <small>{approver.area} · {status}</small>
+                        {decision?.comment ? <em>{decision.comment}</em> : null}
+
+                        <div className="miniDecisionGrid">
+                          <button
+                            className="miniApprove"
+                            type="button"
+                            disabled={disabled}
+                            onClick={() => submitManagementDecision(approver.name, 'approve')}
+                          >
+                            {managementLoading === `${approver.name}-approve` ? '...' : 'Aprobar'}
+                          </button>
+                          <button
+                            className="miniObserve"
+                            type="button"
+                            disabled={!canAuthorizeManagement(selected) || Boolean(managementLoading)}
+                            onClick={() => submitManagementDecision(approver.name, 'observe')}
+                          >
+                            Observar
+                          </button>
+                          <button
+                            className="miniReject"
+                            type="button"
+                            disabled={disabled}
+                            onClick={() => submitManagementDecision(approver.name, 'reject')}
+                          >
+                            Rechazar
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </article>
@@ -771,8 +890,8 @@ export default function EcabPage() {
 
           <div className="auditStep done"><span>✓</span><div><b>Solicitud creada</b><small>Líder técnico registró eCAB.</small></div></div>
           <div className={selected?.status === 'rm_review' || selected?.status === 'rm_observed' ? 'auditStep active' : 'auditStep done'}><span>{selected?.status === 'rm_review' || selected?.status === 'rm_observed' ? '◷' : '✓'}</span><div><b>Revisión RM</b><small>Release Manager revisa completitud, urgencia y evidencia.</small></div></div>
-          <div className={selected?.status === 'management_authorization' || selected?.status === 'management_observed' ? 'auditStep active' : 'auditStep'}><span>{selected?.status === 'management_authorization' || selected?.status === 'management_observed' ? '◷' : '○'}</span><div><b>Autorización gerencial</b><small>Rafael Osorio, Julio Quiroz y Cristian Kraus autorizan digitalmente.</small></div></div>
-          <div className="auditStep"><span>○</span><div><b>Plan PAP</b><small>Se habilita al aprobar eCAB.</small></div></div>
+          <div className={selected?.status === 'management_authorization' || selected?.status === 'management_observed' ? 'auditStep active' : selected?.status === 'ready_for_pap' || selected?.status === 'pap_created' || selected?.status === 'ready_for_deploy' ? 'auditStep done' : 'auditStep'}><span>{selected?.status === 'management_authorization' || selected?.status === 'management_observed' ? '◷' : selected?.status === 'ready_for_pap' || selected?.status === 'pap_created' || selected?.status === 'ready_for_deploy' ? '✓' : '○'}</span><div><b>Autorización gerencial</b><small>Rafael Osorio, Julio Quiroz y Cristian Krauss autorizan digitalmente.</small></div></div>
+          <div className={selected?.status === 'ready_for_pap' || selected?.status === 'pap_created' || selected?.status === 'ready_for_deploy' ? 'auditStep active' : 'auditStep'}><span>{selected?.status === 'ready_for_pap' || selected?.status === 'pap_created' || selected?.status === 'ready_for_deploy' ? '◷' : '○'}</span><div><b>Plan PAP</b><small>Se habilita al aprobar eCAB.</small></div></div>
           <div className="auditStep"><span>○</span><div><b>Deploy y cierre</b><small>Ejecución y validación post deploy.</small></div></div>
 
           <div className="ruleBox">
