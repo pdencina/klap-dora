@@ -53,6 +53,8 @@ type EcabRequest = {
   approval_rule?: string | null;
   created_by?: string | null;
   ecab_decisions?: EcabDecision[];
+  rdc_id?: string | null;
+  pap_rdc_id?: string | null;
 };
 
 type FormState = {
@@ -272,6 +274,8 @@ export default function EcabPage() {
   const [managementComment, setManagementComment] = useState('');
   const [managementError, setManagementError] = useState('');
   const [managementLoading, setManagementLoading] = useState('');
+  const [papLoading, setPapLoading] = useState(false);
+  const [papError, setPapError] = useState('');
 
 
   useEffect(() => {
@@ -508,6 +512,40 @@ export default function EcabPage() {
     }
   }
 
+
+  async function createPapFromEcab() {
+    if (!selected?.id) return;
+
+    setPapLoading(true);
+    setPapError('');
+
+    try {
+      const response = await fetch(`/api/ecab/${selected.id}/create-pap`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error || 'No fue posible crear el Plan PAP desde eCAB.');
+      }
+
+      const updated = data.ecab as EcabRequest;
+      if (updated?.id) {
+        setEcabs((current) => current.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)));
+        setSelectedId(updated.id);
+      }
+
+      setNotice(data.existing ? 'Este eCAB ya tenía un Plan PAP asociado. Abriendo Plan PAP.' : 'Plan PAP creado desde eCAB. Abriendo módulo Plan PAP.');
+      const rdcId = data.rdc_id || updated?.rdc_id || selected.rdc_id;
+      if (rdcId) window.location.href = `/pap?rdcId=${rdcId}`;
+    } catch (error: any) {
+      setPapError(error?.message || 'No fue posible crear el Plan PAP desde eCAB.');
+    } finally {
+      setPapLoading(false);
+    }
+  }
 
   const canAuthorizeManagement = (item?: EcabRequest | null) => {
     return item?.status === 'management_authorization' || item?.status === 'management_observed';
@@ -791,6 +829,26 @@ export default function EcabPage() {
                 <span>Motivo de urgencia</span>
                 <p>{selected.urgency_reason}</p>
               </div>
+
+              {(selected.status === 'ready_for_pap' || selected.status === 'pap_created') ? (
+                <div className="papInjectionBox">
+                  <div>
+                    <p className="kicker">Plan PAP</p>
+                    <h3>{selected.status === 'pap_created' ? 'Plan PAP asociado' : 'Crear Plan PAP desde eCAB'}</h3>
+                    <span>
+                      {selected.status === 'pap_created'
+                        ? 'Este eCAB ya fue inyectado al módulo Plan PAP.'
+                        : 'La autorización gerencial está completa. Ahora puedes crear la planificación operativa del paso a producción.'}
+                    </span>
+                  </div>
+
+                  <button type="button" onClick={createPapFromEcab} disabled={papLoading}>
+                    {papLoading ? 'Procesando...' : selected.status === 'pap_created' ? 'Abrir Plan PAP' : 'Crear Plan PAP'}
+                  </button>
+                </div>
+              ) : null}
+
+              {papError ? <div className="formError">{papError}</div> : null}
             </article>
 
             <article className="questionsCard">
@@ -1225,6 +1283,24 @@ export default function EcabPage() {
             grid-template-columns:1fr !important;
           }
         }
+
+
+        .papInjectionBox {
+          margin-top:16px;
+          border:1px solid #86efac;
+          background:linear-gradient(135deg, #f0fff7 0%, #ffffff 100%);
+          border-radius:18px;
+          padding:16px;
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:16px;
+        }
+        .papInjectionBox h3 { margin:0 0 6px; color:#00395f; letter-spacing:-.03em; }
+        .papInjectionBox span { display:block; color:#60748a; font-weight:700; line-height:1.35; }
+        .papInjectionBox button { min-height:44px; border:0; border-radius:999px; background:#00b86b; color:#fff; font-weight:950; padding:0 18px; cursor:pointer; white-space:nowrap; box-shadow:0 14px 24px rgba(0,57,95,.08); }
+        .papInjectionBox button:disabled { opacity:.6; cursor:not-allowed; box-shadow:none; }
+        @media(max-width:760px){ .papInjectionBox { flex-direction:column; align-items:flex-start; } .papInjectionBox button { width:100%; } }
 
       `}</style>
     </main>

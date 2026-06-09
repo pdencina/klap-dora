@@ -57,6 +57,19 @@ function detailOf(change: Change): RdcDetail {
   return d || {};
 }
 
+function sourceTypeOf(change: Change) {
+  const detail = detailOf(change);
+  return detail.form_data?.source_type || (change.category === 'ECAB' ? 'ECAB' : 'RDC');
+}
+
+function isEcabPap(change: Change) {
+  return sourceTypeOf(change) === 'ECAB';
+}
+
+function ecabFormData(change: Change) {
+  return detailOf(change).form_data || {};
+}
+
 function formatDate(value?: string | null) {
   if (!value) return 'Sin fecha';
   try {
@@ -315,12 +328,12 @@ export default function PapPage() {
         <section className="papLayout">
           <aside className="queue">
             <div className="queueHead">
-              <h2>RDC aprobados</h2>
+              <h2>RDC / eCAB listos para PAP</h2>
               <span>{changes.length}</span>
             </div>
 
             {changes.length === 0 ? (
-              <p className="empty">No hay RDC aprobados para planificar PAP.</p>
+              <p className="empty">No hay RDC/eCAB aprobados para planificar PAP.</p>
             ) : (
               <div className="queueList">
                 {changes.map((change) => {
@@ -336,6 +349,7 @@ export default function PapPage() {
                       onClick={() => selectChange(change.id)}
                     >
                       <strong>{change.title}</strong>
+                      {isEcabPap(change) ? <i className="queueSourceBadge">⚡ eCAB aprobado</i> : null}
                       <small>{change.system || 'Sin sistema'} · {change.cell || 'Sin célula'}</small>
                       <em>{currentPercent === 100 ? 'Listo para Deploy' : 'Pendiente Plan PAP'}</em>
                     </button>
@@ -351,7 +365,10 @@ export default function PapPage() {
                 <div className="summary">
                   <div>
                     <p className="kicker">Plan operativo</p>
-                    <h2>{selected.title}</h2>
+                    <div className="summaryTitleRow">
+                      <h2>{selected.title}</h2>
+                      {isEcabPap(selected) ? <span className="papSourcePill">⚡ Origen eCAB</span> : null}
+                    </div>
                     <p>{selected.system || 'Sin sistema'} · {selected.cell || 'Sin célula'} · {selected.category || 'Sin categoría'}</p>
                   </div>
                   <div className="summaryActions">
@@ -360,6 +377,26 @@ export default function PapPage() {
                     <button type="button" onClick={copyPlan}>Copiar plan</button>
                   </div>
                 </div>
+
+                {isEcabPap(selected) ? (
+                  <section className="ecabOriginCard">
+                    <div>
+                      <p className="kicker">eCAB aprobado</p>
+                      <h3>Expediente de urgencia inyectado a PAP</h3>
+                      <p>
+                        Esta planificación nació desde un eCAB con autorización gerencial completa.
+                        Completa solo las actividades operativas del paso a producción.
+                      </p>
+                    </div>
+
+                    <div className="ecabOriginGrid">
+                      <div><span>Motivo urgencia</span><b>{ecabFormData(selected).urgency_reason || 'Registrado en eCAB'}</b></div>
+                      <div><span>Validador</span><b>{ecabFormData(selected).validator || selected.business_validator || 'Pendiente'}</b></div>
+                      <div><span>Aprobación gerencial</span><b>{ecabFormData(selected).management_approved_count || 3} aprobaciones</b></div>
+                      <div><span>Ticket JIRA / ERFC</span><b>{ecabFormData(selected).jira_or_erfc_url || selected.jira_origin || 'Pendiente'}</b></div>
+                    </div>
+                  </section>
+                ) : null}
 
                 <section className={readyForDeploy ? 'readiness ready' : 'readiness pending'}>
                   <div>
@@ -545,6 +582,19 @@ export default function PapPage() {
           .footerActions, .quickActions, .stepActions { flex-direction: column; }
           .footerActions button, .footerActions a, .quickActions button, .stepActions button, .readiness a { width: 100%; }
         }
+
+        .queueSourceBadge { display:inline-flex; width:max-content; margin:0 0 8px; border-radius:999px; background:#e8fff3; color:#008f57; padding:5px 9px; font-size:11px; font-weight:950; font-style:normal; }
+        .summaryTitleRow { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+        .papSourcePill { border-radius:999px; background:#e8fff3; color:#008f57; padding:8px 11px; font-size:12px; font-weight:950; white-space:nowrap; }
+        .ecabOriginCard { border:1px solid #86efac; border-radius:18px; background:linear-gradient(135deg, #f0fff7 0%, #ffffff 100%); padding:18px; margin:16px 0; display:grid; gap:16px; }
+        .ecabOriginCard h3 { margin:0; color:var(--navy-d); letter-spacing:-.03em; }
+        .ecabOriginGrid { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px; }
+        .ecabOriginGrid div { border:1px solid #dfeaf0; background:#fff; border-radius:14px; padding:12px; min-width:0; }
+        .ecabOriginGrid span { display:block; color:var(--ink-soft); font-size:12px; font-weight:900; margin-bottom:6px; }
+        .ecabOriginGrid b { display:block; color:var(--navy-d); font-size:13px; line-height:1.3; overflow-wrap:anywhere; }
+        @media(max-width:1100px){ .ecabOriginGrid { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+        @media(max-width:720px){ .ecabOriginGrid { grid-template-columns:1fr; } }
+
       `}</style>
     </main>
   );
