@@ -566,6 +566,10 @@ export default function EcabPage() {
     return 'pending';
   };
 
+  const rmReviewAvailable = canReviewAsRm(selected);
+  const managementAvailable = canAuthorizeManagement(selected);
+  const managementCompleted = selected?.status === 'ready_for_pap' || selected?.status === 'pap_created' || selected?.status === 'ready_for_deploy';
+
   return (
     <main className="ecabPage">
       <header className="hero">
@@ -818,8 +822,8 @@ export default function EcabPage() {
                     El RM revisa si la solicitud está completa antes de enviarla a autorización gerencial.
                   </small>
                 </div>
-                <span className={canReviewAsRm(selected) ? 'reviewReadyBadge' : 'reviewLockedBadge'}>
-                  {canReviewAsRm(selected) ? 'Pendiente RM' : 'Etapa no disponible'}
+                <span className={rmReviewAvailable ? 'reviewReadyBadge' : 'reviewLockedBadge'}>
+                  {rmReviewAvailable ? 'Pendiente RM' : 'Etapa finalizada'}
                 </span>
               </div>
 
@@ -836,7 +840,7 @@ export default function EcabPage() {
                   setDecisionError('');
                 }}
                 placeholder="Comentario RM. Obligatorio si observas o rechazas."
-                disabled={!canReviewAsRm(selected) || decisionLoading}
+                disabled={!rmReviewAvailable || decisionLoading}
               />
 
               {decisionError ? <div className="formError">{decisionError}</div> : null}
@@ -845,7 +849,7 @@ export default function EcabPage() {
                 <button
                   className="approve"
                   type="button"
-                  disabled={!canReviewAsRm(selected) || decisionLoading}
+                  disabled={!rmReviewAvailable || decisionLoading}
                   onClick={() => submitRmDecision('approve')}
                 >
                   {decisionLoading ? 'Registrando...' : 'Aprobar revisión RM'}
@@ -853,7 +857,7 @@ export default function EcabPage() {
                 <button
                   className="observe"
                   type="button"
-                  disabled={!canReviewAsRm(selected) || decisionLoading}
+                  disabled={!rmReviewAvailable || decisionLoading}
                   onClick={() => submitRmDecision('observe')}
                 >
                   Observar solicitud
@@ -861,7 +865,7 @@ export default function EcabPage() {
                 <button
                   className="reject"
                   type="button"
-                  disabled={!canReviewAsRm(selected) || decisionLoading}
+                  disabled={!rmReviewAvailable || decisionLoading}
                   onClick={() => submitRmDecision('reject')}
                 >
                   Rechazar eCAB
@@ -877,8 +881,8 @@ export default function EcabPage() {
                       Esta etapa queda disponible después del OK del Release Manager.
                     </small>
                   </div>
-                  <span className={canAuthorizeManagement(selected) ? 'reviewReadyBadge' : selected.status === 'ready_for_pap' ? 'reviewReadyBadge' : 'reviewLockedBadge'}>
-                    {selected.status === 'ready_for_pap' ? 'Autorización completa' : canAuthorizeManagement(selected) ? managementProgressLabel(selected) : 'Pendiente etapa RM'}
+                  <span className={managementAvailable || managementCompleted ? 'reviewReadyBadge' : 'reviewLockedBadge'}>
+                    {managementCompleted ? 'Autorización completa' : managementAvailable ? managementProgressLabel(selected) : 'Pendiente etapa RM'}
                   </span>
                 </div>
 
@@ -889,7 +893,7 @@ export default function EcabPage() {
                     setManagementError('');
                   }}
                   placeholder="Comentario gerencial. Obligatorio si observas o rechazas."
-                  disabled={!canAuthorizeManagement(selected) || Boolean(managementLoading)}
+                  disabled={!managementAvailable || Boolean(managementLoading)}
                 />
 
                 {managementError ? <div className="formError">{managementError}</div> : null}
@@ -920,7 +924,7 @@ export default function EcabPage() {
                           <button
                             className="miniObserve"
                             type="button"
-                            disabled={!canAuthorizeManagement(selected) || Boolean(managementLoading)}
+                            disabled={!managementAvailable || Boolean(managementLoading)}
                             onClick={() => submitManagementDecision(approver.name, 'observe')}
                           >
                             Observar
@@ -1081,6 +1085,147 @@ export default function EcabPage() {
         @media(max-width:1450px){ .layout { grid-template-columns:1fr; } .queue,.audit { position:relative; top:auto; } .flow { grid-template-columns:repeat(4, minmax(0, 1fr)); gap:12px; } .flowItemWrap { display:block; } .flowConnector { display:none; } }
         @media(max-width:1080px){ .stepper { grid-template-columns:repeat(2,minmax(0,1fr)); } .formGrid,.questionGrid,.reviewGrid,.summaryGrid,.decisionGrid,.kpis { grid-template-columns:1fr; } }
         @media(max-width:960px){ .hero,.requestTop,.sectionHead,.formTop { flex-direction:column; } .flow { grid-template-columns:1fr; } .heroActions { width:100%; justify-content:flex-start; } }
+
+        /* Management approval UI polish */
+        .decisionCard textarea {
+          margin-bottom:12px;
+        }
+
+        .decisionGrid button {
+          box-shadow:0 14px 24px rgba(0,57,95,.08);
+          transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+        }
+
+        .decisionGrid button:not(:disabled):hover,
+        .miniDecisionGrid button:not(:disabled):hover {
+          transform:translateY(-1px);
+          box-shadow:0 16px 28px rgba(0,57,95,.12);
+        }
+
+        .decisionGrid button:disabled {
+          filter:grayscale(.15);
+        }
+
+        .managementApprovers textarea {
+          margin-bottom:14px;
+          background:#fff;
+        }
+
+        .approverCardTop {
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:10px;
+          margin-bottom:10px;
+        }
+
+        .approverCardTop span {
+          margin:0;
+        }
+
+        .approverStatus {
+          font-style:normal;
+          font-size:11px;
+          font-weight:950;
+          border-radius:999px;
+          padding:6px 9px;
+          white-space:nowrap;
+          background:#eef5f8;
+          color:#60748a;
+        }
+
+        .approverStatus.approved {
+          background:#dcfce7;
+          color:#008f57;
+        }
+
+        .approverStatus.observed {
+          background:#fef3c7;
+          color:#b45309;
+        }
+
+        .approverStatus.rejected {
+          background:#ffe4e6;
+          color:#be123c;
+        }
+
+        .approverDecisionCard {
+          position:relative;
+          padding:16px !important;
+          border-radius:18px !important;
+          box-shadow:0 12px 28px rgba(0,57,95,.04);
+        }
+
+        .approverDecisionCard b {
+          font-size:16px;
+          letter-spacing:-.02em;
+        }
+
+        .approverDecisionCard small {
+          font-size:12px;
+        }
+
+        .approverDecisionCard.approved::before,
+        .approverDecisionCard.observed::before,
+        .approverDecisionCard.rejected::before {
+          content:'';
+          position:absolute;
+          inset:0 auto 0 0;
+          width:4px;
+          border-radius:18px 0 0 18px;
+        }
+
+        .approverDecisionCard.approved::before { background:#00b86b; }
+        .approverDecisionCard.observed::before { background:#f59e0b; }
+        .approverDecisionCard.rejected::before { background:#dc2626; }
+
+        .miniDecisionGrid {
+          grid-template-columns:repeat(3, minmax(0, 1fr)) !important;
+          gap:8px !important;
+          margin-top:14px !important;
+        }
+
+        .miniDecisionGrid button {
+          min-height:40px !important;
+          border-radius:999px !important;
+          border:1px solid transparent !important;
+          color:#fff !important;
+          font-weight:950 !important;
+          font-size:12px !important;
+          cursor:pointer !important;
+          appearance:none !important;
+          -webkit-appearance:none !important;
+          box-shadow:0 10px 18px rgba(0,57,95,.08);
+        }
+
+        .miniApprove {
+          background:#00b86b !important;
+          border-color:#00b86b !important;
+        }
+
+        .miniObserve {
+          background:#f59e0b !important;
+          border-color:#f59e0b !important;
+        }
+
+        .miniReject {
+          background:#dc2626 !important;
+          border-color:#dc2626 !important;
+        }
+
+        .miniDecisionGrid button:disabled {
+          opacity:.45 !important;
+          cursor:not-allowed !important;
+          transform:none !important;
+          box-shadow:none !important;
+        }
+
+        @media(max-width:1180px){
+          .miniDecisionGrid {
+            grid-template-columns:1fr !important;
+          }
+        }
+
       `}</style>
     </main>
   );
