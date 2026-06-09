@@ -32,6 +32,7 @@ type Change = {
   approval_requests?: any[];
   pap_steps?: any[];
   deployment_runs?: DeploymentRun[];
+  rdc_details?: any[] | any;
 };
 
 type JenkinsJob = {
@@ -79,6 +80,41 @@ function approvedCount(change?: Change | null) {
 
 function totalApprovals(change?: Change | null) {
   return change?.approval_requests?.length || 0;
+}
+
+function detailOf(change?: Change | null) {
+  const detail = change?.rdc_details;
+  if (Array.isArray(detail)) return detail[0] || {};
+  return detail || {};
+}
+
+function sourceTypeOf(change?: Change | null) {
+  const detail = detailOf(change);
+  return String(detail?.form_data?.source_type || change?.category || '').toUpperCase();
+}
+
+function isEcabChange(change?: Change | null) {
+  return sourceTypeOf(change) === 'ECAB' || String(change?.title || '').toUpperCase().startsWith('[ECAB]');
+}
+
+function ecabApprovalCount(change?: Change | null) {
+  const detail = detailOf(change);
+  const count = Number(detail?.form_data?.management_approved_count || 0);
+  return Number.isFinite(count) && count > 0 ? count : 3;
+}
+
+function ecabRequiredApprovalCount(change?: Change | null) {
+  const detail = detailOf(change);
+  const rule = String(detail?.form_data?.approval_rule || '').trim();
+
+  if (rule === '1_of_3') return 1;
+  if (rule === '2_of_3') return 2;
+  return 3;
+}
+
+function isEcabApproved(change?: Change | null) {
+  if (!isEcabChange(change)) return false;
+  return ecabApprovalCount(change) >= ecabRequiredApprovalCount(change);
 }
 
 function isPapStepReady(status?: string) {
@@ -249,7 +285,8 @@ const [changes, setChanges] = useState<Change[]>([]);
   const selected = useMemo(() => changes.find((c) => c.id === selectedId) || null, [changes, selectedId]);
   const selectedLastRun = lastRun(selected);
 
-  const cabReady = isRdcApproved(selected);
+  const ecabFlow = isEcabChange(selected);
+  const cabReady = ecabFlow ? isEcabApproved(selected) : isRdcApproved(selected);
   const papReady = isPapReady(selected);
   const roleReady = true;
   const jobReady = Boolean(jobName.trim());
@@ -277,8 +314,28 @@ const [changes, setChanges] = useState<Change[]>([]);
   const pipelineName = jobName || selected?.title || 'ticketing-efe-pipeline';
   const artifactName = selected?.jira_key || selected?.jira_origin || selected?.title || 'RDC';
   const traceItems = [
-    { key: 'RDC', label: 'RDC', value: artifactName, ok: Boolean(selected), icon: '▣' },
-    { key: 'CAB', label: 'CAB', value: `${approvedCount(selected)}/${totalApprovals(selected)}`, ok: cabReady, icon: '✓' },
+    {
+      key: ecabFlow ? 'ECAB' : 'RDC',
+      label: ecabFlow ? 'eCAB' : 'RDC',
+      value: ecabFlow ? 'Aprobado' : artifactName,
+      ok: Boolean(selected),
+      icon: ecabFlow ? '⚡' : '▣',
+    },
+    ecabFlow
+      ? {
+          key: 'GERENCIA',
+          label: 'Gerencia',
+          value: `${ecabApprovalCount(selected)}/${ecabRequiredApprovalCount(selected)}`,
+          ok: cabReady,
+          icon: '✓',
+        }
+      : {
+          key: 'CAB',
+          label: 'CAB',
+          value: `${approvedCount(selected)}/${totalApprovals(selected)}`,
+          ok: cabReady,
+          icon: '✓',
+        },
     { key: 'PAP', label: 'PAP', value: papReady ? 'Completo' : 'Pendiente', ok: papReady, icon: '□' },
     { key: 'Jenkins', label: 'Jenkins', value: selectedStageRun?.build_number ? `#${selectedStageRun.build_number}` : 'Pendiente', ok: selectedStageRun?.status === 'SUCCESS', icon: '⚙' },
     { key: 'Cierre', label: 'Cierre', value: selected?.status === 'CERRADO' ? 'Cerrado' : 'Pendiente', ok: selected?.status === 'CERRADO', icon: '⚑' },
@@ -3978,6 +4035,19 @@ const [changes, setChanges] = useState<Change[]>([]);
           }
         }
 
+
+
+        .ecabDeployBadge {
+          display:inline-flex;
+          width:max-content;
+          margin:0 0 8px;
+          border-radius:999px;
+          background:#e8fff3;
+          color:#008f57;
+          padding:7px 10px;
+          font-size:12px;
+          font-weight:950;
+        }
 
       `}</style>
       </main>

@@ -12,7 +12,7 @@ export async function GET() {
 
   const { data: changes, error: changesError } = await supabase
     .from('rdc')
-    .select('*, approval_requests(*), pap_steps(*), deployment_runs(*)')
+    .select('*, approval_requests(*), pap_steps(*), deployment_runs(*), rdc_details(*)')
     .in('status', ['APROBADO_PARA_EJECUCION', 'PAP_CREADO', 'EN_IMPLEMENTACION', 'IMPLEMENTADO_EXITOSO'])
     .order('proposed_deploy_date', { ascending: true })
     .limit(80);
