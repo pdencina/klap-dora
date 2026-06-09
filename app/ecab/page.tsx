@@ -508,6 +508,64 @@ export default function EcabPage() {
     }
   }
 
+
+  const canAuthorizeManagement = (item?: EcabRequest | null) => {
+    return item?.status === 'management_authorization' || item?.status === 'management_observed';
+  };
+
+  const requiredManagementApprovals = (value?: string | null) => {
+    if (value === '1_of_3') return 1;
+    if (value === '3_of_3') return 3;
+    return 2;
+  };
+
+  const managementDecisions = (item?: EcabRequest | null) => {
+    return (item?.ecab_decisions || []).filter((decision) => decision.stage === 'management');
+  };
+
+  const latestManagementDecisionFor = (item: EcabRequest | null | undefined, approverName: string) => {
+    const normalized = approverName.trim().toLowerCase();
+    const decisions = managementDecisions(item)
+      .filter((decision) => String(decision.actor_name || '').trim().toLowerCase() === normalized)
+      .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+
+    return decisions[0] || null;
+  };
+
+  const managementApprovedCount = (item?: EcabRequest | null) => {
+    const approved = new Set<string>();
+
+    for (const decision of managementDecisions(item)) {
+      if (decision.decision === 'approve' && decision.actor_name) {
+        approved.add(String(decision.actor_name).trim().toLowerCase());
+      }
+    }
+
+    return approved.size;
+  };
+
+  const managementProgressLabel = (item?: EcabRequest | null) => {
+    const approved = managementApprovedCount(item);
+    const required = requiredManagementApprovals(item?.approval_rule);
+    return `${approved} de ${required} aprobaciones`;
+  };
+
+  const managementStatusLabel = (decision?: EcabDecision | null) => {
+    if (!decision) return 'Pendiente';
+    if (decision.decision === 'approve') return 'Aprobado';
+    if (decision.decision === 'observe') return 'Observado';
+    if (decision.decision === 'reject') return 'Rechazado';
+    return 'Pendiente';
+  };
+
+  const managementStatusClass = (decision?: EcabDecision | null) => {
+    if (!decision) return 'pending';
+    if (decision.decision === 'approve') return 'approved';
+    if (decision.decision === 'observe') return 'observed';
+    if (decision.decision === 'reject') return 'rejected';
+    return 'pending';
+  };
+
   return (
     <main className="ecabPage">
       <header className="hero">
