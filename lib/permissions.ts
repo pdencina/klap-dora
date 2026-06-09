@@ -60,11 +60,11 @@ export const ROLE_DEFAULT_MODULES: Record<AppRole, string[]> = {
 
 export const ROLE_DEFAULT_ACTIONS: Record<AppRole, string[]> = {
   client: ['create_rdc', 'create_ecab'],
-  approver: ['approve_change', 'authorize_ecab'],
-  deployment: ['approve_change', 'authorize_ecab', 'view_pap', 'execute_jenkins', 'update_jenkins_status', 'close_change'],
-  rm: ['create_rdc', 'create_ecab', 'edit_rdc', 'send_approval', 'approve_change', 'review_ecab', 'authorize_ecab', 'view_pap', 'edit_pap', 'execute_jenkins', 'update_jenkins_status', 'close_change', 'view_metrics'],
+  approver: ['inicio', 'mis_aprobaciones', 'ecab'],
+  deployment: ['inicio', 'mis_aprobaciones', 'ecab', 'plan_pap', 'deploy_center', 'cierre'],
+  rm: ['inicio', 'nuevo_rdc', 'mis_cambios', 'release', 'aprobaciones', 'agenda_cab', 'ecab', 'plan_pap', 'deploy_center', 'cierre', 'dashboard_dora'],
   super_admin: APP_ACTIONS.map((action) => action.key),
-  read_only: ['view_metrics'],
+  read_only: ['inicio', 'mis_cambios', 'ecab', 'dashboard_dora'],
 };
 
 export function normalizeAppRole(value?: string | null): AppRole {
