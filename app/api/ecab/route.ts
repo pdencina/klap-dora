@@ -78,6 +78,7 @@ export async function POST(request: Request) {
     affected_systems: payload.affected_systems,
     jira_or_erfc_url: payload.jira_or_erfc_url,
     status: 'rm_review',
+    approval_rule: payload.approval_rule || '2_of_3',
     created_by: payload.created_by || null,
   };
 
