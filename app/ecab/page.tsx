@@ -493,7 +493,7 @@ export default function EcabPage() {
       if (data.ready_for_pap) {
         setNotice('Autorización gerencial completa. La solicitud eCAB quedó lista para Plan PAP.');
       } else if (decision === 'approve') {
-        setNotice(`Aprobación registrada para ${approverName}. Avance: ${data.approved_count || managementApprovedCount(updated)} de ${data.required_count || requiredManagementApprovals(updated.approval_rule)}.`);
+        setNotice(`Aprobación registrada para ${approverName}. Avance: ${data.approved_count ?? 0} de ${data.required_count ?? 3}.`);
       } else if (decision === 'observe') {
         setNotice(`Observación registrada por ${approverName}.`);
       } else {
