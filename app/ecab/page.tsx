@@ -631,7 +631,7 @@ export default function EcabPage() {
         <article><span>Pendientes RM</span><b>{kpis.rm}</b></article>
         <article><span>En autorización</span><b>{kpis.auth}</b></article>
         <article><span>Aprobados gerencia</span><b>{kpis.approved}</b></article>
-        <article><span>Listos para PAP</span><b>{kpis.pap}</b></article>
+        <article><span>Plan PAP creado</span><b>{kpis.pap}</b></article>
       </section>
 
       <section className="flowCard">
