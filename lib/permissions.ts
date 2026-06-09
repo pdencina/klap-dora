@@ -24,6 +24,7 @@ export const APP_MODULES: AppModule[] = [
   { key: 'mis_aprobaciones', label: 'Mis Aprobaciones', path: '/mis-aprobaciones', icon: '✓', section: 'CONTROL', sort_order: 50 },
   { key: 'aprobaciones', label: 'Aprobaciones', path: '/approvals', icon: '✓', section: 'CONTROL', sort_order: 60 },
   { key: 'agenda_cab', label: 'Agenda CAB', path: '/cab', icon: '▣', section: 'CONTROL', sort_order: 70 },
+  { key: 'ecab', label: 'eCAB', path: '/ecab', icon: '⚡', section: 'CONTROL', sort_order: 75 },
   { key: 'plan_pap', label: 'Plan PAP', path: '/pap', icon: '□', section: 'EJECUCIÓN', sort_order: 80 },
   { key: 'deploy_center', label: 'Deploy Center', path: '/deploy', icon: '↗', section: 'EJECUCIÓN', sort_order: 90 },
   { key: 'cierre', label: 'Cierre', path: '/cierre', icon: '⚑', section: 'EJECUCIÓN', sort_order: 100 },
@@ -35,6 +36,9 @@ export const APP_ACTIONS: AppAction[] = [
   { key: 'create_rdc', label: 'Crear RDC', description: 'Puede registrar nuevos cambios.', section: 'RDC' },
   { key: 'edit_rdc', label: 'Editar RDC', description: 'Puede modificar la ficha del cambio.', section: 'RDC' },
   { key: 'send_approval', label: 'Enviar a aprobación', description: 'Puede activar el flujo CAB digital.', section: 'Aprobaciones' },
+  { key: 'create_ecab', label: 'Crear eCAB', description: 'Puede registrar solicitudes eCAB digitales.', section: 'eCAB' },
+  { key: 'review_ecab', label: 'Revisar eCAB', description: 'Puede revisar, observar o rechazar eCAB como Release Manager.', section: 'eCAB' },
+  { key: 'authorize_ecab', label: 'Autorizar eCAB', description: 'Puede autorizar eCAB digitalmente según regla gerencial.', section: 'eCAB' },
   { key: 'approve_change', label: 'Aprobar / observar / rechazar', description: 'Puede registrar decisión como aprobador.', section: 'Aprobaciones' },
   { key: 'view_pap', label: 'Ver PAP', description: 'Puede consultar pasos a producción.', section: 'PAP' },
   { key: 'edit_pap', label: 'Editar PAP', description: 'Puede modificar actividades del plan a producción.', section: 'PAP' },
@@ -47,18 +51,18 @@ export const APP_ACTIONS: AppAction[] = [
 
 export const ROLE_DEFAULT_MODULES: Record<AppRole, string[]> = {
   client: ['inicio', 'nuevo_rdc', 'mis_cambios'],
-  approver: ['inicio', 'mis_aprobaciones'],
-  deployment: ['inicio', 'mis_aprobaciones', 'plan_pap', 'deploy_center', 'cierre'],
-  rm: ['inicio', 'nuevo_rdc', 'mis_cambios', 'release', 'aprobaciones', 'agenda_cab', 'plan_pap', 'deploy_center', 'cierre', 'dashboard_dora'],
+  approver: ['inicio', 'mis_aprobaciones', 'ecab'],
+  deployment: ['inicio', 'mis_aprobaciones', 'ecab', 'plan_pap', 'deploy_center', 'cierre'],
+  rm: ['inicio', 'nuevo_rdc', 'mis_cambios', 'release', 'aprobaciones', 'agenda_cab', 'ecab', 'plan_pap', 'deploy_center', 'cierre', 'dashboard_dora'],
   super_admin: APP_MODULES.map((module) => module.key),
-  read_only: ['inicio', 'mis_cambios', 'dashboard_dora'],
+  read_only: ['inicio', 'mis_cambios', 'ecab', 'dashboard_dora'],
 };
 
 export const ROLE_DEFAULT_ACTIONS: Record<AppRole, string[]> = {
-  client: ['create_rdc'],
-  approver: ['approve_change'],
-  deployment: ['approve_change', 'view_pap', 'execute_jenkins', 'update_jenkins_status', 'close_change'],
-  rm: ['create_rdc', 'edit_rdc', 'send_approval', 'approve_change', 'view_pap', 'edit_pap', 'execute_jenkins', 'update_jenkins_status', 'close_change', 'view_metrics'],
+  client: ['create_rdc', 'create_ecab'],
+  approver: ['approve_change', 'authorize_ecab'],
+  deployment: ['approve_change', 'authorize_ecab', 'view_pap', 'execute_jenkins', 'update_jenkins_status', 'close_change'],
+  rm: ['create_rdc', 'create_ecab', 'edit_rdc', 'send_approval', 'approve_change', 'review_ecab', 'authorize_ecab', 'view_pap', 'edit_pap', 'execute_jenkins', 'update_jenkins_status', 'close_change', 'view_metrics'],
   super_admin: APP_ACTIONS.map((action) => action.key),
   read_only: ['view_metrics'],
 };
