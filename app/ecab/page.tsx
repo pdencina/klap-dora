@@ -258,6 +258,16 @@ function missingForStep(step: number, form: FormState) {
   return requiredByStep[step].filter((field) => !String(form[field] || '').trim());
 }
 
+
+function hasPapCreated(item: EcabRequest) {
+  return item.status === 'pap_created' || Boolean(item.rdc_id);
+}
+
+function hasManagementApprovalCompleted(item: EcabRequest) {
+  return item.status === 'ready_for_pap' || item.status === 'pap_created' || Boolean(item.rdc_id);
+}
+
+
 export default function EcabPage() {
   const [ecabs, setEcabs] = useState<EcabRequest[]>(sampleEcabs);
   const [selectedId, setSelectedId] = useState(sampleEcabs[0]?.id || '');
@@ -313,7 +323,7 @@ export default function EcabPage() {
       rm: ecabs.filter((item) => item.status === 'rm_review' || item.status === 'rm_observed').length,
       auth: ecabs.filter((item) => item.status === 'management_authorization' || item.status === 'management_observed').length,
       approved: ecabs.filter((item) => item.status === 'ready_for_pap' || item.status === 'pap_created' || item.status === 'ready_for_deploy').length,
-      pap: ecabs.filter((item) => item.status === 'ready_for_pap').length,
+      pap: ecabs.filter((item) => hasPapCreated(item)).length,
     };
   }, [ecabs]);
 
