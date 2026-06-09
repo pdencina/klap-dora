@@ -5,7 +5,7 @@ import { createSupabaseAdmin } from '../../../../../lib/supabase-admin';
 export const dynamic = 'force-dynamic';
 
 const nextStatusByDecision: Record<string, Record<string, string>> = {
-  rm: { approve: 'pre_review', observe: 'rm_observed', reject: 'rm_rejected' },
+  rm: { approve: 'management_authorization', observe: 'rm_observed', reject: 'rm_rejected' },
   pre_review: { approve: 'pre_ok', observe: 'pre_observed', reject: 'rm_rejected' },
   management: { approve: 'ready_for_pap', observe: 'management_observed', reject: 'management_rejected' },
 };
