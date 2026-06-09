@@ -26,14 +26,65 @@ const ECAB_MODULE: AppModule = {
   sort_order: 75,
 };
 
+const MODULE_ORDER = [
+  'inicio',
+  'nuevo_rdc',
+  'mis_cambios',
+  'release',
+  'mis_aprobaciones',
+  'aprobaciones',
+  'agenda_cab',
+  'ecab',
+  'plan_pap',
+  'deploy_center',
+  'cierre',
+  'dashboard_dora',
+  'admin_users',
+];
+
+const SECTION_ORDER: AppModule['section'][] = ['OPERACIÓN', 'CONTROL', 'EJECUCIÓN', 'MÉTRICAS', 'ADMINISTRACIÓN'];
+
+function stableModuleOrder(module: AppModule) {
+  const index = MODULE_ORDER.indexOf(module.key);
+  return index >= 0 ? index : 999 + module.sort_order;
+}
+
 function sortModules(items: AppModule[]) {
-  return [...items].sort((a, b) => a.sort_order - b.sort_order);
+  const unique = new Map<string, AppModule>();
+
+  for (const item of items) {
+    const key = item.key || item.path;
+    if (!unique.has(key)) unique.set(key, item);
+  }
+
+  return Array.from(unique.values()).sort((a, b) => {
+    const sectionDiff = SECTION_ORDER.indexOf(a.section) - SECTION_ORDER.indexOf(b.section);
+    if (sectionDiff !== 0) return sectionDiff;
+    return stableModuleOrder(a) - stableModuleOrder(b);
+  });
 }
 
 function ensureEcabModule(items: AppModule[], shouldShow: boolean) {
   const exists = items.some((item) => item.key === 'ecab' || item.path === '/ecab');
   if (!shouldShow || exists) return sortModules(items);
   return sortModules([...items, ECAB_MODULE]);
+}
+
+function normalizeRoutePath(value?: string | null) {
+  const path = String(value || '/').split('?')[0].split('#')[0];
+  if (!path || path === '/') return '/';
+  return path.endsWith('/') ? path.slice(0, -1) : path;
+}
+
+function isRouteActive(currentPath: string, href: string) {
+  const current = normalizeRoutePath(currentPath);
+  const target = normalizeRoutePath(href);
+
+  if (target === '/') return current === '/';
+
+  // Match exact route or nested route only.
+  // Prevents /cab from activating on unrelated paths and handles query params safely.
+  return current === target || current.startsWith(`${target}/`);
 }
 
 function hasEcabSignal(data: any, role: Role | AppRole) {
@@ -99,13 +150,12 @@ export default function TopNav({ role, email }: { role: Role; email: string }) {
     return () => { active = false; };
   }, [role, email]);
 
-  const isActive = (href: string) => (href === '/' ? pathname === '/' : pathname.startsWith(href));
+  const isActive = (href: string) => isRouteActive(pathname, href);
 
   const sections = useMemo(() => {
-    const orderedSections: AppModule['section'][] = ['OPERACIÓN', 'CONTROL', 'EJECUCIÓN', 'MÉTRICAS', 'ADMINISTRACIÓN'];
     const visibleModules = sortModules(modules);
 
-    return orderedSections
+    return SECTION_ORDER
       .map((section) => ({ section, links: visibleModules.filter((module) => module.section === section && module.path !== '/') }))
       .filter((group) => group.links.length);
   }, [modules]);
