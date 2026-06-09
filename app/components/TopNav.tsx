@@ -1,59 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { createSupabaseBrowser } from '../../lib/supabase-browser';
+import { APP_MODULES, modulesForRole, normalizeAppRole, type AppModule, type AppRole } from '../../lib/permissions';
 
 type Role = 'client' | 'approver' | 'deployment' | 'rm' | 'super_admin' | 'read_only';
 
-type NavLink = {
-  href: string;
-  label: string;
-  icon: string;
-  rm?: boolean;
-  section?: 'OPERACIÓN' | 'CONTROL' | 'EJECUCIÓN' | 'MÉTRICAS' | 'ADMINISTRACIÓN';
-};
-
-const CLIENT_LINKS: NavLink[] = [
-  { href: '/', label: 'Inicio', icon: '⌂' },
-  { href: '/rdc', label: 'Nuevo RDC', icon: '＋', section: 'OPERACIÓN' },
-  { href: '/mis-cambios', label: 'Mis Cambios', icon: '◇', section: 'OPERACIÓN' },
-];
-
-const APPROVER_LINKS: NavLink[] = [
-  { href: '/', label: 'Inicio', icon: '⌂' },
-  { href: '/mis-aprobaciones', label: 'Mis Aprobaciones', icon: '✓', section: 'CONTROL' },
-];
-
-const DEPLOYMENT_LINKS: NavLink[] = [
-  { href: '/', label: 'Inicio', icon: '⌂' },
-  { href: '/mis-aprobaciones', label: 'Mis Aprobaciones', icon: '✓', section: 'CONTROL' },
-  { href: '/pap', label: 'Plan PAP', icon: '□', section: 'EJECUCIÓN' },
-  { href: '/deploy', label: 'Deploy Center', icon: '↗', section: 'EJECUCIÓN' },
-  { href: '/cierre', label: 'Cierre técnico', icon: '⚑', section: 'EJECUCIÓN' },
-];
-
-const RM_LINKS: NavLink[] = [
-  { href: '/', label: 'Inicio', icon: '⌂' },
-
-  { href: '/rdc', label: 'Nuevo RDC', icon: '＋', section: 'OPERACIÓN' },
-  { href: '/mis-cambios', label: 'Mis Cambios', icon: '◇', section: 'OPERACIÓN' },
-  { href: '/release', label: 'Release', icon: '○', rm: true, section: 'OPERACIÓN' },
-
-  { href: '/approvals', label: 'Aprobaciones', icon: '✓', rm: true, section: 'CONTROL' },
-  { href: '/cab', label: 'Agenda CAB', icon: '▣', rm: true, section: 'CONTROL' },
-
-  { href: '/pap', label: 'Plan PAP', icon: '□', rm: true, section: 'EJECUCIÓN' },
-  { href: '/deploy', label: 'Deploy Center', icon: '↗', rm: true, section: 'EJECUCIÓN' },
-  { href: '/cierre', label: 'Cierre', icon: '⚑', rm: true, section: 'EJECUCIÓN' },
-
-  { href: '/dashboard', label: 'Dashboard DORA', icon: '⌁', rm: true, section: 'MÉTRICAS' },
-
-  { href: '/admin/users', label: 'Usuarios y permisos', icon: '⚙', rm: true, section: 'ADMINISTRACIÓN' },
-];
-
-const ROLE_LABEL: Record<Role, string> = {
+const ROLE_LABEL: Record<Role | AppRole, string> = {
   client: 'Cliente Interno',
   approver: 'Aprobador',
   deployment: 'Deployment',
@@ -62,84 +17,100 @@ const ROLE_LABEL: Record<Role, string> = {
   read_only: 'Solo Lectura',
 };
 
-function normalizeEmail(value: string) {
-  return String(value || '').trim().toLowerCase();
+const ECAB_MODULE: AppModule = {
+  key: 'ecab',
+  label: 'eCAB',
+  path: '/ecab',
+  icon: '⚡',
+  section: 'CONTROL',
+  sort_order: 75,
+};
+
+function sortModules(items: AppModule[]) {
+  return [...items].sort((a, b) => a.sort_order - b.sort_order);
 }
 
-function isDeploymentApproverEmail(email: string) {
-  const normalized = normalizeEmail(email);
+function ensureEcabModule(items: AppModule[], shouldShow: boolean) {
+  const exists = items.some((item) => item.key === 'ecab' || item.path === '/ecab');
+  if (!shouldShow || exists) return sortModules(items);
+  return sortModules([...items, ECAB_MODULE]);
+}
 
-  const configuredEmails = String(process.env.NEXT_PUBLIC_DEPLOYMENT_APPROVERS || '')
-    .split(',')
-    .map((item) => normalizeEmail(item))
-    .filter(Boolean);
+function hasEcabSignal(data: any, role: Role | AppRole) {
+  if (role === 'super_admin' || role === 'rm') return true;
 
-  return configuredEmails.includes(normalized)
-    || normalized === 'ximena.cruz@klap.cl'
-    || normalized.includes('ximena.cruz');
+  const modules = Array.isArray(data?.modules) ? data.modules : [];
+  const actions = Array.isArray(data?.actions) ? data.actions : [];
+  const allowedModules = Array.isArray(data?.debug?.allowedModules) ? data.debug.allowedModules : [];
+  const catalogKeys = Array.isArray(data?.debug?.catalogKeys) ? data.debug.catalogKeys : [];
+
+  return (
+    modules.some((module: any) => module?.key === 'ecab' || module?.path === '/ecab') ||
+    allowedModules.includes('ecab') ||
+    catalogKeys.includes('ecab') ||
+    actions.some((action: any) => String(action?.key || '').includes('ecab'))
+  );
+}
+
+
+function fallbackModules(role: Role, email: string) {
+  const normalized = email.trim().toLowerCase();
+  const normalizedRole = normalizeAppRole(role);
+
+  if (role === 'approver' && (normalized === 'ximena.cruz@klap.cl' || normalized.includes('ximena.cruz'))) {
+    return ensureEcabModule(modulesForRole('deployment'), true);
+  }
+
+  return ensureEcabModule(
+    modulesForRole(normalizedRole),
+    normalizedRole === 'super_admin' || normalizedRole === 'rm' || normalizedRole === 'deployment' || normalizedRole === 'approver',
+  );
 }
 
 export default function TopNav({ role, email }: { role: Role; email: string }) {
   const pathname = usePathname() || '/';
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
+  const [modules, setModules] = useState<AppModule[]>(() => fallbackModules(role, email));
+  const [displayRole, setDisplayRole] = useState<AppRole>(() => normalizeAppRole(role));
 
-  const isDeploymentApprover = role === 'approver' && isDeploymentApproverEmail(email);
-  const links = role === 'super_admin'
-    ? RM_LINKS
-    : role === 'rm'
-      ? RM_LINKS.filter((link) => link.section !== 'ADMINISTRACIÓN')
-      : role === 'deployment' || isDeploymentApprover
-        ? DEPLOYMENT_LINKS
-        : role === 'approver'
-          ? APPROVER_LINKS
-          : CLIENT_LINKS;
-  const displayRoleLabel = role === 'deployment' || isDeploymentApprover ? 'Deployment' : ROLE_LABEL[role];
+  useEffect(() => {
+    let active = true;
+
+    async function loadPermissions() {
+      try {
+        const response = await fetch('/api/admin/my-permissions', { cache: 'no-store' });
+        const data = await response.json().catch(() => null);
+        if (!active || !data?.ok) return;
+
+        const apiRole = normalizeAppRole(data.role || role);
+        const nextModules = Array.isArray(data.modules) && data.modules.length
+          ? data.modules
+          : fallbackModules(role, email);
+
+        setModules(ensureEcabModule(nextModules, hasEcabSignal(data, apiRole)));
+        setDisplayRole(apiRole);
+      } catch {
+        if (active) setModules(fallbackModules(role, email));
+      }
+    }
+
+    loadPermissions();
+    return () => { active = false; };
+  }, [role, email]);
 
   const isActive = (href: string) => (href === '/' ? pathname === '/' : pathname.startsWith(href));
 
-  function renderSidebarLinks() {
-    const home = links.find((link) => link.href === '/');
-    const sectionNames = Array.from(
-      new Set(links.map((link) => link.section).filter(Boolean)),
-    ) as Array<NonNullable<NavLink['section']>>;
+  const sections = useMemo(() => {
+    const orderedSections: AppModule['section'][] = ['OPERACIÓN', 'CONTROL', 'EJECUCIÓN', 'MÉTRICAS', 'ADMINISTRACIÓN'];
+    const visibleModules = sortModules(modules);
 
-    return (
-      <>
-        {home ? (
-          <Link
-            key={home.href}
-            href={home.href}
-            className={`app-sidebar-link ${isActive(home.href) ? 'active' : ''}`}
-          >
-            <span className="app-sidebar-icon" aria-hidden="true">{home.icon}</span>
-            <b>{home.label}</b>
-          </Link>
-        ) : null}
+    return orderedSections
+      .map((section) => ({ section, links: visibleModules.filter((module) => module.section === section && module.path !== '/') }))
+      .filter((group) => group.links.length);
+  }, [modules]);
 
-        {sectionNames.map((section) => {
-          const sectionLinks = links.filter((link) => link.section === section);
-          if (!sectionLinks.length) return null;
-
-          return (
-            <div className="app-sidebar-section" key={section}>
-              <small>{section}</small>
-              {sectionLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`app-sidebar-link ${isActive(link.href) ? 'active' : ''} ${link.rm ? 'rm' : ''}`}
-                >
-                  <span className="app-sidebar-icon" aria-hidden="true">{link.icon}</span>
-                  <b>{link.label}</b>
-                </Link>
-              ))}
-            </div>
-          );
-        })}
-      </>
-    );
-  }
+  const home = modules.find((module) => module.path === '/') || APP_MODULES[0];
 
   useEffect(() => {
     document.body.classList.toggle('sidebar-collapsed', collapsed);
@@ -174,14 +145,36 @@ export default function TopNav({ role, email }: { role: Role; email: string }) {
       </div>
 
       <nav className="app-sidebar-nav" aria-label="Navegación principal">
-        {renderSidebarLinks()}
+        <Link
+          href={home.path}
+          className={`app-sidebar-link ${isActive(home.path) ? 'active' : ''}`}
+        >
+          <span className="app-sidebar-icon" aria-hidden="true">{home.icon}</span>
+          <b>{home.label}</b>
+        </Link>
+
+        {sections.map((group) => (
+          <div className="app-sidebar-section" key={group.section}>
+            <small>{group.section}</small>
+            {group.links.map((link) => (
+              <Link
+                key={link.key}
+                href={link.path}
+                className={`app-sidebar-link ${isActive(link.path) ? 'active' : ''}`}
+              >
+                <span className="app-sidebar-icon" aria-hidden="true">{link.icon}</span>
+                <b>{link.label}</b>
+              </Link>
+            ))}
+          </div>
+        ))}
       </nav>
 
       <div className="app-sidebar-user">
         <div className="app-sidebar-avatar">PE</div>
         <div className="app-sidebar-user-text">
           <b>{email ? email.split('@')[0].replace('.', ' ') : 'Usuario'}</b>
-          <span>{displayRoleLabel}</span>
+          <span>{ROLE_LABEL[displayRole] || ROLE_LABEL[role]}</span>
         </div>
       </div>
 
