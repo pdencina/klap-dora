@@ -29,3 +29,8 @@ alter table if exists public.ecab_requests
 
 comment on column public.ecab_requests.approval_rule is
 'Regla de autorización gerencial para eCAB: 1_of_3, 2_of_3 o 3_of_3.';
+
+
+-- Diagnóstico:
+-- Si /ecab no aparece en menú, revisar que el usuario tenga permiso can_view=true para module_key='ecab'.
+-- Para Super Admin, el menú debería tomarlo desde APP_MODULES o desde app_modules.
