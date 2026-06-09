@@ -1,22 +1,8 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
+import { requireUser } from '../../../../../lib/auth';
+import { createSupabaseAdmin } from '../../../../../lib/supabase-admin';
 
-async function supabaseServer() {
-  const cookieStore = await cookies();
-
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-      },
-    },
-  );
-}
+export const dynamic = 'force-dynamic';
 
 const nextStatusByDecision: Record<string, Record<string, string>> = {
   rm: { approve: 'pre_review', observe: 'rm_observed', reject: 'rm_rejected' },
@@ -25,8 +11,11 @@ const nextStatusByDecision: Record<string, Record<string, string>> = {
 };
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+  const { user, deny } = await requireUser();
+  if (deny) return deny;
+
   const { id } = await context.params;
-  const supabase = await supabaseServer();
+  const supabase = createSupabaseAdmin();
   const payload = await request.json().catch(() => null);
 
   if (!payload) return NextResponse.json({ ok: false, error: 'Payload inválido' }, { status: 400 });
@@ -56,19 +45,22 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
 
+  const actorEmail = user?.email || payload.actor_email || null;
+  const actorName = payload.actor_name || user?.user_metadata?.full_name || user?.email || null;
+
   await supabase.from('ecab_decisions').insert({
     ecab_id: id,
     stage,
     decision,
     comment: payload.comment || null,
-    actor_email: payload.actor_email || null,
-    actor_name: payload.actor_name || null,
+    actor_email: actorEmail,
+    actor_name: actorName,
   });
 
   await supabase.from('ecab_audit_log').insert({
     ecab_id: id,
     event_type: `decision_${stage}_${decision}`,
-    actor_email: payload.actor_email || null,
+    actor_email: actorEmail,
     from_status: current.status,
     to_status: nextStatus,
     detail: payload.comment || `Decisión digital registrada: ${decision}`,
