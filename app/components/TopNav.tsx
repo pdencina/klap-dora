@@ -28,6 +28,14 @@ const ECAB_MODULE: AppModule = {
 
 const FORCED_MODULES: AppModule[] = [
   {
+    key: 'control_center',
+    label: 'Centro de Control',
+    path: '/control',
+    icon: '◈',
+    section: 'CONTROL',
+    sort_order: 45,
+  },
+  {
     key: 'ecab',
     label: 'eCAB',
     path: '/ecab',
