@@ -978,10 +978,10 @@ const [changes, setChanges] = useState<Change[]>([]);
         .conditions { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; }
         .condition { display:flex; gap:15px; align-items:flex-start; background:var(--bg); border:1px solid #dfeaf0; border-radius:18px; padding:16px; min-height:96px; }
         .condition.ok { border-color:#dfeaf0; background:#f0fff7; }
-        .condition.warn { border-color:#dfeaf0; background:#fff; }
+        .condition.warn { border-color:#fde68a; background:#fffbeb; }
         .conditionIcon { width:34px; height:34px; border-radius:999px; display:flex; align-items:center; justify-content:center; flex:none; font-weight:900; font-size:15px; margin-top:1px; }
-        .condition.ok .conditionIcon { width:34px; height:34px; border-radius:999px; display:flex; align-items:center; justify-content:center; flex:none; font-weight:900; font-size:15px; margin-top:1px; }
-        .condition.warn .conditionIcon { width:34px; height:34px; border-radius:999px; display:flex; align-items:center; justify-content:center; flex:none; font-weight:900; font-size:15px; margin-top:1px; }
+        .condition.ok .conditionIcon { width:34px; height:34px; border-radius:999px; display:flex; align-items:center; justify-content:center; flex:none; font-weight:900; font-size:15px; margin-top:1px; background:#e8fff3; color:#008f57; }
+        .condition.warn .conditionIcon { width:34px; height:34px; border-radius:999px; display:flex; align-items:center; justify-content:center; flex:none; font-weight:900; font-size:15px; margin-top:1px; background:#fef3c7; color:#b45309; }
         .condition b, .condition small { color:var(--ink-soft); line-height:1.45; font-weight:700; }
         .condition b { color:var(--navy-d); margin-bottom:8px; font-size:15px; letter-spacing:-.01em; line-height:1.18; }
         .condition small { color:var(--ink-soft); line-height:1.45; font-weight:700; }

@@ -147,7 +147,7 @@ export default function MisCambiosPage() {
         .mine .badge.watch { background: #eef4f8; color: var(--navy); }
         .mine .badge.bad { background: #fff1f0; color: #c0392b; }
         .mine .jira { font-size: 13px; font-weight: 800; color: var(--navy); }
-        .mine .nopap { font-size: 12px; color: var(--ink-soft); font-weight: 600; }
+        .mine .nopap { font-size: 12px; color: #b45309; font-weight: 700; background: #fffbeb; padding: 4px 10px; border-radius: 999px; }
       `}</style>
     </main>
   );

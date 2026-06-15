@@ -138,7 +138,7 @@ export default function MisAprobacionesPage() {
         .card a { flex: none; background: var(--green); color: white; padding: 11px 14px; border-radius: 999px; font-weight: 800; }
         .card.compact a { background: #fff; color: var(--navy); border: 1px solid var(--line); }
         .badge { display: inline-flex; border-radius: 999px; padding: 6px 10px; font-size: 11px; font-weight: 900; }
-        .ok { background:#e8fff3;color:#008f57 }.pending { background:#ecf7ff;color:#02568c }.watch { background:#fff7e6;color:#9a6700 }.bad { background:#fff1f0;color:#b42318 }
+        .ok { background:#e8fff3;color:#008f57 }.pending { background:#fef3c7;color:#b45309 }.watch { background:#fff7e6;color:#9a6700 }.bad { background:#fff1f0;color:#b42318 }
         .empty { color: var(--ink-soft); padding: 16px; background: var(--bg); border-radius: 14px; }
         .error { color: #b42318; background: #fff1f0; }
         @media(max-width:760px){ .stats { grid-template-columns: 1fr; } .card { flex-direction: column; align-items: flex-start; } }

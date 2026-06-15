@@ -69,8 +69,23 @@ const tone: Record<string, string> = {
 const statusLabel: Record<string, string> = {
   PENDIENTE_APROBACIONES: 'Pendiente aprobaciones CAB',
   APROBADO_PARA_EJECUCION: 'Aprobado para ejecución',
+  PAP_CREADO: 'Plan PAP creado',
+  EN_IMPLEMENTACION: 'En implementación',
+  IMPLEMENTADO_EXITOSO: 'Implementado exitoso',
+  CERRADO: 'Cerrado',
   OBSERVADO: 'Observado',
   RECHAZADO: 'Rechazado',
+};
+
+const statusTone: Record<string, string> = {
+  PENDIENTE_APROBACIONES: 'watch',
+  APROBADO_PARA_EJECUCION: 'ok',
+  PAP_CREADO: 'ok',
+  EN_IMPLEMENTACION: 'pending',
+  IMPLEMENTADO_EXITOSO: 'ok',
+  CERRADO: 'ok',
+  OBSERVADO: 'watch',
+  RECHAZADO: 'bad',
 };
 
 function firstDetail(change: Change): RdcDetails {
@@ -272,7 +287,7 @@ export default function RdcDetailPage() {
                 <div>
                   <p className="sectionLabel">1. Resumen ejecutivo</p>
                   <h2>{change.title}</h2>
-                  <p className="muted">{statusLabel[change.status] || change.status}</p>
+                  <em className={statusTone[change.status] || 'pending'}>{statusLabel[change.status] || change.status}</em>
                 </div>
                 <span className={`statePill ${readiness.ready ? 'ok' : 'watch'}`}>
                   {readiness.ready ? 'CAB Ready' : 'Faltan datos CAB'}
@@ -285,8 +300,8 @@ export default function RdcDetailPage() {
                 <div><span>Categoría</span><b>{valueOrEmpty(change.category, 'Sin categoría')}</b></div>
                 <div><span>Fecha deploy</span><b>{shortDate(change.proposed_deploy_date)}</b></div>
                 <div><span>Jira origen</span><b>{valueOrEmpty(change.jira_origin, 'No informado')}</b></div>
-                <div><span>PAP Jira</span><b>{valueOrEmpty(change.jira_key, 'Pendiente')}</b></div>
-                <div><span>Resultado deploy</span><b>{valueOrEmpty(change.deployment_result, 'PENDIENTE')}</b></div>
+                <div><span>PAP Jira</span><b className={change.jira_key ? 'val-ok' : 'val-warn'}>{valueOrEmpty(change.jira_key, 'Pendiente')}</b></div>
+                <div><span>Resultado deploy</span><b className={change.deployment_result && change.deployment_result !== 'PENDIENTE' ? 'val-ok' : 'val-warn'}>{valueOrEmpty(change.deployment_result, 'PENDIENTE')}</b></div>
               </div>
             </section>
 
@@ -533,6 +548,7 @@ export default function RdcDetailPage() {
         .headerActions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
         .back,.cabState,.statePill,.riskBadge{background:white;border:1px solid #dfeaf0;border-radius:999px;padding:11px 16px;font-weight:950}
         .ok{background:#e8fff3!important;color:#008f57!important}.pending{background:#ecf7ff!important;color:#02568c!important}.watch{background:#fff7e6!important;color:#9a6700!important}.bad{background:#fff1f0!important;color:#b42318!important}
+        .val-ok{color:#008f57}.val-warn{color:#b45309;background:#fffbeb;border-radius:8px;padding:2px 8px;font-size:13px}
         .layout{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(340px,.8fr);gap:20px}
         .mainCard,.sideCard,.empty,.error{background:white;border:1px solid #dfeaf0;border-radius:24px;box-shadow:0 18px 45px rgba(7,59,93,.07)}
         .mainCard,.sideCard{padding:22px}

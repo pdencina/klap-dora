@@ -351,7 +351,7 @@ export default function PapPage() {
                       <strong>{change.title}</strong>
                       {isEcabPap(change) ? <i className="queueSourceBadge">⚡ eCAB aprobado</i> : null}
                       <small>{change.system || 'Sin sistema'} · {change.cell || 'Sin célula'}</small>
-                      <em>{currentPercent === 100 ? 'Listo para Deploy' : 'Pendiente Plan PAP'}</em>
+                      <em className={currentPercent === 100 ? 'statusOk' : 'statusWarn'}>{currentPercent === 100 ? 'Listo para Deploy' : 'Pendiente Plan PAP'}</em>
                     </button>
                   );
                 })}
@@ -526,7 +526,9 @@ export default function PapPage() {
         .queueItem strong, .queueItem small, .queueItem em { display: block; }
         .queueItem strong { color: var(--navy-d); margin-bottom: 5px; }
         .queueItem small { color: var(--ink-soft); margin-bottom: 8px; }
-        .queueItem em { font-style: normal; color: var(--green-d); font-weight: 900; font-size: 12px; }
+        .queueItem em { font-style: normal; font-weight: 900; font-size: 12px; }
+        .queueItem em.statusOk { color: var(--green-d); }
+        .queueItem em.statusWarn { color: #b45309; background: #fffbeb; border-radius: 999px; padding: 4px 10px; display: inline-flex; }
         .empty { color: var(--ink-soft); }
         .summary { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; background: var(--bg); border: 1px solid #dfeaf0; border-radius: 18px; padding: 18px; }
         .summaryActions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }

@@ -24,6 +24,8 @@ type Change = {
 const stateLabel: Record<string, string> = {
   PENDIENTE_APROBACIONES: 'Pendiente aprobación',
   APROBADO_PARA_EJECUCION: 'Aprobado para ejecución',
+  PAP_CREADO: 'Plan PAP creado',
+  EN_IMPLEMENTACION: 'En implementación',
   OBSERVADO: 'Observado',
   RECHAZADO: 'Rechazado',
 };
@@ -147,7 +149,7 @@ export default function ApprovalsPage() {
       <section className="list">
         {changes.map((change) => {
           const progress = getProgress(change);
-          const cabTone = progress.rejected > 0 ? 'bad' : progress.observed > 0 ? 'watch' : progress.pending === 0 ? 'ok' : 'pending';
+          const cabTone = progress.rejected > 0 ? 'bad' : progress.observed > 0 ? 'watch' : progress.pending === 0 ? 'ok' : 'watch';
 
           return (
             <article className="card" key={change.id}>
