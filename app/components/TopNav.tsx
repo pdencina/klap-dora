@@ -17,16 +17,7 @@ const ROLE_LABEL: Record<Role | AppRole, string> = {
   read_only: 'Solo Lectura',
 };
 
-const ECAB_MODULE: AppModule = {
-  key: 'ecab',
-  label: 'eCAB',
-  path: '/ecab',
-  icon: '⚡',
-  section: 'CONTROL',
-  sort_order: 75,
-};
-
-const FORCED_MODULES: AppModule[] = [
+const PROCESS_MODULES: AppModule[] = [
   {
     key: 'control_center',
     label: 'Centro de Control',
@@ -45,6 +36,42 @@ const FORCED_MODULES: AppModule[] = [
   },
 ];
 
+const ROLE_VISIBLE_MODULE_KEYS: Record<AppRole, string[]> = {
+  client: ['inicio', 'nuevo_rdc', 'mis_cambios'],
+  read_only: ['inicio', 'mis_cambios'],
+  approver: ['inicio', 'mis_aprobaciones'],
+  deployment: ['inicio', 'plan_pap', 'cierre', 'deploy_center'],
+  rm: [
+    'inicio',
+    'nuevo_rdc',
+    'mis_cambios',
+    'release',
+    'control_center',
+    'aprobaciones',
+    'agenda_cab',
+    'ecab',
+    'plan_pap',
+    'cierre',
+    'dashboard_dora',
+  ],
+  super_admin: [
+    'inicio',
+    'nuevo_rdc',
+    'mis_cambios',
+    'release',
+    'control_center',
+    'mis_aprobaciones',
+    'aprobaciones',
+    'agenda_cab',
+    'ecab',
+    'plan_pap',
+    'cierre',
+    'deploy_center',
+    'dashboard_dora',
+    'admin_users',
+  ],
+};
+
 const SECTION_ORDER: AppModule['section'][] = ['OPERACIÓN', 'CONTROL', 'EJECUCIÓN', 'MÉTRICAS', 'ADMINISTRACIÓN'];
 
 const MODULE_ORDER = [
@@ -52,6 +79,7 @@ const MODULE_ORDER = [
   '/rdc',
   '/mis-cambios',
   '/release',
+  '/control',
   '/mis-aprobaciones',
   '/approvals',
   '/agenda',
@@ -85,7 +113,7 @@ function isRouteActive(currentPath: string, href: string) {
 function sortModules(items: AppModule[]) {
   const unique = new Map<string, AppModule>();
 
-  for (const item of [...items, ...FORCED_MODULES]) {
+  for (const item of [...items, ...PROCESS_MODULES]) {
     const key = item.path || item.key;
     if (!unique.has(key)) unique.set(key, item);
   }
@@ -101,41 +129,31 @@ function sortModules(items: AppModule[]) {
   });
 }
 
-function ensureEcabModule(items: AppModule[], shouldShow: boolean) {
-  const exists = items.some((item) => item.key === 'ecab' || item.path === '/ecab');
-  if (!shouldShow || exists) return sortModules(items);
-  return sortModules([...items, ECAB_MODULE]);
-}
+function moduleCatalogWithProcess(items: AppModule[]) {
+  const catalog = new Map<string, AppModule>();
 
-function hasEcabSignal(data: any, role: Role | AppRole) {
-  if (role === 'super_admin' || role === 'rm') return true;
-
-  const modules = Array.isArray(data?.modules) ? data.modules : [];
-  const actions = Array.isArray(data?.actions) ? data.actions : [];
-  const allowedModules = Array.isArray(data?.debug?.allowedModules) ? data.debug.allowedModules : [];
-  const catalogKeys = Array.isArray(data?.debug?.catalogKeys) ? data.debug.catalogKeys : [];
-
-  return (
-    modules.some((module: any) => module?.key === 'ecab' || module?.path === '/ecab') ||
-    allowedModules.includes('ecab') ||
-    catalogKeys.includes('ecab') ||
-    actions.some((action: any) => String(action?.key || '').includes('ecab'))
-  );
-}
-
-
-function fallbackModules(role: Role, email: string) {
-  const normalized = email.trim().toLowerCase();
-  const normalizedRole = normalizeAppRole(role);
-
-  if (role === 'approver' && (normalized === 'ximena.cruz@klap.cl' || normalized.includes('ximena.cruz'))) {
-    return ensureEcabModule(modulesForRole('deployment'), true);
+  for (const item of [...APP_MODULES, ...PROCESS_MODULES, ...items]) {
+    if (!catalog.has(item.key)) catalog.set(item.key, item);
   }
 
-  return ensureEcabModule(
-    modulesForRole(normalizedRole),
-    normalizedRole === 'super_admin' || normalizedRole === 'rm' || normalizedRole === 'deployment' || normalizedRole === 'approver',
+  return catalog;
+}
+
+function modulesForProcessRole(items: AppModule[], role: Role | AppRole) {
+  const normalizedRole = normalizeAppRole(role);
+  const allowedKeys = ROLE_VISIBLE_MODULE_KEYS[normalizedRole] || ROLE_VISIBLE_MODULE_KEYS.client;
+  const catalog = moduleCatalogWithProcess(items);
+
+  return sortModules(
+    allowedKeys
+      .map((key) => catalog.get(key))
+      .filter(Boolean) as AppModule[],
   );
+}
+
+function fallbackModules(role: Role, email: string) {
+  const normalizedRole = normalizeAppRole(role);
+  return modulesForProcessRole(modulesForRole(normalizedRole), normalizedRole);
 }
 
 export default function TopNav({ role, email }: { role: Role; email: string }) {
@@ -159,7 +177,7 @@ export default function TopNav({ role, email }: { role: Role; email: string }) {
           ? data.modules
           : fallbackModules(role, email);
 
-        setModules(ensureEcabModule(nextModules, hasEcabSignal(data, apiRole)));
+        setModules(modulesForProcessRole(nextModules, apiRole));
         setDisplayRole(apiRole);
       } catch {
         if (active) setModules(fallbackModules(role, email));
