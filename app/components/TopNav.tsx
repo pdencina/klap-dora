@@ -173,11 +173,21 @@ export default function TopNav({ role, email }: { role: Role; email: string }) {
         if (!active || !data?.ok) return;
 
         const apiRole = normalizeAppRole(data.role || role);
-        const nextModules = Array.isArray(data.modules) && data.modules.length
+        const apiModules: AppModule[] = Array.isArray(data.modules) && data.modules.length
           ? data.modules
-          : fallbackModules(role, email);
+          : [];
 
-        setModules(modulesForProcessRole(nextModules, apiRole));
+        if (apiModules.length) {
+          // La API ya devuelve los módulos filtrados por permisos custom del usuario.
+          // Solo necesitamos agregarlos al catálogo y ordenarlos.
+          const catalog = moduleCatalogWithProcess(apiModules);
+          const resolved = apiModules
+            .map((m: AppModule) => catalog.get(m.key) || m)
+            .filter(Boolean) as AppModule[];
+          setModules(sortModules(resolved));
+        } else {
+          setModules(fallbackModules(role, email));
+        }
         setDisplayRole(apiRole);
       } catch {
         if (active) setModules(fallbackModules(role, email));

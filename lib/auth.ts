@@ -90,15 +90,22 @@ export async function hasActionPermission(user: any, permissionKey: string) {
     if (userError && isTableMissing(userError)) return defaultAllowed.has(permissionKey);
     if (userError || !appUser || appUser.is_active === false) return defaultAllowed.has(permissionKey);
 
-    const { data: row } = await supabase
+    // Verificar si el usuario tiene permisos custom guardados
+    const { data: allRows, error: permError } = await supabase
       .from('user_action_permissions')
-      .select('allowed')
-      .eq('user_id', appUser.id)
-      .eq('permission_key', permissionKey)
-      .maybeSingle();
+      .select('permission_key, allowed')
+      .eq('user_id', appUser.id);
 
-    if (row && typeof row.allowed === 'boolean') return row.allowed;
+    if (permError && isTableMissing(permError)) return defaultAllowed.has(permissionKey);
 
+    const customRows = Array.isArray(allRows) ? allRows : [];
+
+    // Si tiene permisos custom, solo esos aplican
+    if (customRows.length > 0) {
+      return customRows.some((row) => row.permission_key === permissionKey && row.allowed === true);
+    }
+
+    // Sin custom, usar defaults del rol
     return defaultAllowed.has(permissionKey);
   } catch {
     return defaultAllowed.has(permissionKey);

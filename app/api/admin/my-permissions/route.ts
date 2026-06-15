@@ -93,20 +93,22 @@ export async function GET() {
 
     const defaultModuleKeys = new Set(modulesForRole(effectiveRole).map((module) => module.key));
     const customModuleRows = Array.isArray(modulePermissions) ? modulePermissions : [];
-    const denied = new Set(customModuleRows.filter((item: any) => item.can_view === false).map((item: any) => item.module_key));
+    const hasCustomModules = customModuleRows.length > 0;
     const allowed = new Set(customModuleRows.filter((item: any) => item.can_view === true).map((item: any) => item.module_key));
 
+    // Si hay permisos custom guardados, solo esos son los que ve el usuario.
+    // Si no hay custom, usa los defaults del rol.
     const modules = moduleCatalog
-      .filter((module) => (allowed.has(module.key) || defaultModuleKeys.has(module.key)) && !denied.has(module.key))
+      .filter((module) => hasCustomModules ? allowed.has(module.key) : defaultModuleKeys.has(module.key))
       .sort((a, b) => a.sort_order - b.sort_order);
 
     const defaultActionKeys = new Set(actionsForRole(effectiveRole).map((action) => action.key));
     const customActionRows = Array.isArray(actionPermissions) ? actionPermissions : [];
-    const deniedActions = new Set(customActionRows.filter((item: any) => item.allowed === false).map((item: any) => item.permission_key));
+    const hasCustomActions = customActionRows.length > 0;
     const allowedActions = new Set(customActionRows.filter((item: any) => item.allowed === true).map((item: any) => item.permission_key));
 
     const actions = APP_ACTIONS
-      .filter((action) => (allowedActions.has(action.key) || defaultActionKeys.has(action.key)) && !deniedActions.has(action.key));
+      .filter((action) => hasCustomActions ? allowedActions.has(action.key) : defaultActionKeys.has(action.key));
 
     return NextResponse.json({
       ok: true,
@@ -119,7 +121,8 @@ export async function GET() {
         fallbackRole,
         effectiveRole,
         allowedModules: Array.from(allowed),
-        deniedModules: Array.from(denied),
+        hasCustomModules,
+        hasCustomActions,
         catalogKeys: moduleCatalog.map((module) => module.key),
       },
     });
