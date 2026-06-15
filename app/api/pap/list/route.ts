@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdmin } from '@/lib/supabase-admin';
-import { requireActionPermission } from '@/lib/auth';
+import { requireAnyRole } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const { deny } = await requireActionPermission('view_pap');
+  const { deny } = await requireAnyRole(['rm', 'deployment']);
   if (deny) return deny;
 
   const supabase = createSupabaseAdmin();
