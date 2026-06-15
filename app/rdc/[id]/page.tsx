@@ -48,7 +48,6 @@ type Change = {
   updated_at?: string | null;
   jira_key?: string | null;
   jira_origin?: string | null;
-  rfc?: string | null;
   presenter?: string | null;
   technical_lead?: string | null;
   qa_analyst?: string | null;
@@ -286,7 +285,6 @@ export default function RdcDetailPage() {
                 <div><span>Categoría</span><b>{valueOrEmpty(change.category, 'Sin categoría')}</b></div>
                 <div><span>Fecha deploy</span><b>{shortDate(change.proposed_deploy_date)}</b></div>
                 <div><span>Jira origen</span><b>{valueOrEmpty(change.jira_origin, 'No informado')}</b></div>
-                <div><span>RFC</span><b>{valueOrEmpty(change.rfc, 'No aplica')}</b></div>
                 <div><span>PAP Jira</span><b>{valueOrEmpty(change.jira_key, 'Pendiente')}</b></div>
                 <div><span>Resultado deploy</span><b>{valueOrEmpty(change.deployment_result, 'PENDIENTE')}</b></div>
               </div>

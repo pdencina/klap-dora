@@ -86,7 +86,6 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
     technical_lead: ecab.technical_lead || null,
     business_validator: ecab.validator || null,
     jira_origin: ecab.jira_or_erfc_url || null,
-    rfc: `ECAB-${String(ecab.id).slice(0, 8)}`,
     proposed_deploy_date: proposedDate,
     validation_date: validationDate,
     deployment_result: 'PENDIENTE',

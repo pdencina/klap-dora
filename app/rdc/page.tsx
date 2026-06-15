@@ -90,7 +90,6 @@ export default function RdcLitePage() {
     system: '',
     cell: '',
     jiraOrigin: '',
-    rfc: '',
     proposedDeployDate: '',
     presenter: '',
     technicalLead: '',
@@ -425,9 +424,6 @@ export default function RdcLitePage() {
                   <Field label="Jira origen">
                     <input value={form.jiraOrigin} onChange={(e) => update('jiraOrigin', e.target.value)} placeholder="Ej: CNLS-1916 / BEMS-1692" />
                   </Field>
-                  <Field label="RFC">
-                    <input value={form.rfc} onChange={(e) => update('rfc', e.target.value)} placeholder="Ej: RFC-1234 / No aplica" />
-                  </Field>
                 </Block>
               </>
             )}
@@ -595,7 +591,6 @@ export default function RdcLitePage() {
                     <div><b>Categoría</b><span>{form.category}</span></div>
                     <div><b>Fecha propuesta</b><span>{form.proposedDeployDate || 'Sin fecha'}</span></div>
                     <div><b>Jira origen</b><span>{form.jiraOrigin || 'No informado'}</span></div>
-                    <div><b>RFC</b><span>{form.rfc || 'No aplica'}</span></div>
                     <div><b>Presentador</b><span>{form.presenter || 'No informado'}</span></div>
                     <div><b>Líder técnico</b><span>{form.technicalLead || 'No informado'}</span></div>
                   </div>

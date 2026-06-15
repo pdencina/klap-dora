@@ -101,7 +101,6 @@ export async function POST(req: Request) {
         qa_analyst: String(body?.qaAnalyst || '').trim(),
         business_validator: String(body?.businessValidator || '').trim(),
         jira_origin: String(body?.jiraOrigin || '').trim(),
-        rfc: String(body?.rfc || '').trim(),
         proposed_deploy_date: body?.proposedDeployDate || null,
         validation_date: body?.validationDate || null,
         deployment_result: String(body?.deploymentResult || 'PENDIENTE').trim(),

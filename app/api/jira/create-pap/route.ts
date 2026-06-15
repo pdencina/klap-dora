@@ -91,7 +91,6 @@ function buildDescriptionText(rdc: any, details: RdcDetails) {
     `Célula: ${rdc.cell || 'Sin célula'}`,
     `Categoría: ${rdc.category || 'Sin categoría'}`,
     `Jira Origen: ${rdc.jira_origin || 'No informado'}`,
-    `RFC: ${rdc.rfc || 'No aplica'}`,
     `Fecha Deploy: ${rdc.proposed_deploy_date || 'No informada'}`,
     '',
     'Descripción del requerimiento:',

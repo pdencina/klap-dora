@@ -31,7 +31,6 @@ type Approval = {
     proposed_deploy_date?: string | null;
     validation_date?: string | null;
     jira_origin?: string | null;
-    rfc?: string | null;
     deployment_result?: string | null;
   } | null;
 };
@@ -251,7 +250,6 @@ export default function ApproveTokenPage() {
                   <div><span>Presentador</span><b>{approval.rdc?.presenter || 'Portal Release'}</b></div>
                   <div><span>Líder técnico</span><b>{approval.rdc?.technical_lead || 'No informado'}</b></div>
                   <div><span>Jira origen</span><b>{approval.rdc?.jira_origin || 'No informado'}</b></div>
-                  <div><span>RFC</span><b>{approval.rdc?.rfc || 'No aplica'}</b></div>
                 </div>
               </div>
 
