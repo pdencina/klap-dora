@@ -26,7 +26,7 @@ type PimComponent = {
 };
 
 // ===== Opciones del formulario =====
-const categoriaOptions = ['Mantención', 'Proyecto', 'Incidente', 'Hotfix', 'ECAB', 'Recurrente'];
+const categoriaOptions = ['Mantención', 'Proyecto', 'Incidente', 'Hotfix', 'Recurrente'];
 const sistemaOptions = ['POS', 'Anticipo', 'Abono Ya', 'Bridge', 'H2H', 'BO', 'SmartVista', 'API', 'Middleware', 'Portal', 'App Klap', 'Data Analytics', 'Otro'];
 const celulaOptions = ['SmartVista', 'POS', 'Adquirencia', 'Adquirencia Clearing', 'Core', 'Boleta Electrónica y Multiservicios', 'Operaciones', 'QA', 'Infraestructura', 'Canales Presenciales', 'Otro'];
 const impactOptions = ['Bajo', 'Medio', 'Alto', 'Crítico'];
@@ -64,8 +64,6 @@ const SYSTEMS_CATALOG: Record<string, string[]> = {
   '17. Data Analytics': ['Data warehouse (Redshift)', 'Data lake (S3)', 'Data Gobernance (Lakeformation)'],
   '18. OTI': ['Sistemas de Respaldo', 'Ciberseguridad', 'vSphere Teatinos', 'vSphere Kudos'],
 };
-
-const ECAB_REQUIRED_FIELDS = ['ecabUrgencyReason', 'ecabProblem', 'ecabSolution', 'ecabRisk', 'ecabAffected', 'ecabPostValidationDate', 'ecabValidator', 'ecabProductionValidationPlan', 'ecabAffectedSystems', 'ecabTicketUrl'] as const;
 
 const STEPS = [
   { title: 'Detalles', help: 'Identificación del cambio, origen Jira y responsable técnico.' },
@@ -155,26 +153,11 @@ export default function RdcPage() {
     presenter: '',
     qaAnalyst: '',
     selectedApprovalRoles: ['Dueño Cambio', 'QA', 'DBA', 'Deployment'] as string[],
-
-    // === eCAB (solo si categoría = ECAB) ===
-    ecabUrgencyReason: '',
-    ecabProblem: '',
-    ecabSolution: '',
-    ecabRisk: '',
-    ecabAffected: '',
-    ecabPostValidationDate: '',
-    ecabValidator: '',
-    ecabProductionValidationPlan: '',
-    ecabAffectedSystems: '',
-    ecabTicketUrl: '',
-    ecabApprovalRule: '2_of_3',
   });
 
   function update(name: string, value: any) {
     setForm((c) => ({ ...c, [name]: value }));
   }
-
-  const isEcab = form.category === 'ECAB';
 
   // Cargar roles de aprobación
   useEffect(() => {
@@ -312,28 +295,11 @@ export default function RdcPage() {
             deployPlanProd: form.deployPlanProd,
             rollbackProd: form.rollbackProd,
             mitigationPlan: form.mitigationPlan,
-            source_type: isEcab ? 'ECAB' : 'CAB',
           },
         }),
       });
       const data = await response.json();
       if (!response.ok || !data.ok) throw new Error(data.error || 'No fue posible crear el RDC');
-
-      if (isEcab && data.rdc?.id) {
-        await fetch('/api/ecab', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            rdc_id: data.rdc.id, title: form.title, system: form.system, cell: form.cell,
-            technical_lead: form.technicalLead, validator: form.ecabValidator || form.businessValidator,
-            urgency_reason: form.ecabUrgencyReason, problem: form.ecabProblem, solution: form.ecabSolution,
-            risk: form.ecabRisk, impact: form.ecabAffected, proposed_deploy_at: form.proposedDeployDate,
-            post_validation_at: form.ecabPostValidationDate, production_validation_plan: form.ecabProductionValidationPlan,
-            affected_systems: form.ecabAffectedSystems, jira_or_erfc_url: form.ecabTicketUrl || form.jiraOrigin,
-            approval_rule: form.ecabApprovalRule,
-          }),
-        });
-      }
 
       setCreatedRdcId(data.rdc?.id || '');
       setCreated(true);
@@ -349,7 +315,7 @@ export default function RdcPage() {
         <div className="done">
           <span className="check">✓</span>
           <h1>RDC registrado</h1>
-          <p>{isEcab ? 'Solicitud eCAB registrada y enviada a revisión RM.' : 'RDC registrado y enviado al flujo CAB.'}</p>
+          <p>RDC registrado y enviado al flujo CAB.</p>
           <div className="doneActions">
             {createdRdcId ? <a className="primary" href={`/rdc/${createdRdcId}`}>Abrir RDC →</a> : null}
             <a className="ghostLink" href="/mis-cambios">Ver en Mis Cambios</a>
@@ -443,28 +409,6 @@ export default function RdcPage() {
                   </Field>
                 </Block>
 
-                {isEcab ? (
-                  <Block title="Preguntas eCAB obligatorias">
-                    <div className="ecabNotice"><b>Flujo eCAB digital</b><span>Estas respuestas reemplazan el formato por Teams/correo. La evidencia oficial queda en el sistema.</span></div>
-                    <Field label="Motivo no puede esperar al siguiente CAB *"><textarea value={form.ecabUrgencyReason} onChange={(e) => update('ecabUrgencyReason', e.target.value)} rows={3} /></Field>
-                    <Field label="¿Cuál es el problema? *"><textarea value={form.ecabProblem} onChange={(e) => update('ecabProblem', e.target.value)} rows={3} /></Field>
-                    <Field label="¿Cuál es la solución? *"><textarea value={form.ecabSolution} onChange={(e) => update('ecabSolution', e.target.value)} rows={3} /></Field>
-                    <Field label="¿Qué riesgo tiene aplicar este cambio? *"><textarea value={form.ecabRisk} onChange={(e) => update('ecabRisk', e.target.value)} rows={3} /></Field>
-                    <Field label="¿A quién afecta este cambio? *"><textarea value={form.ecabAffected} onChange={(e) => update('ecabAffected', e.target.value)} rows={3} /></Field>
-                    <Field label="Fecha/Hora validación post despliegue *"><input value={form.ecabPostValidationDate} onChange={(e) => update('ecabPostValidationDate', e.target.value)} placeholder="Ej: 09-06-2026 10:00" /></Field>
-                    <Field label="Validador eCAB *"><input value={form.ecabValidator} onChange={(e) => update('ecabValidator', e.target.value)} placeholder="Nombre del validador" /></Field>
-                    <Field label="Plan de validación en producción *"><textarea value={form.ecabProductionValidationPlan} onChange={(e) => update('ecabProductionValidationPlan', e.target.value)} rows={3} /></Field>
-                    <Field label="Sistemas afectados *"><textarea value={form.ecabAffectedSystems} onChange={(e) => update('ecabAffectedSystems', e.target.value)} rows={3} /></Field>
-                    <Field label="Link ticket JIRA / ERFC *"><input value={form.ecabTicketUrl} onChange={(e) => update('ecabTicketUrl', e.target.value)} placeholder="https://..." /></Field>
-                    <Field label="Regla de autorización gerencial">
-                      <select value={form.ecabApprovalRule} onChange={(e) => update('ecabApprovalRule', e.target.value)}>
-                        <option value="1_of_3">1 de 3 autorizadores</option>
-                        <option value="2_of_3">2 de 3 autorizadores</option>
-                        <option value="3_of_3">3 de 3 autorizadores</option>
-                      </select>
-                    </Field>
-                  </Block>
-                ) : null}
               </>
             )}
 
@@ -734,8 +678,6 @@ export default function RdcPage() {
         .rdcLite .checks { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
         .rdcLite .checks label { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #d9e7ef; border-radius: 12px; padding: 12px; font-size: 13px; cursor: pointer; }
         .rdcLite .checks input { width: auto; min-height: auto; }
-        .rdcLite .ecabNotice { grid-column: 1 / -1; background: #ecfdf4; border: 1px solid #bbf7d0; color: #007d4f; border-radius: 14px; padding: 12px; display: grid; gap: 4px; }
-        .rdcLite .ecabNotice span { color: #246b50; }
         .rdcLite .cutWarning { grid-column: 1 / -1; background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 12px; padding: 12px; font-weight: 800; font-size: 13px; }
         .rdcLite .systemsCatalog { grid-column: 1 / -1; display: grid; gap: 8px; }
         .rdcLite .sysGroup { background: #fff; border: 1px solid #e5eef3; border-radius: 14px; overflow: hidden; }
