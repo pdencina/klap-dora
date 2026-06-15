@@ -260,8 +260,7 @@ function getPipelineUrlFromBuildUrl(buildUrl?: string | null) {
 
 export default function DeployCenterPage() {
   
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-const [changes, setChanges] = useState<Change[]>([]);
+  const [changes, setChanges] = useState<Change[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [jobs, setJobs] = useState<JenkinsJob[]>([]);
   const [jobsLoading, setJobsLoading] = useState(false);
@@ -554,49 +553,7 @@ const [changes, setChanges] = useState<Change[]>([]);
   }
 
   return (
-    <div className={sidebarCollapsed ? 'deployShell sidebarCollapsed' : 'deployShell'}>
-
-      <aside className={sidebarCollapsed ? 'deploySidebar collapsed' : 'deploySidebar'}>
-        <div className="sidebarTop">
-          <button
-            className="hamburgerBtn"
-            type="button"
-            aria-label="Abrir o cerrar menú"
-            onClick={() => setSidebarCollapsed((value) => !value)}
-          >
-            <span />
-            <span />
-            <span />
-          </button>
-
-          <a className="sidebarBrand" href="/">
-            <strong>klap</strong>
-            <span>RELEASE</span>
-          </a>
-        </div>
-
-        <nav className="sidebarNav" aria-label="Navegación principal">
-          <a href="/" className="sidebarLink"><span>⌂</span><b>Inicio</b></a>
-          <a href="/rdc" className="sidebarLink"><span>＋</span><b>Nuevo RDC</b></a>
-          <a href="/mis-cambios" className="sidebarLink"><span>◇</span><b>Mis Cambios</b></a>
-          <a href="/release" className="sidebarLink"><span>○</span><b>Release</b></a>
-          <a href="/aprobaciones" className="sidebarLink"><span>✓</span><b>Aprobaciones</b></a>
-          <a href="/cab" className="sidebarLink"><span>▣</span><b>Agenda CAB</b></a>
-          <a href="/pap" className="sidebarLink"><span>□</span><b>Plan PAP</b></a>
-          <a href="/deploy" className="sidebarLink active"><span>↗</span><b>Deploy Center</b></a>
-          <a href="/cierre" className="sidebarLink"><span>⚑</span><b>Cierre</b></a>
-          <a href="/dashboard" className="sidebarLink"><span>⌁</span><b>Dashboard DORA</b></a>
-        </nav>
-
-        <div className="sidebarUser">
-          <div className="avatar">PE</div>
-          <div>
-            <b>Pablo Encina</b>
-            <span>Release Manager</span>
-          </div>
-        </div>
-      </aside>
-
+    <>
       <main className="deploy">
       <header className="mockHeader">
         <div>
@@ -4051,7 +4008,7 @@ const [changes, setChanges] = useState<Change[]>([]);
 
       `}</style>
       </main>
-    </div>
+    </>
   );
 }
 

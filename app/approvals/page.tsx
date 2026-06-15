@@ -219,10 +219,6 @@ export default function ApprovalsPage() {
       </section>
 
       <style jsx global>{`
-        * { box-sizing: border-box; }
-        html, body { margin:0; }
-        body { background:#edf5f9; }
-        a { color:inherit; text-decoration:none; }
         .page { min-height:100vh; padding:26px 6vw 60px; border-top:6px solid #00c16e; color:#073b5d; background:radial-gradient(circle at top right,rgba(0,193,110,.10),transparent 32%),#edf5f9; font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
         .header, .summaryGrid, .list, .empty, .error { max-width:1280px; margin:0 auto; }
         .header { display:flex; justify-content:space-between; gap:24px; align-items:flex-start; margin-bottom:24px; }
