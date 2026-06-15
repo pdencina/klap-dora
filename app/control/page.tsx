@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 type ChangeType = 'CAB' | 'eCAB';
 
@@ -345,7 +346,39 @@ function normalizeValidator(value?: string | null) {
   return raw;
 }
 
+
+function actionRouteOf(item?: ControlChange | null) {
+  if (!item) return '/control';
+
+  if (item.type === 'eCAB') {
+    if (item.status === 'pap_created') return `/pap?rdcId=${encodeURIComponent(item.id)}`;
+    return `/ecab`;
+  }
+
+  if (item.status === 'approval') return `/approvals`;
+  if (item.status === 'approved_for_pap' || item.status === 'pap_created') return `/pap?rdcId=${encodeURIComponent(item.id)}`;
+  if (item.status === 'closed') return `/cierre?rdcId=${encodeURIComponent(item.id)}`;
+
+  return `/approvals`;
+}
+
+function expedienteRouteOf(item?: ControlChange | null) {
+  if (!item) return '/control';
+
+  if (item.type === 'eCAB') return '/ecab';
+  return `/mis-cambios`;
+}
+
+function approvalRouteOf(item?: ControlChange | null) {
+  if (!item) return '/approvals';
+
+  if (item.type === 'eCAB') return '/ecab';
+  return '/approvals';
+}
+
+
 export default function ControlCenterPage() {
+  const router = useRouter();
   const [changes, setChanges] = useState<ControlChange[]>(demoChanges);
   const [selectedId, setSelectedId] = useState(demoChanges[0].id);
   const [filter, setFilter] = useState<'all' | ProcessStatus>('all');
@@ -411,6 +444,19 @@ export default function ControlCenterPage() {
       { label: 'Cerrados', value: count('closed'), icon: '▰', tone: 'slate', status: 'closed' as ProcessStatus },
     ];
   }, [changes]);
+
+  function openExpediente() {
+    router.push(expedienteRouteOf(selected));
+  }
+
+  function openMainAction() {
+    router.push(actionRouteOf(selected));
+  }
+
+  function openApprovals() {
+    router.push(approvalRouteOf(selected));
+  }
+
 
   const processMetrics = [
     { label: 'Cumplimiento SLA', value: '92%', help: 'Cambios dentro del SLA acordado', tone: 'green' },
@@ -655,8 +701,8 @@ export default function ControlCenterPage() {
               </section>
 
               <div className="detailActions">
-                <button type="button">▣ Ver expediente completo</button>
-                <button type="button" className="primary">{processActionLabel(selected)}</button>
+                <button type="button" onClick={openExpediente}>▣ Ver expediente completo</button>
+                <button type="button" className="primary" onClick={openMainAction}>{processActionLabel(selected)}</button>
               </div>
             </>
           ) : null}
