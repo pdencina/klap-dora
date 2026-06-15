@@ -2,7 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { roleOf } from './lib/roles';
 
-const RM_PREFIXES = ['/release', '/approvals', '/cab', '/ecab', '/pap', '/deploy', '/cierre', '/dashboard'];
+const RM_PREFIXES = ['/release', '/approvals', '/cab', '/ecab', '/dashboard'];
+const DEPLOY_PREFIXES = ['/pap', '/deploy', '/cierre'];
 const CLIENT_PREFIXES = ['/rdc', '/mis-cambios'];
 const APPROVER_PREFIXES = ['/mis-aprobaciones', '/ecab'];
 
@@ -53,6 +54,7 @@ export async function middleware(req: NextRequest) {
 
     // Super Admin y RM ven todo.
     if (role !== 'rm' && role !== 'super_admin') {
+      // Rutas exclusivas RM (release, approvals, cab, dashboard)
       if (matchPrefix(pathname, RM_PREFIXES)) {
         const isEcabRoute = pathname === '/ecab' || pathname.startsWith('/ecab/');
         if (!(isEcabRoute && (role === 'approver' || role === 'deployment'))) {
@@ -61,6 +63,14 @@ export async function middleware(req: NextRequest) {
           url.search = '';
           return NextResponse.redirect(url);
         }
+      }
+
+      // Rutas de ejecución (pap, deploy, cierre) — accesibles para deployment y rm
+      if (matchPrefix(pathname, DEPLOY_PREFIXES) && role !== 'deployment') {
+        const url = req.nextUrl.clone();
+        url.pathname = '/';
+        url.search = '';
+        return NextResponse.redirect(url);
       }
 
       // Cliente interno puede crear/ver sus RDC. Aprobador no.

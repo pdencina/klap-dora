@@ -118,10 +118,12 @@ export async function requireDeployAccess() {
 
   const role = await getEffectiveAppRole(user);
 
-  if (role === 'super_admin' || role === 'rm' || role === 'deployment') {
+  // Super admin siempre pasa
+  if (role === 'super_admin') {
     return { user, deny: null as NextResponse | null, role };
   }
 
+  // Para otros roles, verificar permisos de acción específicos
   const allowed =
     await hasActionPermission(user, 'execute_jenkins') ||
     await hasActionPermission(user, 'update_jenkins_status');
