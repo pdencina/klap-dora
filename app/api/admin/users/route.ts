@@ -110,8 +110,8 @@ export async function POST(req: Request) {
     await supabase.from('user_module_permissions').delete().eq('user_id', appUser.id);
     if (modulePermissions.length) {
       const rows = modulePermissions
-        .filter((item: any) => APP_MODULES.some((module) => module.key === item.module_key))
-        .map((item: any) => ({ user_id: appUser.id, module_key: item.module_key, can_view: Boolean(item.can_view) }));
+        .filter((item: any) => APP_MODULES.some((module) => module.key === item.module_key) && item.can_view === true)
+        .map((item: any) => ({ user_id: appUser.id, module_key: item.module_key, can_view: true }));
       if (rows.length) {
         const { error } = await supabase.from('user_module_permissions').insert(rows);
         if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
@@ -121,8 +121,8 @@ export async function POST(req: Request) {
     await supabase.from('user_action_permissions').delete().eq('user_id', appUser.id);
     if (actionPermissions.length) {
       const rows = actionPermissions
-        .filter((item: any) => APP_ACTIONS.some((action) => action.key === item.permission_key))
-        .map((item: any) => ({ user_id: appUser.id, permission_key: item.permission_key, allowed: Boolean(item.allowed) }));
+        .filter((item: any) => APP_ACTIONS.some((action) => action.key === item.permission_key) && item.allowed === true)
+        .map((item: any) => ({ user_id: appUser.id, permission_key: item.permission_key, allowed: true }));
       if (rows.length) {
         const { error } = await supabase.from('user_action_permissions').insert(rows);
         if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });

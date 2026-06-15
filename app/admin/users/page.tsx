@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { APP_ACTIONS, APP_MODULES, ROLE_DEFAULT_ACTIONS, ROLE_DEFAULT_MODULES, normalizeAppRole, type AppRole } from '@/lib/permissions';
 
 type UserRow = {
@@ -23,6 +23,10 @@ const ROLE_OPTIONS: { value: AppRole; label: string; description: string }[] = [
   { value: 'read_only', label: 'Solo Lectura', description: 'Consulta información sin ejecutar acciones.' },
 ];
 
+function roleLabel(role: string) {
+  return ROLE_OPTIONS.find((r) => r.value === role)?.label || role;
+}
+
 export default function AdminUsersPage() {
   const [query, setQuery] = useState('');
   const [users, setUsers] = useState<UserRow[]>([]);
@@ -34,47 +38,62 @@ export default function AdminUsersPage() {
   const [actionKeys, setActionKeys] = useState<Set<string>>(new Set(ROLE_DEFAULT_ACTIONS.client));
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Carga usuarios al entrar (últimos 25)
+  useEffect(() => {
+    loadUsers('');
+  }, []);
 
   const modulesBySection = useMemo(() => {
-    const sections = ['OPERACIÓN', 'CONTROL', 'EJECUCIÓN', 'MÉTRICAS', 'ADMINISTRACIÓN'];
-    return sections.map((section) => ({ section, modules: APP_MODULES.filter((module) => module.section === section) })).filter((item) => item.modules.length);
+    const sections = ['OPERACIÓN', 'CONTROL', 'EJECUCIÓN', 'MÉTRICAS', 'ADMINISTRACIÓN'] as const;
+    return sections
+      .map((section) => ({ section, modules: APP_MODULES.filter((m) => m.section === section) }))
+      .filter((item) => item.modules.length);
   }, []);
 
   const actionsBySection = useMemo(() => {
-    const sections = Array.from(new Set(APP_ACTIONS.map((action) => action.section)));
-    return sections.map((section) => ({ section, actions: APP_ACTIONS.filter((action) => action.section === section) }));
+    const sections = Array.from(new Set(APP_ACTIONS.map((a) => a.section)));
+    return sections.map((section) => ({ section, actions: APP_ACTIONS.filter((a) => a.section === section) }));
   }, []);
 
-  async function searchUsers() {
+  // Cuenta cuántos módulos/acciones difieren del default del rol
+  const modulesDiff = useMemo(() => {
+    const defaults = new Set(ROLE_DEFAULT_MODULES[role] || []);
+    let added = 0;
+    let removed = 0;
+    moduleKeys.forEach((k) => { if (!defaults.has(k)) added++; });
+    defaults.forEach((k) => { if (!moduleKeys.has(k)) removed++; });
+    return { added, removed };
+  }, [moduleKeys, role]);
+
+  const actionsDiff = useMemo(() => {
+    const defaults = new Set(ROLE_DEFAULT_ACTIONS[role] || []);
+    let added = 0;
+    let removed = 0;
+    actionKeys.forEach((k) => { if (!defaults.has(k)) added++; });
+    defaults.forEach((k) => { if (!actionKeys.has(k)) removed++; });
+    return { added, removed };
+  }, [actionKeys, role]);
+
+  async function loadUsers(q: string) {
     try {
       setLoading(true);
       setStatus('');
-      const response = await fetch(`/api/admin/users?q=${encodeURIComponent(query)}`);
+      const response = await fetch(`/api/admin/users?q=${encodeURIComponent(q)}`, { cache: 'no-store' });
       const data = await response.json().catch(() => null);
-      if (!response.ok || !data?.ok) throw new Error(data?.error || 'No fue posible buscar usuarios');
-
-      const resultUsers: UserRow[] = data.users || [];
-      setUsers(resultUsers);
-
-      if (resultUsers.length === 1) {
-        selectUser(resultUsers[0]);
-        return;
-      }
-
-      if (!resultUsers.length) {
-        setSelected(null);
-        setFullName('');
-        setRole('client');
-        setIsActive(true);
-        setModuleKeys(new Set(ROLE_DEFAULT_MODULES.client));
-        setActionKeys(new Set(ROLE_DEFAULT_ACTIONS.client));
-        setStatus('No se encontró en la base. Puedes completar el nombre, rol y guardar para crearlo.');
-      }
+      if (!response.ok || !data?.ok) throw new Error(data?.error || 'No fue posible cargar usuarios');
+      setUsers(data.users || []);
     } catch (error: any) {
-      setStatus(error?.message || 'Error buscando usuarios');
+      setStatus(error?.message || 'Error cargando usuarios');
     } finally {
       setLoading(false);
     }
+  }
+
+  async function searchUsers(e?: React.FormEvent) {
+    e?.preventDefault();
+    await loadUsers(query);
   }
 
   function selectUser(user: UserRow) {
@@ -93,8 +112,20 @@ export default function AdminUsersPage() {
     setRole(nextRole);
     setFullName(user.full_name || '');
     setIsActive(user.is_active !== false);
+    // Si tiene permisos custom guardados, usar esos. Si no, usar defaults del rol.
     setModuleKeys(new Set(savedModules.length ? savedModules : ROLE_DEFAULT_MODULES[nextRole] || []));
     setActionKeys(new Set(savedActions.length ? savedActions : ROLE_DEFAULT_ACTIONS[nextRole] || []));
+    setStatus('');
+  }
+
+  function clearSelection() {
+    setSelected(null);
+    setQuery('');
+    setFullName('');
+    setRole('client');
+    setIsActive(true);
+    setModuleKeys(new Set(ROLE_DEFAULT_MODULES.client));
+    setActionKeys(new Set(ROLE_DEFAULT_ACTIONS.client));
     setStatus('');
   }
 
@@ -120,13 +151,30 @@ export default function AdminUsersPage() {
     });
   }
 
+  function selectAllModules() {
+    setModuleKeys(new Set(APP_MODULES.map((m) => m.key)));
+  }
+
+  function selectAllActions() {
+    setActionKeys(new Set(APP_ACTIONS.map((a) => a.key)));
+  }
+
+  function resetToDefaults() {
+    setModuleKeys(new Set(ROLE_DEFAULT_MODULES[role] || []));
+    setActionKeys(new Set(ROLE_DEFAULT_ACTIONS[role] || []));
+  }
+
   async function savePermissions() {
     try {
-      setLoading(true);
+      setSaving(true);
       setStatus('');
       const email = String(selected?.email || query || '').trim().toLowerCase();
       if (!email) throw new Error('Selecciona o escribe un correo para guardar permisos.');
       if (!email.includes('@')) throw new Error('Ingresa un correo válido.');
+
+      // Solo enviar los módulos marcados (can_view: true) y acciones permitidas (allowed: true)
+      const modulePermissions = Array.from(moduleKeys).map((key) => ({ module_key: key, can_view: true }));
+      const actionPermissions = Array.from(actionKeys).map((key) => ({ permission_key: key, allowed: true }));
 
       const response = await fetch('/api/admin/users', {
         method: 'POST',
@@ -136,8 +184,8 @@ export default function AdminUsersPage() {
           full_name: fullName,
           role,
           is_active: isActive,
-          modulePermissions: APP_MODULES.map((module) => ({ module_key: module.key, can_view: moduleKeys.has(module.key) })),
-          actionPermissions: APP_ACTIONS.map((action) => ({ permission_key: action.key, allowed: actionKeys.has(action.key) })),
+          modulePermissions,
+          actionPermissions,
         }),
       });
 
@@ -151,19 +199,25 @@ export default function AdminUsersPage() {
       };
 
       setSelected(updatedUser);
-      setQuery(updatedUser.email);
-      setFullName(updatedUser.full_name || '');
       setUsers((current) => {
         const without = current.filter((item) => item.email !== updatedUser.email);
         return [updatedUser, ...without];
       });
 
-      setStatus('Permisos guardados correctamente. El usuario verá el menú actualizado al refrescar o cambiar de página.');
+      setStatus('✓ Permisos guardados correctamente. El usuario verá los cambios al refrescar.');
     } catch (error: any) {
       setStatus(error?.message || 'Error guardando permisos');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
+  }
+
+  function isModuleDefault(key: string) {
+    return (ROLE_DEFAULT_MODULES[role] || []).includes(key);
+  }
+
+  function isActionDefault(key: string) {
+    return (ROLE_DEFAULT_ACTIONS[role] || []).includes(key);
   }
 
   return (
@@ -171,150 +225,288 @@ export default function AdminUsersPage() {
       <section className="adminHero">
         <small>ADMINISTRACIÓN</small>
         <h1>Usuarios y permisos</h1>
-        <p>Busca usuarios, asigna un rol base y define qué módulos o acciones puede usar cada persona.</p>
+        <p>Busca usuarios por correo o nombre, asigna un rol base y personaliza módulos y acciones.</p>
       </section>
 
       <section className="adminGrid">
         <aside className="adminPanel searchPanel">
-          <h2>Buscar usuario</h2>
-          <div className="searchBox">
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="correo@klap.cl" />
-            <button type="button" onClick={searchUsers} disabled={loading}>{loading ? 'Buscando…' : 'Buscar'}</button>
-          </div>
+          <h2>Usuarios</h2>
+          <form className="searchBox" onSubmit={searchUsers}>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="correo@klap.cl"
+            />
+            <button type="submit" disabled={loading}>
+              {loading ? '…' : '🔍'}
+            </button>
+          </form>
 
           <div className="userList">
+            {users.length === 0 && !loading ? (
+              <p className="emptyList">No se encontraron usuarios.</p>
+            ) : null}
             {users.map((user) => (
-              <button key={user.email} type="button" onClick={() => selectUser(user)} className={selected?.email === user.email ? 'userRow active' : 'userRow'}>
-                <b>{user.full_name || user.email}</b>
+              <button
+                key={user.email}
+                type="button"
+                onClick={() => selectUser(user)}
+                className={selected?.email === user.email ? 'userRow active' : 'userRow'}
+              >
+                <b>{user.full_name || user.email.split('@')[0]}</b>
                 <span>{user.email}</span>
-                <small>{user.role || 'client'} · {user.source || 'app'}</small>
+                <small className={user.is_active === false ? 'inactive' : ''}>
+                  {roleLabel(normalizeAppRole(user.role))}
+                  {user.is_active === false ? ' · Inactivo' : ''}
+                </small>
               </button>
             ))}
           </div>
+
+          <button type="button" className="newUserBtn" onClick={clearSelection}>
+            + Nuevo usuario
+          </button>
         </aside>
 
         <section className="adminPanel editorPanel">
-          <div className="editorHead">
-            <div>
-              <small>Usuario seleccionado</small>
-              <h2>{selected?.email || query || 'Selecciona un usuario'}</h2>
+          {!selected && !query ? (
+            <div className="emptyEditor">
+              <p>Selecciona un usuario de la lista o busca por correo para editar sus permisos.</p>
             </div>
-            <label className="activeSwitch">
-              <input type="checkbox" checked={isActive} onChange={(event) => setIsActive(event.target.checked)} />
-              Activo
-            </label>
-          </div>
-
-          <div className="formGrid">
-            <label>
-              Nombre visible
-              <input
-                value={fullName}
-                onChange={(event) => setFullName(event.target.value)}
-                placeholder="Nombre Apellido"
-                autoComplete="name"
-              />
-            </label>
-            <label>
-              Rol base
-              <select value={role} onChange={(event) => applyRoleDefaults(event.target.value as AppRole)}>
-                {ROLE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
-            </label>
-          </div>
-
-          <div className="roleHelp">
-            <b>{ROLE_OPTIONS.find((item) => item.value === role)?.label}</b>
-            <span>{ROLE_OPTIONS.find((item) => item.value === role)?.description}</span>
-          </div>
-
-          <h3>Módulos visibles</h3>
-          <div className="permissionSections">
-            {modulesBySection.map((group) => (
-              <div className="permissionBlock" key={group.section}>
-                <small>{group.section}</small>
-                <div className="permissionGrid">
-                  {group.modules.map((module) => (
-                    <label key={module.key} className="checkCard">
-                      <input type="checkbox" checked={moduleKeys.has(module.key)} onChange={() => toggleModule(module.key)} />
-                      <span>{module.icon}</span>
-                      <b>{module.label}</b>
-                    </label>
-                  ))}
+          ) : (
+            <>
+              <div className="editorHead">
+                <div>
+                  <small>{selected ? 'Editando usuario' : 'Nuevo usuario'}</small>
+                  <h2>{selected?.email || 'Nuevo usuario'}</h2>
+                </div>
+                <div className="headActions">
+                  <label className="activeSwitch">
+                    <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+                    {isActive ? 'Activo' : 'Inactivo'}
+                  </label>
                 </div>
               </div>
-            ))}
-          </div>
 
-          <h3>Permisos de acción</h3>
-          <div className="permissionSections">
-            {actionsBySection.map((group) => (
-              <div className="permissionBlock" key={group.section}>
-                <small>{group.section}</small>
-                <div className="actionGrid">
-                  {group.actions.map((action) => (
-                    <label key={action.key} className="actionCard">
-                      <input type="checkbox" checked={actionKeys.has(action.key)} onChange={() => toggleAction(action.key)} />
-                      <div>
-                        <b>{action.label}</b>
-                        <span>{action.description}</span>
-                      </div>
-                    </label>
-                  ))}
+              <div className="formGrid">
+                <label>
+                  Correo
+                  <input
+                    value={selected?.email || query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="correo@klap.cl"
+                    disabled={Boolean(selected?.id)}
+                  />
+                </label>
+                <label>
+                  Nombre visible
+                  <input
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Nombre Apellido"
+                  />
+                </label>
+                <label>
+                  Rol base
+                  <select value={role} onChange={(e) => applyRoleDefaults(e.target.value as AppRole)}>
+                    {ROLE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <div className="roleHelp">
+                <b>{ROLE_OPTIONS.find((r) => r.value === role)?.label}</b>
+                <span>{ROLE_OPTIONS.find((r) => r.value === role)?.description}</span>
+              </div>
+
+              {/* Módulos */}
+              <div className="sectionHeader">
+                <h3>Módulos visibles</h3>
+                <div className="quickActions">
+                  <button type="button" onClick={resetToDefaults} className="linkBtn">Reset defaults</button>
+                  <button type="button" onClick={selectAllModules} className="linkBtn">Todos</button>
                 </div>
               </div>
-            ))}
-          </div>
+              {(modulesDiff.added > 0 || modulesDiff.removed > 0) ? (
+                <p className="diffNote">
+                  {modulesDiff.added > 0 ? `+${modulesDiff.added} extra` : ''}
+                  {modulesDiff.added > 0 && modulesDiff.removed > 0 ? ' · ' : ''}
+                  {modulesDiff.removed > 0 ? `−${modulesDiff.removed} removido${modulesDiff.removed > 1 ? 's' : ''}` : ''}
+                  {' '}respecto al default del rol
+                </p>
+              ) : null}
+              <div className="permissionSections">
+                {modulesBySection.map((group) => (
+                  <div className="permissionBlock" key={group.section}>
+                    <small>{group.section}</small>
+                    <div className="permissionGrid">
+                      {group.modules.map((module) => {
+                        const checked = moduleKeys.has(module.key);
+                        const isDefault = isModuleDefault(module.key);
+                        return (
+                          <label key={module.key} className={`checkCard ${checked ? 'checked' : ''} ${!isDefault && checked ? 'custom' : ''}`}>
+                            <input type="checkbox" checked={checked} onChange={() => toggleModule(module.key)} />
+                            <span className="moduleIcon">{module.icon}</span>
+                            <b>{module.label}</b>
+                            {!isDefault && checked ? <i className="customBadge">custom</i> : null}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
 
-          {status ? <div className={status.includes('correctamente') ? 'status ok' : 'status'}>{status}</div> : null}
+              {/* Acciones */}
+              <div className="sectionHeader">
+                <h3>Permisos de acción</h3>
+                <div className="quickActions">
+                  <button type="button" onClick={resetToDefaults} className="linkBtn">Reset defaults</button>
+                  <button type="button" onClick={selectAllActions} className="linkBtn">Todos</button>
+                </div>
+              </div>
+              {(actionsDiff.added > 0 || actionsDiff.removed > 0) ? (
+                <p className="diffNote">
+                  {actionsDiff.added > 0 ? `+${actionsDiff.added} extra` : ''}
+                  {actionsDiff.added > 0 && actionsDiff.removed > 0 ? ' · ' : ''}
+                  {actionsDiff.removed > 0 ? `−${actionsDiff.removed} removido${actionsDiff.removed > 1 ? 's' : ''}` : ''}
+                  {' '}respecto al default del rol
+                </p>
+              ) : null}
+              <div className="permissionSections">
+                {actionsBySection.map((group) => (
+                  <div className="permissionBlock" key={group.section}>
+                    <small>{group.section}</small>
+                    <div className="actionGrid">
+                      {group.actions.map((action) => {
+                        const checked = actionKeys.has(action.key);
+                        const isDefault = isActionDefault(action.key);
+                        return (
+                          <label key={action.key} className={`actionCard ${checked ? 'checked' : ''} ${!isDefault && checked ? 'custom' : ''}`}>
+                            <input type="checkbox" checked={checked} onChange={() => toggleAction(action.key)} />
+                            <div>
+                              <b>{action.label}</b>
+                              <span>{action.description}</span>
+                              {!isDefault && checked ? <i className="customBadge">custom</i> : null}
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
 
-          <div className="saveBar">
-            <button type="button" onClick={savePermissions} disabled={loading || (!selected?.email && !query)}>{loading ? 'Guardando…' : 'Guardar permisos'}</button>
-          </div>
+              {status ? (
+                <div className={status.startsWith('✓') ? 'status ok' : 'status err'}>{status}</div>
+              ) : null}
+
+              <div className="saveBar">
+                <button type="button" className="secondary" onClick={clearSelection}>Cancelar</button>
+                <button type="button" className="primary" onClick={savePermissions} disabled={saving || (!selected?.email && !query)}>
+                  {saving ? 'Guardando…' : 'Guardar permisos'}
+                </button>
+              </div>
+            </>
+          )}
         </section>
       </section>
 
       <style jsx>{`
-        .adminPage { padding: 44px 6vw 80px; }
-        .adminHero { max-width: 980px; margin: 0 auto 22px; }
-        .adminHero small, .editorHead small, .permissionBlock small { color: var(--green-d); text-transform: uppercase; letter-spacing: .22em; font-weight: 900; font-size: 12px; }
-        .adminHero h1 { margin: 8px 0 10px; font-size: clamp(38px, 5vw, 64px); line-height: .95; color: var(--navy-d); letter-spacing: -.06em; }
-        .adminHero p { margin: 0; color: var(--ink-soft); font-size: 17px; max-width: 720px; line-height: 1.5; }
-        .adminGrid { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 340px 1fr; gap: 18px; align-items: start; }
+        .adminPage { padding: 36px 6vw 80px; }
+        .adminHero { max-width: 1100px; margin: 0 auto 22px; }
+        .adminHero small, .editorHead small, .permissionBlock small { color: var(--green-d); text-transform: uppercase; letter-spacing: .18em; font-weight: 900; font-size: 11px; }
+        .adminHero h1 { margin: 8px 0 10px; font-size: clamp(34px, 4.5vw, 56px); line-height: .95; color: var(--navy-d); letter-spacing: -.05em; }
+        .adminHero p { margin: 0; color: var(--ink-soft); font-size: 16px; max-width: 640px; line-height: 1.5; }
+
+        .adminGrid { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 320px 1fr; gap: 18px; align-items: start; }
         .adminPanel { background: #fff; border: 1px solid var(--line); border-radius: 22px; padding: 20px; box-shadow: 0 18px 45px rgba(7,59,93,.05); }
-        .adminPanel h2, .adminPanel h3 { color: var(--navy-d); margin: 0 0 14px; }
-        .searchBox { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
-        input, select { width: 100%; border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; font: inherit; color: var(--ink); background: #fff; }
-        button { font: inherit; font-weight: 900; border: 1px solid var(--line); background: #fff; color: var(--navy); border-radius: 999px; padding: 11px 16px; cursor: pointer; }
-        button:disabled { opacity: .65; cursor: not-allowed; }
-        .userList { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
-        .userRow { text-align: left; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 4px; }
-        .userRow.active { background: var(--green-soft); border-color: #bbf7d0; color: var(--green-d); }
-        .userRow span, .userRow small { color: var(--ink-soft); font-weight: 700; }
-        .editorHead { display: flex; justify-content: space-between; gap: 16px; align-items: start; margin-bottom: 16px; }
-        .editorHead h2 { margin-top: 4px; }
-        .activeSwitch { display: inline-flex; align-items: center; gap: 8px; font-weight: 900; color: var(--navy); }
-        .activeSwitch input { width: auto; }
-        .formGrid { display: grid; grid-template-columns: 1fr 240px; gap: 12px; margin-bottom: 14px; }
-        .formGrid label { color: var(--navy); font-weight: 900; display: flex; flex-direction: column; gap: 6px; }
-        .roleHelp { background: #f4f8fb; border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; margin-bottom: 20px; }
-        .roleHelp b { display: block; color: var(--navy-d); }
-        .roleHelp span { display: block; color: var(--ink-soft); margin-top: 4px; }
-        .permissionSections { display: flex; flex-direction: column; gap: 14px; margin-bottom: 22px; }
-        .permissionBlock { border: 1px solid #edf3f7; border-radius: 18px; padding: 14px; background: #fbfdff; }
-        .permissionGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
-        .checkCard, .actionCard { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: flex; align-items: center; gap: 10px; font-weight: 900; color: var(--navy); }
-        .checkCard input, .actionCard input { width: auto; }
-        .checkCard span { width: 26px; height: 26px; border-radius: 999px; background: var(--green-soft); color: var(--green-d); display: inline-flex; align-items: center; justify-content: center; }
-        .actionGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+        .adminPanel h2 { color: var(--navy-d); margin: 0 0 14px; font-size: 20px; }
+        .adminPanel h3 { color: var(--navy-d); margin: 0; font-size: 16px; }
+
+        .searchBox { display: grid; grid-template-columns: 1fr 44px; gap: 8px; }
+        input, select { width: 100%; border: 1px solid var(--line); border-radius: 12px; padding: 11px 13px; font: inherit; font-size: 14px; color: var(--ink); background: #fff; }
+        input:focus, select:focus { border-color: var(--green); outline: none; box-shadow: 0 0 0 3px rgba(0,193,110,.1); }
+        input:disabled { background: #f8fbfd; color: var(--ink-soft); }
+
+        button { font: inherit; font-size: 13px; font-weight: 800; border: 1px solid var(--line); background: #fff; color: var(--navy); border-radius: 999px; padding: 10px 14px; cursor: pointer; transition: background .15s; }
+        button:hover { background: #f4f8fb; }
+        button:disabled { opacity: .55; cursor: not-allowed; }
+
+        .userList { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; max-height: 500px; overflow-y: auto; }
+        .emptyList { color: var(--ink-soft); font-size: 13px; text-align: center; padding: 20px 0; margin: 0; }
+        .userRow { text-align: left; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 3px; border: 1px solid transparent; transition: background .15s, border-color .15s; }
+        .userRow:hover { background: #f4f8fb; }
+        .userRow.active { background: var(--green-soft); border-color: #bbf7d0; }
+        .userRow b { font-size: 14px; color: var(--navy-d); }
+        .userRow span { color: var(--ink-soft); font-size: 12px; font-weight: 600; }
+        .userRow small { color: var(--ink-soft); font-size: 11px; font-weight: 700; }
+        .userRow small.inactive { color: #b42318; }
+
+        .newUserBtn { margin-top: 14px; width: 100%; background: var(--bg); border: 1px dashed var(--line); color: var(--green-d); }
+        .newUserBtn:hover { background: var(--green-soft); border-color: #bbf7d0; }
+
+        .emptyEditor { padding: 60px 20px; text-align: center; }
+        .emptyEditor p { color: var(--ink-soft); font-size: 15px; max-width: 360px; margin: 0 auto; line-height: 1.5; }
+
+        .editorHead { display: flex; justify-content: space-between; gap: 16px; align-items: start; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid #edf3f7; }
+        .editorHead h2 { margin-top: 4px; font-size: 18px; }
+        .headActions { display: flex; gap: 10px; align-items: center; }
+        .activeSwitch { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: 13px; color: var(--navy); padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: #fff; cursor: pointer; }
+        .activeSwitch input { width: auto; accent-color: var(--green); }
+
+        .formGrid { display: grid; grid-template-columns: 1fr 1fr 200px; gap: 12px; margin-bottom: 14px; }
+        .formGrid label { color: var(--navy); font-weight: 800; font-size: 13px; display: flex; flex-direction: column; gap: 6px; }
+
+        .roleHelp { background: #f4f8fb; border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; margin-bottom: 22px; }
+        .roleHelp b { display: block; color: var(--navy-d); font-size: 14px; }
+        .roleHelp span { display: block; color: var(--ink-soft); margin-top: 4px; font-size: 13px; }
+
+        .sectionHeader { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .quickActions { display: flex; gap: 8px; }
+        .linkBtn { border: none; background: none; color: var(--green-d); font-size: 12px; font-weight: 800; padding: 6px 10px; border-radius: 8px; }
+        .linkBtn:hover { background: var(--green-soft); }
+
+        .diffNote { margin: 0 0 10px; font-size: 12px; font-weight: 700; color: #b45309; background: #fffbeb; padding: 6px 12px; border-radius: 8px; display: inline-block; }
+
+        .permissionSections { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+        .permissionBlock { border: 1px solid #edf3f7; border-radius: 16px; padding: 12px; background: #fbfdff; }
+        .permissionGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+
+        .checkCard, .actionCard { position: relative; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: flex; align-items: center; gap: 9px; font-weight: 800; color: var(--ink-soft); font-size: 13px; cursor: pointer; transition: border-color .15s, background .15s; }
+        .checkCard:hover, .actionCard:hover { border-color: #a7e8c4; }
+        .checkCard.checked, .actionCard.checked { border-color: #bbf7d0; background: #f0fff7; color: var(--navy-d); }
+        .checkCard.custom, .actionCard.custom { border-color: #fde68a; background: #fffef5; }
+        .checkCard input, .actionCard input { width: auto; accent-color: var(--green); flex: none; }
+        .moduleIcon { width: 24px; height: 24px; border-radius: 8px; background: var(--bg); display: inline-flex; align-items: center; justify-content: center; font-size: 13px; flex: none; }
+        .checkCard.checked .moduleIcon { background: var(--green-soft); color: var(--green-d); }
+        .customBadge { position: absolute; top: 6px; right: 8px; font-style: normal; font-size: 9px; font-weight: 900; color: #b45309; background: #fef3c7; padding: 2px 6px; border-radius: 6px; text-transform: uppercase; letter-spacing: .05em; }
+
+        .actionGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
         .actionCard { align-items: flex-start; }
-        .actionCard b { display: block; color: var(--navy-d); }
-        .actionCard span { display: block; color: var(--ink-soft); font-weight: 700; font-size: 12px; margin-top: 3px; line-height: 1.35; }
-        .status { border: 1px solid #fecaca; background: #fff1f2; color: #9f1239; border-radius: 16px; padding: 14px 16px; font-weight: 800; margin-bottom: 14px; }
-        .status.ok { border-color: #bbf7d0; background: var(--green-soft); color: var(--green-d); }
-        .saveBar { display: flex; justify-content: flex-end; }
-        .saveBar button { min-width: 220px; background: var(--green); border-color: var(--green); color: #fff; }
-        @media(max-width: 980px) { .adminGrid { grid-template-columns: 1fr; } .formGrid, .permissionGrid, .actionGrid { grid-template-columns: 1fr; } }
+        .actionCard b { display: block; color: var(--navy-d); font-size: 13px; }
+        .actionCard span { display: block; color: var(--ink-soft); font-weight: 600; font-size: 11px; margin-top: 2px; line-height: 1.35; }
+
+        .status { border-radius: 14px; padding: 14px 16px; font-weight: 700; font-size: 14px; margin-bottom: 14px; }
+        .status.ok { border: 1px solid #bbf7d0; background: var(--green-soft); color: var(--green-d); }
+        .status.err { border: 1px solid #fecaca; background: #fff1f2; color: #9f1239; }
+
+        .saveBar { display: flex; justify-content: flex-end; gap: 10px; padding-top: 14px; border-top: 1px solid #edf3f7; }
+        .saveBar .secondary { background: #fff; color: var(--ink-soft); }
+        .saveBar .primary { min-width: 180px; background: var(--green); border-color: var(--green); color: #fff; }
+        .saveBar .primary:hover { background: var(--green-d); }
+
+        @media(max-width: 1000px) {
+          .adminGrid { grid-template-columns: 1fr; }
+          .formGrid { grid-template-columns: 1fr; }
+          .permissionGrid { grid-template-columns: repeat(2, 1fr); }
+          .actionGrid { grid-template-columns: 1fr; }
+        }
+        @media(max-width: 600px) {
+          .permissionGrid { grid-template-columns: 1fr; }
+        }
       `}</style>
     </main>
   );
