@@ -39,6 +39,7 @@ export default function AdminUsersPage() {
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isNewUser, setIsNewUser] = useState(false);
 
   // Carga usuarios al entrar (últimos 25)
   useEffect(() => {
@@ -108,6 +109,7 @@ export default function AdminUsersPage() {
       : [];
 
     setSelected(user);
+    setIsNewUser(false);
     setQuery(user.email);
     setRole(nextRole);
     setFullName(user.full_name || '');
@@ -127,6 +129,19 @@ export default function AdminUsersPage() {
     setModuleKeys(new Set(ROLE_DEFAULT_MODULES.client));
     setActionKeys(new Set(ROLE_DEFAULT_ACTIONS.client));
     setStatus('');
+    setIsNewUser(true);
+  }
+
+  function cancelEdit() {
+    setSelected(null);
+    setQuery('');
+    setFullName('');
+    setRole('client');
+    setIsActive(true);
+    setModuleKeys(new Set(ROLE_DEFAULT_MODULES.client));
+    setActionKeys(new Set(ROLE_DEFAULT_ACTIONS.client));
+    setStatus('');
+    setIsNewUser(false);
   }
 
   function applyRoleDefaults(nextRole: AppRole) {
@@ -269,7 +284,7 @@ export default function AdminUsersPage() {
         </aside>
 
         <section className="adminPanel editorPanel">
-          {!selected && !query ? (
+          {!selected && !query && !isNewUser ? (
             <div className="emptyEditor">
               <p>Selecciona un usuario de la lista o busca por correo para editar sus permisos.</p>
             </div>
@@ -404,7 +419,7 @@ export default function AdminUsersPage() {
               ) : null}
 
               <div className="saveBar">
-                <button type="button" className="secondary" onClick={clearSelection}>Cancelar</button>
+                <button type="button" className="secondary" onClick={cancelEdit}>Cancelar</button>
                 <button type="button" className="primary" onClick={savePermissions} disabled={saving || (!selected?.email && !query)}>
                   {saving ? 'Guardando…' : 'Guardar permisos'}
                 </button>
