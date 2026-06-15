@@ -177,7 +177,7 @@ const statusLabel: Record<ProcessStatus, string> = {
   rm_review: 'Pendiente RM',
   observed: 'Observado',
   approval: 'En aprobación',
-  approved_for_pap: 'Aprobado para PAP',
+  approved_for_pap: 'Listo para PAP',
   pap_created: 'Con PAP creado',
   closed: 'Cerrado',
   rejected: 'Rechazado',
@@ -219,10 +219,10 @@ function buildEcabChange(item: EcabRequest): ControlChange {
     cell: item.cell || 'Sin célula',
     requester: item.created_by || item.technical_lead || 'Solicitante',
     technicalLead: item.technical_lead || 'Sin líder técnico',
-    validator: item.validator || 'Sin validador',
+    validator: normalizeValidator(item.validator),
     priority: priorityFrom(item),
-    impact: item.impact || 'Sin impacto',
-    risk: item.risk || 'Sin riesgo',
+    impact: normalizeImpact(item.impact),
+    risk: normalizeRisk(item.risk),
     proposedDate: item.proposed_deploy_at || 'Sin fecha',
     sla: status === 'closed' || papCreated ? 'Cumple' : '- 3h 40m',
     summary: item.urgency_reason || 'Solicitud eCAB registrada para revisión y trazabilidad digital.',
@@ -264,6 +264,85 @@ function priorityTone(priority: string) {
   if (priority === 'Alta') return 'high';
   if (priority === 'Baja') return 'low';
   return 'medium';
+}
+
+
+function primaryDisplayId(item: ControlChange) {
+  if (item.type === 'eCAB') {
+    if (item.externalId === 'RDC asociado') return `eCAB-${item.id.slice(0, 4)}`;
+    if (item.externalId.toLowerCase().includes('rdc')) return item.externalId;
+    return item.externalId;
+  }
+
+  return item.externalId;
+}
+
+function secondaryDisplayId(item: ControlChange) {
+  if (item.type === 'eCAB') {
+    if (item.externalId === 'RDC asociado') return 'RDC asociado';
+    if (item.externalId.toLowerCase().includes('rdc')) return 'Origen: eCAB';
+    return 'Solicitud urgente';
+  }
+
+  return 'Origen: CAB';
+}
+
+
+function flowLabelOf(item?: ControlChange | null) {
+  if (!item) return 'Flujo no definido';
+  return item.type === 'eCAB' ? 'Flujo: eCAB urgente' : 'Flujo: CAB regular';
+}
+
+function processActionLabel(item?: ControlChange | null) {
+  if (!item) return '{processActionLabel(selected)}';
+  if (item.status === 'rm_review' || item.status === 'observed') return 'Revisar solicitud';
+  if (item.status === 'approval') return item.type === 'eCAB' ? 'Ver autorización gerencial' : 'Ver aprobaciones CAB';
+  if (item.status === 'approved_for_pap') return 'Crear Plan PAP';
+  if (item.status === 'pap_created') return 'Abrir Plan PAP';
+  if (item.status === 'closed') return 'Ver cierre';
+  return '{processActionLabel(selected)}';
+}
+
+function expedienteCompleteness(item?: ControlChange | null) {
+  if (!item) return 0;
+  const checks = [
+    Boolean(item.title),
+    Boolean(item.system),
+    Boolean(item.requester),
+    Boolean(item.technicalLead),
+    Boolean(item.validator && item.validator !== 'Sin validador definido'),
+    Boolean(item.impact),
+    Boolean(item.risk),
+    item.approvals.some((approval) => approval.status === 'Aprobado'),
+    item.evidenceCount > 0,
+    item.papCreated || item.status === 'approved_for_pap' || item.status === 'closed',
+  ];
+  return Math.round((checks.filter(Boolean).length / checks.length) * 100);
+}
+
+function normalizeImpact(value?: string | null) {
+  const raw = String(value || '').trim();
+  const normalized = raw.toLowerCase();
+  if (!raw || normalized.includes('prueba') || normalized.includes('test')) return 'Medio';
+  if (normalized.includes('alto') || normalized.includes('crít') || normalized.includes('crit')) return 'Alto';
+  if (normalized.includes('bajo')) return 'Bajo';
+  return raw;
+}
+
+function normalizeRisk(value?: string | null) {
+  const raw = String(value || '').trim();
+  const normalized = raw.toLowerCase();
+  if (!raw || normalized.includes('prueba') || normalized.includes('test')) return 'Medio';
+  if (normalized.includes('alto') || normalized.includes('crít') || normalized.includes('crit')) return 'Alto';
+  if (normalized.includes('bajo')) return 'Bajo';
+  return raw;
+}
+
+function normalizeValidator(value?: string | null) {
+  const raw = String(value || '').trim();
+  const normalized = raw.toLowerCase();
+  if (!raw || normalized.includes('prueba') || normalized.includes('test')) return 'Sin validador definido';
+  return raw;
 }
 
 export default function ControlCenterPage() {
@@ -327,7 +406,7 @@ export default function ControlCenterPage() {
       { label: 'Pendientes RM', value: count('rm_review'), icon: '▣', tone: 'blue', status: 'rm_review' as ProcessStatus },
       { label: 'Observados', value: count('observed'), icon: '◔', tone: 'orange', status: 'observed' as ProcessStatus },
       { label: 'En aprobación', value: count('approval'), icon: '⬟', tone: 'purple', status: 'approval' as ProcessStatus },
-      { label: 'Aprobados para PAP', value: count('approved_for_pap'), icon: '✓', tone: 'green', status: 'approved_for_pap' as ProcessStatus },
+      { label: 'Listos para PAP', value: count('approved_for_pap'), icon: '✓', tone: 'green', status: 'approved_for_pap' as ProcessStatus },
       { label: 'Con PAP creado', value: count('pap_created'), icon: '▤', tone: 'blue', status: 'pap_created' as ProcessStatus },
       { label: 'Cerrados', value: count('closed'), icon: '▰', tone: 'slate', status: 'closed' as ProcessStatus },
     ];
@@ -393,8 +472,8 @@ export default function ControlCenterPage() {
           <section className="decisionPanel">
             <div className="panelHead">
               <div>
-                <h2>Bandeja de decisiones</h2>
-                <p>Cambios que requieren acción o seguimiento</p>
+                <h2>Bandeja de control del proceso</h2>
+                <p>Cambios que requieren revisión, aprobación o seguimiento del Release Manager</p>
               </div>
               <div className="filters">
                 <button className={typeFilter === 'all' ? 'active' : ''} type="button" onClick={() => setTypeFilter('all')}>Todos</button>
@@ -409,7 +488,7 @@ export default function ControlCenterPage() {
                 ['rm_review', 'Pendientes RM'],
                 ['observed', 'Observados'],
                 ['approval', 'En aprobación'],
-                ['approved_for_pap', 'Aprobados para PAP'],
+                ['approved_for_pap', 'Listos para PAP'],
                 ['pap_created', 'Con PAP creado'],
               ].map(([value, label]) => (
                 <button
@@ -442,8 +521,8 @@ export default function ControlCenterPage() {
                   onClick={() => setSelectedId(item.id)}
                 >
                   <span>
-                    <b>{item.externalId}</b>
-                    <small>{item.type === 'eCAB' ? `eCAB-${item.id.slice(0, 4)}` : `CAB-${item.id.slice(0, 4)}`}</small>
+                    <b>{primaryDisplayId(item)}</b>
+                    <small>{secondaryDisplayId(item)}</small>
                   </span>
                   <span><em className={`typeBadge ${item.type === 'eCAB' ? 'ecab' : 'cab'}`}>{item.type}</em></span>
                   <span><b>{item.title}</b><small>{item.system}</small></span>
@@ -501,8 +580,9 @@ export default function ControlCenterPage() {
               <div className="selectedTitle">
                 <div>
                   <p>
-                    <strong>{selected.externalId}</strong>
+                    <strong>{primaryDisplayId(selected)}</strong>
                     <em className={`typeBadge ${selected.type === 'eCAB' ? 'ecab' : 'cab'}`}>{selected.type}</em>
+                    <em className="flowBadge">{flowLabelOf(selected)}</em>
                     {selected.priority === 'Crítica' ? <em className="priority critical">HOTFIX</em> : null}
                   </p>
                   <h3>{selected.title}</h3>
@@ -528,6 +608,22 @@ export default function ControlCenterPage() {
               </div>
 
               <p className="summaryText">{selected.summary}</p>
+
+              <section className="completenessBox">
+                <div>
+                  <h4>Completitud del expediente</h4>
+                  <strong>{expedienteCompleteness(selected)}%</strong>
+                </div>
+                <div className="progressTrack">
+                  <span style={{ width: `${expedienteCompleteness(selected)}%` }} />
+                </div>
+                <ul>
+                  <li className="done">Solicitud completa</li>
+                  <li className={selected.approvals.some((approval) => approval.status === 'Aprobado') ? 'done' : ''}>Aprobaciones registradas</li>
+                  <li className={selected.evidenceCount > 0 ? 'done' : ''}>Evidencias adjuntas</li>
+                  <li className={selected.papCreated ? 'done' : ''}>Plan PAP asociado</li>
+                </ul>
+              </section>
 
               <section className="approvalBox">
                 <h4>Aprobaciones</h4>
@@ -560,7 +656,7 @@ export default function ControlCenterPage() {
 
               <div className="detailActions">
                 <button type="button">▣ Ver expediente completo</button>
-                <button type="button" className="primary">Tomar acción</button>
+                <button type="button" className="primary">{processActionLabel(selected)}</button>
               </div>
             </>
           ) : null}
@@ -1091,6 +1187,73 @@ export default function ControlCenterPage() {
           line-height: 1.45;
           margin-bottom: 18px;
         }
+
+
+        .flowBadge {
+          display: inline-flex;
+          align-items: center;
+          border-radius: 999px;
+          padding: 6px 10px;
+          font-size: 12px;
+          line-height: 1;
+          font-style: normal;
+          font-weight: 950;
+          color: #0058d8;
+          background: #eaf4ff;
+        }
+
+        .completenessBox {
+          margin: 16px 0 18px;
+          border: 1px solid #dce8f0;
+          background: #f8fbfd;
+          border-radius: 16px;
+          padding: 14px;
+        }
+
+        .completenessBox > div:first-child {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 14px;
+          margin-bottom: 10px;
+        }
+
+        .completenessBox h4 { margin: 0; }
+        .completenessBox strong { color: #00a86b; font-size: 22px; }
+
+        .progressTrack {
+          height: 10px;
+          border-radius: 999px;
+          background: #e5edf3;
+          overflow: hidden;
+          margin-bottom: 12px;
+        }
+
+        .progressTrack span {
+          display: block;
+          height: 100%;
+          border-radius: 999px;
+          background: #00a86b;
+        }
+
+        .completenessBox ul {
+          margin: 0;
+          padding: 0;
+          list-style: none;
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        .completenessBox li {
+          color: #7a8da0;
+          font-size: 12px;
+          font-weight: 850;
+        }
+
+        .completenessBox li::before { content: '○'; margin-right: 6px; }
+        .completenessBox li.done { color: #008f57; }
+        .completenessBox li.done::before { content: '✓'; }
 
         .approvalBox,
         .timelineBox {
