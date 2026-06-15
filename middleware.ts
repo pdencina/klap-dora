@@ -1,16 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { roleOf } from './lib/roles';
 
 const RM_PREFIXES = ['/release', '/approvals', '/cab', '/ecab', '/pap', '/deploy', '/cierre', '/dashboard'];
 const CLIENT_PREFIXES = ['/rdc', '/mis-cambios'];
 const APPROVER_PREFIXES = ['/mis-aprobaciones', '/ecab'];
-
-function roleOf(user: any): 'client' | 'approver' | 'deployment' | 'rm' | 'super_admin' {
-  const raw = String(user?.app_metadata?.role || user?.user_metadata?.role || '').toLowerCase();
-  if (raw === 'rm' || raw === 'release_manager' || raw === 'release-manager') return 'rm';
-  if (raw === 'approver' || raw === 'aprobador') return 'approver';
-  return 'client';
-}
 
 function matchPrefix(pathname: string, prefixes: string[]) {
   return prefixes.some((p) => pathname === p || pathname.startsWith(p + '/'));

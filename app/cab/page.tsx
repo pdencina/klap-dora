@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { evaluateCabRoute, type CabRoute } from '../../lib/cab-routing';
+import { evaluateCabRoute, type CabRoute } from '@/lib/cab-routing';
 
 type Approval = { id: string; approver_role: string; status: string };
 type Change = {

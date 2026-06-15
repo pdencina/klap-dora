@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createSupabaseAdmin } from '../../../../lib/supabase-admin';
+import { createSupabaseAdmin } from '@/lib/supabase-admin';
+import { computeRdcStatus } from '@/lib/rdc-status';
 
 export const dynamic = 'force-dynamic';
 const VALID_ACTIONS = new Set(['APROBADO', 'OBSERVADO', 'RECHAZADO']);
@@ -52,10 +53,7 @@ export async function POST(req: Request) {
     const { data: approvals, error: approvalsError } = await supabase.from('approval_requests').select('*').eq('rdc_id', approval.rdc_id);
     if (approvalsError) return NextResponse.json({ ok: false, error: approvalsError.message }, { status: 500 });
 
-    let nextStatus = 'PENDIENTE_APROBACIONES';
-    if ((approvals || []).some((item) => item.status === 'RECHAZADO')) nextStatus = 'RECHAZADO';
-    else if ((approvals || []).some((item) => item.status === 'OBSERVADO')) nextStatus = 'OBSERVADO';
-    else if ((approvals || []).length > 0 && (approvals || []).every((item) => item.status === 'APROBADO')) nextStatus = 'APROBADO_PARA_EJECUCION';
+    const nextStatus = computeRdcStatus(approvals || []);
 
     const { error: rdcError } = await supabase.from('rdc').update({ status: nextStatus, updated_at: now }).eq('id', approval.rdc_id);
     if (rdcError) return NextResponse.json({ ok: false, error: rdcError.message }, { status: 500 });

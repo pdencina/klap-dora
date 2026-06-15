@@ -2,7 +2,7 @@ import './globals.css';
 import type { ReactNode } from 'react';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import TopNav from './components/TopNav';
-import { getCurrentUser, roleOf } from '../lib/auth';
+import { getCurrentUser, roleOf } from '@/lib/auth';
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],

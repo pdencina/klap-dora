@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireDeployAccess } from '../../../../lib/auth';
+import { requireDeployAccess } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 

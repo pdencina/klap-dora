@@ -2,8 +2,11 @@ import { NextResponse } from 'next/server';
 import { createSupabaseServer } from './supabase-server';
 import { createSupabaseAdmin } from './supabase-admin';
 import { actionsForRole, normalizeAppRole, type AppRole } from './permissions';
+import { normalizeEmail, isTableMissing } from './utils';
+import { roleOf as baseRoleOf, roleLabel, type Role } from './roles';
 
-export type Role = 'client' | 'approver' | 'deployment' | 'rm' | 'super_admin' | 'read_only';
+export { roleLabel, type Role } from './roles';
+export { normalizeEmail } from './utils';
 
 // getUser() valida el JWT contra el servidor de Supabase.
 export async function getCurrentUser() {
@@ -12,43 +15,26 @@ export async function getCurrentUser() {
   return user;
 }
 
-function normalizeEmail(value?: string | null) {
-  return String(value || '').trim().toLowerCase();
-}
-
-export function isSuperAdminEmail(email?: string | null) {
+export function isSuperAdminEmail(email?: string | null): boolean {
   const normalized = normalizeEmail(email);
-  const configured = String(process.env.SUPER_ADMIN_EMAILS || process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '')
+  if (!normalized) return false;
+
+  const configured = String(process.env.SUPER_ADMIN_EMAILS || '')
     .split(',')
     .map((item) => normalizeEmail(item))
     .filter(Boolean);
 
-  return configured.includes(normalized)
-    || normalized === 'encinaacevedo.pablo@gmail.com'
-    || normalized === 'pablo.encina@klap.cl'
-    || normalized === 'pablo.encinaacevedo@klap.cl';
+  return configured.includes(normalized);
 }
 
+/**
+ * Determina el rol del usuario. Extiende la lógica base con
+ * la verificación de super admin por email (solo disponible en Node runtime).
+ */
 export function roleOf(user: any): Role {
-  const raw = String(user?.app_metadata?.role || user?.user_metadata?.role || '').toLowerCase();
-
-  if (raw === 'super_admin' || raw === 'super-admin' || raw === 'admin' || raw === 'superadmin') return 'super_admin';
-  if (isSuperAdminEmail(user?.email)) return 'super_admin';
-  if (raw === 'rm' || raw === 'release_manager' || raw === 'release-manager') return 'rm';
-  if (raw === 'deployment' || raw === 'deploy' || raw === 'implementador') return 'deployment';
-  if (raw === 'approver' || raw === 'aprobador') return 'approver';
-
-  // Compatibilidad con usuarios antiguos: antes el rol por defecto era "user".
-  return 'client';
-}
-
-export function roleLabel(role: Role) {
-  if (role === 'super_admin') return 'Super Admin';
-  if (role === 'rm') return 'Release Manager';
-  if (role === 'deployment') return 'Deployment';
-  if (role === 'approver') return 'Aprobador';
-  if (role === 'read_only') return 'Solo Lectura';
-  return 'Cliente Interno';
+  const base = baseRoleOf(user);
+  if (base === 'client' && isSuperAdminEmail(user?.email)) return 'super_admin';
+  return base;
 }
 
 export async function requireUser() {
@@ -57,12 +43,6 @@ export async function requireUser() {
     return { user: null, deny: NextResponse.json({ ok: false, error: 'No autenticado' }, { status: 401 }) };
   }
   return { user, deny: null as NextResponse | null };
-}
-
-
-function isTableMissing(error: any) {
-  const message = String(error?.message || error?.details || '').toLowerCase();
-  return message.includes('does not exist') || message.includes('schema cache') || message.includes('relation');
 }
 
 export async function getEffectiveAppRole(user: any): Promise<AppRole> {

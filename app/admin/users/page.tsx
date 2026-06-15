@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { APP_ACTIONS, APP_MODULES, ROLE_DEFAULT_ACTIONS, ROLE_DEFAULT_MODULES, normalizeAppRole, type AppRole } from '../../../lib/permissions';
+import { APP_ACTIONS, APP_MODULES, ROLE_DEFAULT_ACTIONS, ROLE_DEFAULT_MODULES, normalizeAppRole, type AppRole } from '@/lib/permissions';
 
 type UserRow = {
   id?: string | null;

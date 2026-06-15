@@ -1,20 +1,10 @@
 import { NextResponse } from 'next/server';
-import { createSupabaseAdmin } from '../../../../lib/supabase-admin';
-import { requireSuperAdmin } from '../../../../lib/auth';
-import { APP_MODULES, APP_ACTIONS, modulesForRole, actionsForRole, normalizeAppRole } from '../../../../lib/permissions';
+import { createSupabaseAdmin } from '@/lib/supabase-admin';
+import { requireSuperAdmin } from '@/lib/auth';
+import { APP_MODULES, APP_ACTIONS, modulesForRole, actionsForRole, normalizeAppRole } from '@/lib/permissions';
+import { normalizeEmail, displayNameFromEmail } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
-
-function normalizeEmail(value?: string | null) {
-  return String(value || '').trim().toLowerCase();
-}
-
-function displayNameFromEmail(email: string) {
-  return String(email || '')
-    .split('@')[0]
-    .replace(/[._-]+/g, ' ')
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-}
 
 async function hydrateUsersWithPermissions(supabase: any, users: any[]) {
   const ids = users.map((user) => user.id).filter(Boolean);

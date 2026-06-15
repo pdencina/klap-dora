@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { createSupabaseBrowser } from '../lib/supabase-browser';
+import { createSupabaseBrowser } from '@/lib/supabase-browser';
+import { roleOf } from '@/lib/roles';
 
 type Role = 'client' | 'approver' | 'rm';
 
@@ -70,9 +71,9 @@ const cardsByRole: Record<Role, Array<{ title: string; description: string; href
 };
 
 function getRole(user: any): Role {
-  const raw = String(user?.app_metadata?.role || user?.user_metadata?.role || '').toLowerCase();
-  if (raw === 'rm' || raw === 'release_manager' || raw === 'release-manager') return 'rm';
-  if (raw === 'approver' || raw === 'aprobador') return 'approver';
+  const raw = roleOf(user);
+  if (raw === 'rm' || raw === 'super_admin') return 'rm';
+  if (raw === 'approver') return 'approver';
   return 'client';
 }
 

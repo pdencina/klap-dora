@@ -1,18 +1,10 @@
 import { NextResponse } from 'next/server';
-import { createSupabaseAdmin } from '../../../../lib/supabase-admin';
-import { requireUser, roleOf } from '../../../../lib/auth';
-import { APP_MODULES, APP_ACTIONS, modulesForRole, actionsForRole, normalizeAppRole, type AppModule } from '../../../../lib/permissions';
+import { createSupabaseAdmin } from '@/lib/supabase-admin';
+import { requireUser, roleOf } from '@/lib/auth';
+import { APP_MODULES, APP_ACTIONS, modulesForRole, actionsForRole, normalizeAppRole, type AppModule } from '@/lib/permissions';
+import { normalizeEmail, isTableMissing } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
-
-function normalizeEmail(value?: string | null) {
-  return String(value || '').trim().toLowerCase();
-}
-
-function isTableMissing(error: any) {
-  const message = String(error?.message || '').toLowerCase();
-  return message.includes('does not exist') || message.includes('schema cache') || message.includes('relation');
-}
 
 function normalizeModuleFromDb(row: any): AppModule | null {
   if (!row?.key) return null;

@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { createSupabaseBrowser } from '../../lib/supabase-browser';
-import { APP_MODULES, modulesForRole, normalizeAppRole, type AppModule, type AppRole } from '../../lib/permissions';
+import { createSupabaseBrowser } from '@/lib/supabase-browser';
+import { APP_MODULES, modulesForRole, normalizeAppRole, type AppModule, type AppRole } from '@/lib/permissions';
 
 type Role = 'client' | 'approver' | 'deployment' | 'rm' | 'super_admin' | 'read_only';
 

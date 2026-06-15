@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { createSupabaseAdmin } from '../../../../lib/supabase-admin';
-import { requireRM } from '../../../../lib/auth';
+import { createSupabaseAdmin } from '@/lib/supabase-admin';
+import { requireRM } from '@/lib/auth';
+import { computeRdcStatus } from '@/lib/rdc-status';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,15 +52,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: approvalsError.message }, { status: 500 });
     }
 
-    let nextStatus = 'PENDIENTE_APROBACIONES';
-
-    if ((approvals || []).some((item) => item.status === 'RECHAZADO')) {
-      nextStatus = 'RECHAZADO';
-    } else if ((approvals || []).some((item) => item.status === 'OBSERVADO')) {
-      nextStatus = 'OBSERVADO';
-    } else if ((approvals || []).length > 0 && (approvals || []).every((item) => item.status === 'APROBADO')) {
-      nextStatus = 'APROBADO_PARA_EJECUCION';
-    }
+    const nextStatus = computeRdcStatus(approvals || []);
 
     const { error: rdcError } = await supabase
       .from('rdc')
@@ -71,7 +64,8 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ ok: true, approval, rdcStatus: nextStatus });
-  } catch (error: any) {
-    return NextResponse.json({ ok: false, error: error?.message || 'Error actualizando aprobación' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error actualizando aprobación';
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { requireActionPermission } from '../../../../../lib/auth';
-import { createSupabaseAdmin } from '../../../../../lib/supabase-admin';
+import { requireActionPermission } from '@/lib/auth';
+import { createSupabaseAdmin } from '@/lib/supabase-admin';
 
 export const dynamic = 'force-dynamic';
 

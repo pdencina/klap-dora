@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
-import { createSupabaseAdmin } from '../../../../lib/supabase-admin';
-import { requireRM } from '../../../../lib/auth';
+import { createSupabaseAdmin } from '@/lib/supabase-admin';
+import { requireRM } from '@/lib/auth';
 import {
   PAP_FIELDS,
   adfText,
   jiraSelect,
   normalizeCategory,
   normalizeSeverity,
-} from '../../../../lib/jira-pap-field-map';
+} from '@/lib/jira-pap-field-map';
 
 export const dynamic = 'force-dynamic';
 
