@@ -3,7 +3,7 @@ import { createSupabaseServer } from './supabase-server';
 import { createSupabaseAdmin } from './supabase-admin';
 import { actionsForRole, normalizeAppRole, type AppRole } from './permissions';
 import { normalizeEmail, isTableMissing } from './utils';
-import { roleOf as baseRoleOf, roleLabel, type Role } from './roles';
+import { roleOf as baseRoleOf, type Role } from './roles';
 
 export { roleLabel, type Role } from './roles';
 export { normalizeEmail } from './utils';
@@ -169,8 +169,8 @@ export async function requireAnyRole(allowed: Role[]) {
   const { user, deny } = await requireUser();
   if (deny) return { user: null, deny };
   const role = await getEffectiveAppRole(user);
-  if (!allowed.includes(role as Role)) {
-    return { user: null, deny: NextResponse.json({ ok: false, error: 'No tienes permiso para esta acción' }, { status: 403 }) };
+  if (role === 'super_admin' || allowed.includes(role as Role)) {
+    return { user, deny: null as NextResponse | null, role };
   }
-  return { user, deny: null as NextResponse | null, role };
+  return { user: null, deny: NextResponse.json({ ok: false, error: 'No tienes permiso para esta acción' }, { status: 403 }) };
 }
