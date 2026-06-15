@@ -17,64 +17,67 @@ type JiraUser = {
   avatarUrl?: string;
 };
 
+type PimComponent = {
+  name: string;
+  version: string;
+  status: string;
+  jenkinsQa: string;
+  parameters: string;
+};
+
+// ===== Opciones del formulario =====
 const categoriaOptions = ['Mantención', 'Proyecto', 'Incidente', 'Hotfix', 'ECAB', 'Recurrente'];
 const sistemaOptions = ['POS', 'Anticipo', 'Abono Ya', 'Bridge', 'H2H', 'BO', 'SmartVista', 'API', 'Middleware', 'Portal', 'App Klap', 'Data Analytics', 'Otro'];
 const celulaOptions = ['SmartVista', 'POS', 'Adquirencia', 'Adquirencia Clearing', 'Core', 'Boleta Electrónica y Multiservicios', 'Operaciones', 'QA', 'Infraestructura', 'Canales Presenciales', 'Otro'];
 const impactOptions = ['Bajo', 'Medio', 'Alto', 'Crítico'];
 const priorityOptions = ['Baja', 'Media', 'Alta', 'Urgente'];
-const urgencyOptions = ['Normal', 'Bajo', 'Emergencia'];
+const urgencyOptions = ['Normal', 'Hotfix', 'Recurrente', 'Emergencia'];
 const changeTypeOptions = ['Software', 'Infraestructura', 'Redes', 'Sistema Operativo / Utilidades', 'Base de Datos', 'Procedimiento', 'Seguridad', 'Datos'];
 const businessOptions = ['PCI', 'Multiservicio', 'Verticales', 'No aplica'];
 const environmentOptions = ['Producción', 'Pre-Producción', 'Sandbox', 'Ambiente Exclusivo Sodexo'];
-
-const ECAB_REQUIRED_FIELDS = [
-  'ecabUrgencyReason',
-  'ecabProblem',
-  'ecabSolution',
-  'ecabRisk',
-  'ecabAffected',
-  'ecabPostValidationDate',
-  'ecabValidator',
-  'ecabProductionValidationPlan',
-  'ecabAffectedSystems',
-  'ecabTicketUrl',
-] as const;
-
-const ECAB_FIELD_LABELS: Record<(typeof ECAB_REQUIRED_FIELDS)[number], string> = {
-  ecabUrgencyReason: 'Motivo por el cual no puede esperar al siguiente CAB',
-  ecabProblem: 'Cuál es el problema',
-  ecabSolution: 'Cuál es la solución',
-  ecabRisk: 'Qué riesgo tiene aplicar este cambio',
-  ecabAffected: 'A quién afecta este cambio',
-  ecabPostValidationDate: 'Fecha/Hora de validación post despliegue',
-  ecabValidator: 'Validador',
-  ecabProductionValidationPlan: 'Plan de validación en producción',
-  ecabAffectedSystems: 'Sistemas afectados',
-  ecabTicketUrl: 'Link ticket productivo JIRA / ERFC',
-};
+const cutImpactOptions = ['No aplica corte programado', 'Bajo (1 a 4 comercios)', 'Medio (5 a 20 comercios)', 'Alto (Mayor a 20 comercios)'];
+const assistedOptions = ['No Aplica', 'Semi asistido', 'Asistido'];
+const scheduleOptions = ['Sin restricción', 'Con restricción'];
+const deprecatesOptions = ['No aplica', 'No depreca componente(s)', 'Si depreca componente(s)'];
+const pimStatusOptions = ['Pendiente', 'Error de Despliegue', 'Instalado en QA', 'Certificado', 'Listo para PROD'];
 
 const APPROVER_ROLES = ['Dueño Cambio', 'QA', 'DBA', 'Deployment', 'Release Management', 'Redes', 'Seguridad', 'Infraestructura', 'Arquitectura'];
 
+// ===== Catálogo de Sistemas Relacionados (Template V.7) =====
+const SYSTEMS_CATALOG: Record<string, string[]> = {
+  '1. Afiliación y Contrato': ['Registro Comercio', 'Reporte Registro Comercio', 'Reporte Depósitos en Garantía', 'Reporte Contratos', 'Afiliación Cybersource', 'App Afiliación', 'Afiliación Masiva Copec', 'Autoafiliación Ecommerce', 'Firma de contratos y anexo', 'Backoffice: Mantención de comercios existentes contrato digital'],
+  '2. APM': ['App Vender: Alimentación - Retail', 'App de restaurant POPAPP', 'Transacciones tarjetas cerradas: Hites', 'Transacciones Tarjetas de Alimentación: Sodexo - Edenred - Amipass', 'APK: POS Salud', 'APK: KLAP salud', 'APK: matchOnCard', 'APK: RME dispensador', 'APK: RME prescriptor', 'APK: BAS Fonasa', 'APK: Caja Los Andes', 'Rendición de transacciones', 'Transacciones de cajas de compensación', 'IMED'],
+  '3. Boleta Electrónica y Multiservicios': ['Robot Descarga CAF', 'Generación de lote de folios', 'Recepción de BE POS', 'Envío BE SII', 'Consulta estado BE SII', 'Generación Resúmenes Diarios SII', 'Consulta Resúmenes SII', 'APIs de recepción/conciliación/consulta/carga masiva', 'Módulo Administración comercios con BE en BO', 'POS Tradicional: PDC - Juegos de Azar - Recargas', 'Recargas Telefónicas', 'Recargas BIP!', 'Pago de Cuentas Web', 'Rendiciones multiservicios'],
+  '4. Adquirencia E-Commerce': ['Switch TRN: API Tarjetas Grandes Clientes', 'Switch TRN: API H2H con MercadoPago', 'Switch TRN: API Transit'],
+  '5. E-Commerce-Checkout': ['Klap Checkout (Pasarela)', 'Checkout Transparente', 'Oneclick', 'Módulo anulaciones', 'TGR', 'Robot Banco Chile (SLP, SLC)', 'Botón de Pago (Efectivo, TEF)', 'Transferencia con Banco Bice y Security', 'Link de Pago'],
+  '6. Servicios de Valor Agregado': ['Anticipo Klap', 'R2', 'Cuota Comercio'],
+  '7. App Klap': ['App Klap + Tap To Phone'],
+  '8. Web': ['Portal Público Klap', 'Intranet Klap', 'Portal Privado Comercios'],
+  '9. Facturación y SSFF': ['Cargas masivas Condiciones Comerciales', 'Pago de Renta Variable', 'Bono Ticket', 'Procesos de pagos y Cobros comisiones', 'Cuenta Corriente', 'Tickets de sistemas BO', 'Página de Servicios o CRM', 'Facturación', 'Liquidaciones', 'Sistema Deudas', 'Merchant Discount desde Backoffice', 'Línea de crédito'],
+  '10. BO y Multiservicio Central': ['Backoffice: Inventario', 'Backoffice: Integración XCash', 'Backoffice: Mantenimientos operaciones', 'Backoffice: Robot Afiliación', 'Backoffice: Robot Deudas Masivas', 'Backoffice: Robot Carterización', 'Proyecto Latidos e Inventario', 'Integraciones SLC/SLP', 'ISWITCH', 'Core Switch Transaccional Multiservicios', 'Replicación de Datos', 'Reportes BO'],
+  '11. Adquirencia Transaccional': ['Switch TRN: Ventas con tarjetas', 'Switch TRX PCI', 'Switch TRN: Integración autorizadores marcas', 'Productor de trxs JSON a Kafka', 'Switch BAT y LEG: Replicación', 'Procesamiento transaccional', 'Mantenciones generales adquirencia', 'Backoffice contracargos'],
+  '12. Adquirencia Clearing (RealNear)': ['Switch BAT: Clearing/Settlement', 'CNL', 'Switch BAT', 'Switch CIP', 'Switch LEG', 'Contracargos y Disputas', 'Integración endpoints marcas', 'Consumers Kafka Confluent'],
+  '13. Adquirencia H2H (SmartCell)': ['Switch TRN: Adquirencia H2H', 'SwitchEDP - Cybersource', 'SwitchTRN - Api Notificaciones Cybs'],
+  '14. POS': ['Pos Ingenico', 'Pos Verifone', 'Smart Pago', 'Poslib', 'H2H', 'Pos Integrado Android'],
+  '15. SmartVista': ['SVXP Generator', 'Consumers (Amex, Visa, Mastercard, UPI)', 'Gestor de cuotas', 'Contabilidad', 'Consumidor-Generador SVAP'],
+  '16. Liquidaciones WEB': ['Visualización de Liquidaciones Web en portal Comercio'],
+  '17. Data Analytics': ['Data warehouse (Redshift)', 'Data lake (S3)', 'Data Gobernance (Lakeformation)'],
+  '18. OTI': ['Sistemas de Respaldo', 'Ciberseguridad', 'vSphere Teatinos', 'vSphere Kudos'],
+};
+
+const ECAB_REQUIRED_FIELDS = ['ecabUrgencyReason', 'ecabProblem', 'ecabSolution', 'ecabRisk', 'ecabAffected', 'ecabPostValidationDate', 'ecabValidator', 'ecabProductionValidationPlan', 'ecabAffectedSystems', 'ecabTicketUrl'] as const;
+
 const STEPS = [
-  {
-    title: 'General',
-    help: 'Identifica el cambio, origen, sistema, fecha tentativa y clasificación básica.',
-  },
-  {
-    title: 'Descripción',
-    help: 'Explica qué cambia, por qué cambia, solución e impacto esperado.',
-  },
-  {
-    title: 'Responsables',
-    help: 'Define presentador, líder técnico, QA, validador y aprobadores CAB.',
-  },
-  {
-    title: 'Revisión',
-    help: 'Confirma el resumen antes de enviar el RDC al flujo CAB.',
-  },
+  { title: 'Detalles', help: 'Identificación del cambio, origen Jira y responsable técnico.' },
+  { title: 'Descripción', help: 'Qué cambia, por qué, a quién afecta y plan de validación.' },
+  { title: 'Requisitos', help: 'Redes, infra, BD, diagrama, monitoreo y deprecación.' },
+  { title: 'Clasificación', help: 'Negocio, ambiente, sistemas, tipo, impacto, horario y corte.' },
+  { title: 'Despliegue', help: 'Componentes PIM, repositorios, plan QA, producción y rollback.' },
+  { title: 'Aprobadores', help: 'Selección de áreas y revisión final antes de enviar.' },
 ];
 
-export default function RdcLitePage() {
+
+export default function RdcPage() {
   const [step, setStep] = useState(0);
   const [stepError, setStepError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -84,35 +87,76 @@ export default function RdcLitePage() {
   const [approvalRolesLoading, setApprovalRolesLoading] = useState(false);
 
   const [form, setForm] = useState({
+    // === 1. Detalles del Cambio ===
     title: '',
-    description: '',
+    jiraOrigin: '',
     category: 'Mantención',
     system: '',
     cell: '',
-    jiraOrigin: '',
-    proposedDeployDate: '',
-    presenter: '',
+    area: '',
     technicalLead: '',
-    qaAnalyst: '',
-    businessValidator: '',
+    technicalLeadPhone: '',
+    proposedDeployDate: '',
 
+    // === 2. Descripción del Cambio ===
     requirementDescription: '',
     implementedSolution: '',
     affectedServices: '',
     affectedUsers: '',
     consequenceNotImplementing: '',
+    businessValidator: '',
     validationPlan: '',
 
+    // === 3. Requisitos Previos ===
+    requiresNetworks: false,
+    requiresInfra: false,
+    requiresDba: false,
+    requiresMonitoring: false,
+    monitoringDetail: '',
+    dbCriticalApplies: false,
+    dbCriticalName: '',
+    dbCriticalDba: '',
+    dbCriticalResult: '',
+    diagramApplies: false,
+    diagramLink: '',
+    deprecates: 'No aplica',
+    deprecatesDetail: '',
+    backupBeforeDelete: '',
+
+    // === 4. Clasificación y Negocio ===
     changeType: 'Software',
     urgency: 'Normal',
-    impactedBusiness: 'Verticales',
-    environment: 'Producción',
-    area: '',
     impact: 'Medio',
     priority: 'Media',
-    affectedSystemsText: '',
+    impactedBusiness: 'Verticales',
+    environment: 'Producción',
+    relatedSystems: [] as string[],
+    schedule: 'Sin restricción',
+    scheduleDetail: '',
+    assisted: 'No Aplica',
+    assistedDetail: '',
+    dependentRdc: 'No aplica',
+    cutImpact: 'No aplica corte programado',
+    cutEvidence: '',
 
-    // Campos eCAB 100% digital. Solo son obligatorios cuando categoría = ECAB.
+    // === 5. Despliegue ===
+    pimComponents: [{ name: '', version: '', status: 'Pendiente', jenkinsQa: '', parameters: '' }] as PimComponent[],
+    backupApp: false,
+    backupDb: false,
+    repositories: '',
+    deployPlanQa: '',
+    rollbackQa: '',
+    certificationStories: '',
+    deployPlanProd: '',
+    rollbackProd: '',
+    mitigationPlan: '',
+
+    // === 6. Aprobadores ===
+    presenter: '',
+    qaAnalyst: '',
+    selectedApprovalRoles: ['Dueño Cambio', 'QA', 'DBA', 'Deployment'] as string[],
+
+    // === eCAB (solo si categoría = ECAB) ===
     ecabUrgencyReason: '',
     ecabProblem: '',
     ecabSolution: '',
@@ -124,142 +168,72 @@ export default function RdcLitePage() {
     ecabAffectedSystems: '',
     ecabTicketUrl: '',
     ecabApprovalRule: '2_of_3',
-
-    // Campos livianos para compatibilidad con backend/detalle.
-    deploymentPlan: 'Plan operativo se completará en el módulo Plan PAP una vez aprobado el RDC.',
-    rollbackPlan: 'Rollback detallado se completará en el módulo Plan PAP antes de la ejecución.',
-    qaPlan: 'Plan QA/validación se completará y ajustará en Plan PAP.',
-    repositories: '',
-    mitigationPlan: '',
-    dependentRdc: 'No aplica',
-
-    requiresDba: false,
-    requiresNetworks: false,
-    requiresInfra: false,
-    requiresMonitoring: false,
-
-    selectedApprovalRoles: ['Dueño Cambio', 'QA', 'DBA', 'Deployment'] as string[],
   });
 
-  function update(name: string, value: string | boolean | string[]) {
-    setForm((current) => ({ ...current, [name]: value }));
+  function update(name: string, value: any) {
+    setForm((c) => ({ ...c, [name]: value }));
   }
 
   const isEcab = form.category === 'ECAB';
 
-  async function loadApprovalRoles() {
-    try {
-      setApprovalRolesLoading(true);
-      const response = await fetch('/api/approvals/roles', { cache: 'no-store' });
-      const data = await response.json();
-      if (response.ok && data.ok) setApprovalRoles(data.grouped || {});
-    } catch {
-      setApprovalRoles({});
-    } finally {
-      setApprovalRolesLoading(false);
-    }
-  }
-
+  // Cargar roles de aprobación
   useEffect(() => {
-    loadApprovalRoles();
+    (async () => {
+      try {
+        setApprovalRolesLoading(true);
+        const r = await fetch('/api/approvals/roles', { cache: 'no-store' });
+        const d = await r.json();
+        if (r.ok && d.ok) setApprovalRoles(d.grouped || {});
+      } catch { setApprovalRoles({}); }
+      finally { setApprovalRolesLoading(false); }
+    })();
   }, []);
 
   function toggleApprovalRole(role: string) {
-    setForm((current) => {
-      const currentRoles = current.selectedApprovalRoles || [];
-      const exists = currentRoles.includes(role);
-      return {
-        ...current,
-        selectedApprovalRoles: exists ? currentRoles.filter((r) => r !== role) : [...currentRoles, role],
-      };
+    setForm((c) => {
+      const roles = c.selectedApprovalRoles;
+      return { ...c, selectedApprovalRoles: roles.includes(role) ? roles.filter((r) => r !== role) : [...roles, role] };
     });
   }
 
-  function getSelectedApprovalConfig() {
-    return (form.selectedApprovalRoles || []).reduce((acc: Record<string, any>, role) => {
-      const firstActiveApprover = approvalRoles[role]?.[0];
-      if (firstActiveApprover) acc[role] = firstActiveApprover;
-      return acc;
-    }, {});
+  function toggleSystem(sys: string) {
+    setForm((c) => {
+      const list = c.relatedSystems;
+      return { ...c, relatedSystems: list.includes(sys) ? list.filter((s) => s !== sys) : [...list, sys] };
+    });
   }
 
-  function buildFormData() {
-    return {
-      version: 'rdc_lite_1_0',
-      mode: 'lite',
-      classification: {
-        changeType: form.changeType,
-        urgency: form.urgency,
-        category: form.category,
-        impact: form.impact,
-        priority: form.priority,
-      },
-      business: {
-        impactedBusiness: form.impactedBusiness,
-        environment: form.environment,
-        area: form.area,
-      },
-      systemsAffected: {
-        primarySystem: form.system,
-        cell: form.cell,
-        text: form.affectedSystemsText || `${form.system}${form.cell ? `, ${form.cell}` : ''}`,
-      },
-      planning: {
-        papModuleRequired: true,
-        note: 'Los pasos operativos, horarios, evidencias y checklist de despliegue se completan en el módulo Plan PAP después de la aprobación CAB.',
-      },
-      preRequirements: {
-        networks: { applies: form.requiresNetworks, detail: form.requiresNetworks ? 'Requiere revisión en Plan PAP' : 'No aplica' },
-        infrastructure: { applies: form.requiresInfra, detail: form.requiresInfra ? 'Requiere revisión en Plan PAP' : 'No aplica' },
-        database: { applies: form.requiresDba, detail: form.requiresDba ? 'Requiere revisión DBA en Plan PAP' : 'No aplica' },
-        monitoring: { required: form.requiresMonitoring, status: form.requiresMonitoring ? 'Completar monitoreo en Plan PAP' : 'No aplica' },
-      },
-      deployment: {
-        qaPlan: form.qaPlan,
-        productionPlan: form.deploymentPlan,
-        rollback: form.rollbackPlan,
-        mitigationPlanCab20: form.mitigationPlan,
-      },
-      ecabDigital: isEcab ? {
-        enabled: true,
-        urgencyReason: form.ecabUrgencyReason,
-        problem: form.ecabProblem,
-        solution: form.ecabSolution,
-        risk: form.ecabRisk,
-        affected: form.ecabAffected,
-        postValidationAt: form.ecabPostValidationDate,
-        validator: form.ecabValidator,
-        productionValidationPlan: form.ecabProductionValidationPlan,
-        affectedSystems: form.ecabAffectedSystems,
-        ticketUrl: form.ecabTicketUrl,
-        approvalRule: form.ecabApprovalRule,
-        officialEvidenceSource: 'system',
-      } : null,
-      pimComponents: [],
-    };
+  function addPimComponent() {
+    setForm((c) => ({ ...c, pimComponents: [...c.pimComponents, { name: '', version: '', status: 'Pendiente', jenkinsQa: '', parameters: '' }] }));
+  }
+
+  function updatePim(index: number, field: keyof PimComponent, value: string) {
+    setForm((c) => {
+      const pim = [...c.pimComponents];
+      pim[index] = { ...pim[index], [field]: value };
+      return { ...c, pimComponents: pim };
+    });
+  }
+
+  function removePim(index: number) {
+    setForm((c) => ({ ...c, pimComponents: c.pimComponents.filter((_, i) => i !== index) }));
   }
 
   function validateStep(s: number): string {
     if (s === 0) {
-      if (!form.title.trim()) return 'Ponle un nombre al cambio.';
+      if (!form.title.trim()) return 'El nombre del cambio es obligatorio.';
       if (!form.system) return 'Selecciona el sistema / producto.';
-      if (!form.cell) return 'Selecciona la célula.';
-      if (!form.proposedDeployDate) return 'Indica la fecha propuesta de paso a producción.';
-    }
-
-    if (s === 1) {
-      if (!form.requirementDescription.trim() && !form.description.trim()) return 'Describe brevemente el requerimiento o alcance del cambio.';
-      if (!form.implementedSolution.trim()) return 'Indica la solución o cambio que se implementará.';
-      if (!form.impact) return 'Selecciona impacto.';
-      if (!form.priority) return 'Selecciona prioridad.';
-    }
-
-    if (s === 2) {
-      if (!form.presenter.trim()) return 'Indica el presentador.';
       if (!form.technicalLead.trim()) return 'Indica el líder técnico.';
+      if (!form.proposedDeployDate) return 'Indica la fecha propuesta.';
+    }
+    if (s === 1) {
+      if (!form.requirementDescription.trim()) return 'Describe el requerimiento.';
+      if (!form.implementedSolution.trim()) return 'Indica la solución implementada.';
+    }
+    if (s === 5) {
+      if (!form.presenter.trim()) return 'Indica el presentador.';
       if (!form.selectedApprovalRoles.length) return 'Selecciona al menos un área aprobadora.';
     }
-
     return '';
   }
 
@@ -271,92 +245,113 @@ export default function RdcLitePage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function back() {
-    setStepError('');
-    setStep((s) => Math.max(s - 1, 0));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  function goTo(s: number) {
-    if (s <= step) { setStepError(''); setStep(s); }
-  }
+  function back() { setStepError(''); setStep((s) => Math.max(s - 1, 0)); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  function goTo(s: number) { if (s <= step) { setStepError(''); setStep(s); } }
 
   async function createRdc() {
     for (let s = 0; s < STEPS.length - 1; s++) {
       const e = validateStep(s);
       if (e) { setStep(s); setStepError(e); return; }
     }
-
     try {
-      setSaving(true);
-      setStepError('');
-
+      setSaving(true); setStepError('');
       const response = await fetch('/api/rdc/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, formData: buildFormData(), approvalRoleConfig: getSelectedApprovalConfig() }),
+        body: JSON.stringify({
+          title: form.title,
+          description: form.requirementDescription,
+          category: form.category,
+          system: form.system,
+          cell: form.cell,
+          jiraOrigin: form.jiraOrigin,
+          proposedDeployDate: form.proposedDeployDate,
+          presenter: form.presenter,
+          technicalLead: form.technicalLead,
+          qaAnalyst: form.qaAnalyst,
+          businessValidator: form.businessValidator,
+          requirementDescription: form.requirementDescription,
+          implementedSolution: form.implementedSolution,
+          affectedServices: form.affectedServices,
+          affectedUsers: form.affectedUsers,
+          consequenceNotImplementing: form.consequenceNotImplementing,
+          validationPlan: form.validationPlan,
+          impact: form.impact,
+          priority: form.priority,
+          requiresDba: form.requiresDba,
+          requiresNetworks: form.requiresNetworks,
+          requiresInfra: form.requiresInfra,
+          requiresMonitoring: form.requiresMonitoring,
+          dependentRdc: form.dependentRdc,
+          selectedApprovalRoles: form.selectedApprovalRoles,
+          formData: {
+            version: 'rdc_v7_full',
+            technicalLeadPhone: form.technicalLeadPhone,
+            area: form.area,
+            monitoringDetail: form.monitoringDetail,
+            dbCritical: { applies: form.dbCriticalApplies, name: form.dbCriticalName, dba: form.dbCriticalDba, result: form.dbCriticalResult },
+            diagram: { applies: form.diagramApplies, link: form.diagramLink },
+            deprecates: form.deprecates,
+            deprecatesDetail: form.deprecatesDetail,
+            backupBeforeDelete: form.backupBeforeDelete,
+            classification: { changeType: form.changeType, urgency: form.urgency, impact: form.impact, priority: form.priority },
+            business: { impactedBusiness: form.impactedBusiness, environment: form.environment },
+            relatedSystems: form.relatedSystems,
+            schedule: form.schedule,
+            scheduleDetail: form.scheduleDetail,
+            assisted: form.assisted,
+            assistedDetail: form.assistedDetail,
+            cutImpact: form.cutImpact,
+            cutEvidence: form.cutEvidence,
+            pimComponents: form.pimComponents.filter((p) => p.name.trim()),
+            backups: { app: form.backupApp, db: form.backupDb },
+            repositories: form.repositories,
+            deployPlanQa: form.deployPlanQa,
+            rollbackQa: form.rollbackQa,
+            certificationStories: form.certificationStories,
+            deployPlanProd: form.deployPlanProd,
+            rollbackProd: form.rollbackProd,
+            mitigationPlan: form.mitigationPlan,
+            source_type: isEcab ? 'ECAB' : 'CAB',
+          },
+        }),
       });
-
       const data = await response.json();
       if (!response.ok || !data.ok) throw new Error(data.error || 'No fue posible crear el RDC');
 
-      const rdcId = data.rdc?.id || '';
-      const isEcabCreated = isEcab && rdcId;
-
-      if (isEcabCreated) {
-        const ecabResponse = await fetch('/api/ecab', {
+      if (isEcab && data.rdc?.id) {
+        await fetch('/api/ecab', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            rdc_id: rdcId,
-            title: form.title,
-            system: form.system,
-            cell: form.cell,
-            technical_lead: form.technicalLead,
-            validator: form.ecabValidator || form.businessValidator,
-            urgency_reason: form.ecabUrgencyReason,
-            problem: form.ecabProblem,
-            solution: form.ecabSolution,
-            risk: form.ecabRisk,
-            impact: form.ecabAffected,
-            proposed_deploy_at: form.proposedDeployDate,
-            post_validation_at: form.ecabPostValidationDate,
-            production_validation_plan: form.ecabProductionValidationPlan,
-            affected_systems: form.ecabAffectedSystems || form.affectedSystemsText,
-            jira_or_erfc_url: form.ecabTicketUrl || form.jiraOrigin,
+            rdc_id: data.rdc.id, title: form.title, system: form.system, cell: form.cell,
+            technical_lead: form.technicalLead, validator: form.ecabValidator || form.businessValidator,
+            urgency_reason: form.ecabUrgencyReason, problem: form.ecabProblem, solution: form.ecabSolution,
+            risk: form.ecabRisk, impact: form.ecabAffected, proposed_deploy_at: form.proposedDeployDate,
+            post_validation_at: form.ecabPostValidationDate, production_validation_plan: form.ecabProductionValidationPlan,
+            affected_systems: form.ecabAffectedSystems, jira_or_erfc_url: form.ecabTicketUrl || form.jiraOrigin,
             approval_rule: form.ecabApprovalRule,
-            created_by: form.presenter,
           }),
         });
-
-        const ecabData = await ecabResponse.json().catch(() => null);
-        if (!ecabResponse.ok || !ecabData?.ok) {
-          throw new Error(ecabData?.error || 'El RDC fue creado, pero no fue posible crear el expediente eCAB.');
-        }
       }
 
-      setCreatedRdcId(rdcId);
+      setCreatedRdcId(data.rdc?.id || '');
       setCreated(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (error: any) {
-      setStepError(error?.message || 'Error creando RDC');
-    } finally {
-      setSaving(false);
-    }
+    } catch (err: any) { setStepError(err?.message || 'Error creando RDC'); }
+    finally { setSaving(false); }
   }
 
+  // ===== RENDER =====
   return (
     <main className="rdcLite">
       {created ? (
         <div className="done">
           <span className="check">✓</span>
           <h1>RDC registrado</h1>
-          <p>
-            {isEcab ? 'Tu solicitud eCAB quedó registrada digitalmente y enviada a revisión Release Manager. Toda la evidencia oficial queda dentro del sistema.' : 'Tu solicitud quedó registrada y lista para el flujo CAB. Una vez aprobada, Release Management podrá completar el Plan PAP con los pasos operativos del paso a producción.'}
-          </p>
+          <p>{isEcab ? 'Solicitud eCAB registrada y enviada a revisión RM.' : 'RDC registrado y enviado al flujo CAB.'}</p>
           <div className="doneActions">
             {createdRdcId ? <a className="primary" href={`/rdc/${createdRdcId}`}>Abrir RDC →</a> : null}
-            {isEcab ? <a className="ghostLink" href="/ecab">Ver eCAB digital</a> : null}
             <a className="ghostLink" href="/mis-cambios">Ver en Mis Cambios</a>
             <button type="button" className="ghost" onClick={() => window.location.reload()}>Registrar otro</button>
           </div>
@@ -364,21 +359,14 @@ export default function RdcLitePage() {
       ) : (
         <>
           <header className="head">
-            <p className="kicker">REGISTRO DE CAMBIO · RDC LITE</p>
+            <p className="kicker">REGISTRO DE CAMBIO · RDC V.7</p>
             <h1>Nuevo RDC</h1>
-            <p className="sub">
-              Captura lo necesario para evaluar y aprobar el cambio. Los pasos operativos del deploy se completan después en <b>Plan PAP</b>.
-            </p>
+            <p className="sub">Template RDC R.M V.7 — Captura toda la información requerida para evaluar, aprobar y ejecutar el cambio.</p>
           </header>
 
           <div className="stepper">
             {STEPS.map((s, i) => (
-              <button
-                key={s.title}
-                type="button"
-                className={`stp ${i === step ? 'active' : ''} ${i < step ? 'done' : ''}`}
-                onClick={() => goTo(i)}
-              >
+              <button key={s.title} type="button" className={`stp ${i === step ? 'active' : ''} ${i < step ? 'done' : ''}`} onClick={() => goTo(i)}>
                 <b>{i < step ? '✓' : i + 1}</b>
                 <span>{s.title}</span>
               </button>
@@ -386,129 +374,88 @@ export default function RdcLitePage() {
           </div>
 
           <form className="form" onSubmit={(e) => e.preventDefault()}>
+
+            {/* ===== PASO 1: Detalles del Cambio ===== */}
             {step === 0 && (
               <>
-                <div className="notice">
-                  <b>RDC más liviano</b>
-                  <span>La planificación operativa, horarios, pasos detallados, evidencias y checklist quedan para el módulo Plan PAP.</span>
-                </div>
-
-                <Block title="1. Identificación del cambio">
+                <Block title="Detalles del Cambio">
                   <Field label="Nombre del cambio *">
                     <input value={form.title} onChange={(e) => update('title', e.target.value)} placeholder="[Paso Prod][MANT] Ajuste servicio POS" />
                   </Field>
-                  <Field label="Categoría">
+                  <Field label="Solicitud de cambio (Jira)">
+                    <input value={form.jiraOrigin} onChange={(e) => update('jiraOrigin', e.target.value)} placeholder="Indicar enlace de Jira" />
+                  </Field>
+                  <Field label="Categoría del Cambio">
                     <select value={form.category} onChange={(e) => update('category', e.target.value)}>{categoriaOptions.map((o) => <option key={o}>{o}</option>)}</select>
                   </Field>
                   <Field label="Sistema / Producto *">
                     <select value={form.system} onChange={(e) => update('system', e.target.value)}>
-                      <option value="">Selecciona</option>
+                      <option value="">Seleccionar producto</option>
                       {sistemaOptions.map((o) => <option key={o}>{o}</option>)}
                     </select>
                   </Field>
-                  <Field label="Célula *">
+                  <Field label="Célula">
                     <select value={form.cell} onChange={(e) => update('cell', e.target.value)}>
                       <option value="">Selecciona</option>
                       {celulaOptions.map((o) => <option key={o}>{o}</option>)}
                     </select>
                   </Field>
-                  <Field label="Fecha propuesta de paso *">
+                  <Field label="Área responsable">
+                    <input value={form.area} onChange={(e) => update('area', e.target.value)} placeholder="Área responsable por la solicitud de cambio" />
+                  </Field>
+                  <Field label="Líder Técnico *">
+                    <UserAutocomplete value={form.technicalLead} placeholder="Nombre del responsable del cambio" onChange={(v) => update('technicalLead', v)} />
+                  </Field>
+                  <Field label="Teléfono Líder Técnico">
+                    <input value={form.technicalLeadPhone} onChange={(e) => update('technicalLeadPhone', e.target.value)} placeholder="+56 9 XXXX XXXX" />
+                  </Field>
+                  <Field label="Fecha propuesta paso a producción *">
                     <input type="date" value={form.proposedDeployDate} onChange={(e) => update('proposedDeployDate', e.target.value)} />
-                  </Field>
-                  <Field label="Área / negocio responsable">
-                    <input value={form.area} onChange={(e) => update('area', e.target.value)} placeholder="Ej: Canales Presenciales" />
-                  </Field>
-                </Block>
-
-                <Block title="2. Origen">
-                  <Field label="Jira origen">
-                    <input value={form.jiraOrigin} onChange={(e) => update('jiraOrigin', e.target.value)} placeholder="Ej: CNLS-1916 / BEMS-1692" />
                   </Field>
                 </Block>
               </>
             )}
 
+            {/* ===== PASO 2: Descripción del Cambio ===== */}
             {step === 1 && (
               <>
-                <Block title="3. Qué cambia y por qué">
-                  <Field label="Resumen ejecutivo">
-                    <textarea value={form.description} onChange={(e) => update('description', e.target.value)} rows={3} placeholder="Resumen breve para CAB." />
-                  </Field>
+                <Block title="Descripción del Cambio">
                   <Field label="Descripción del requerimiento *">
-                    <textarea value={form.requirementDescription} onChange={(e) => update('requirementDescription', e.target.value)} rows={4} placeholder="Qué necesidad, problema o solicitud motiva este cambio." />
+                    <textarea value={form.requirementDescription} onChange={(e) => update('requirementDescription', e.target.value)} rows={4} placeholder="Describe el problema o incidente al que se refiere la solicitud de cambio." />
                   </Field>
-                  <Field label="Solución / cambio implementado *">
-                    <textarea value={form.implementedSolution} onChange={(e) => update('implementedSolution', e.target.value)} rows={4} placeholder="Qué se modificará o desplegará." />
+                  <Field label="Solución del requerimiento *">
+                    <textarea value={form.implementedSolution} onChange={(e) => update('implementedSolution', e.target.value)} rows={4} placeholder="¿Cuál es el resultado deseado del cambio? Indicar que es lo que se espera lograr." />
                   </Field>
-                  <Field label="Servicios / sistemas afectados">
-                    <textarea value={form.affectedServices} onChange={(e) => update('affectedServices', e.target.value)} rows={3} placeholder="Servicios, APIs, aplicaciones o componentes afectados." />
+                  <Field label="Servicios afectados">
+                    <textarea value={form.affectedServices} onChange={(e) => update('affectedServices', e.target.value)} rows={3} placeholder="Enumere los servicios a los que afecta la solicitud del cambio." />
                   </Field>
                   <Field label="Usuarios afectados">
-                    <textarea value={form.affectedUsers} onChange={(e) => update('affectedUsers', e.target.value)} rows={3} placeholder="Clientes, comercios, usuarios internos, operaciones, etc." />
+                    <textarea value={form.affectedUsers} onChange={(e) => update('affectedUsers', e.target.value)} rows={3} placeholder="Enumere los usuarios a los que afecta la solicitud del cambio." />
                   </Field>
-                  <Field label="Consecuencia si no se implementa">
-                    <textarea value={form.consequenceNotImplementing} onChange={(e) => update('consequenceNotImplementing', e.target.value)} rows={3} placeholder="Riesgo o impacto de no realizar el cambio." />
+                  <Field label="¿Cuáles son las consecuencias si el cambio no es aprobado o pospuesto?">
+                    <textarea value={form.consequenceNotImplementing} onChange={(e) => update('consequenceNotImplementing', e.target.value)} rows={3} placeholder="Indicar brevemente algún riesgo. Ejemplo: incumplimiento de SLA, exigencia de cliente crítico, etc." />
                   </Field>
-                </Block>
-
-                <Block title="4. Clasificación y riesgo">
-                  <Field label="Tipo de cambio">
-                    <select value={form.changeType} onChange={(e) => update('changeType', e.target.value)}>{changeTypeOptions.map((o) => <option key={o}>{o}</option>)}</select>
+                  <Field label="Validador">
+                    <UserAutocomplete value={form.businessValidator} placeholder="Responsable a validar el cambio luego de ser desplegado" onChange={(v) => update('businessValidator', v)} />
                   </Field>
-                  <Field label="Urgencia">
-                    <select value={form.urgency} onChange={(e) => update('urgency', e.target.value)}>{urgencyOptions.map((o) => <option key={o}>{o}</option>)}</select>
-                  </Field>
-                  <Field label="Impacto">
-                    <select value={form.impact} onChange={(e) => update('impact', e.target.value)}>{impactOptions.map((o) => <option key={o}>{o}</option>)}</select>
-                  </Field>
-                  <Field label="Prioridad">
-                    <select value={form.priority} onChange={(e) => update('priority', e.target.value)}>{priorityOptions.map((o) => <option key={o}>{o}</option>)}</select>
-                  </Field>
-                  <Field label="Negocio impactado">
-                    <select value={form.impactedBusiness} onChange={(e) => update('impactedBusiness', e.target.value)}>{businessOptions.map((o) => <option key={o}>{o}</option>)}</select>
-                  </Field>
-                  <Field label="Ambiente">
-                    <select value={form.environment} onChange={(e) => update('environment', e.target.value)}>{environmentOptions.map((o) => <option key={o}>{o}</option>)}</select>
+                  <Field label="Plan de validación">
+                    <textarea value={form.validationPlan} onChange={(e) => update('validationPlan', e.target.value)} rows={3} placeholder="Enumerar paso(s) para validar cambio una vez desplegado." />
                   </Field>
                 </Block>
 
                 {isEcab ? (
-                  <Block title="6. Preguntas eCAB obligatorias">
-                    <div className="ecabDigitalNotice">
-                      <b>Flujo eCAB digital</b>
-                      <span>Estas respuestas reemplazan el formato enviado por Teams/correo. La evidencia oficial queda en el sistema.</span>
-                    </div>
-
-                    <Field label="Motivo no puede esperar al siguiente CAB *">
-                      <textarea value={form.ecabUrgencyReason} onChange={(e) => update('ecabUrgencyReason', e.target.value)} rows={3} placeholder="Explica por qué este cambio no puede esperar al próximo CAB regular." />
-                    </Field>
-                    <Field label="1. ¿Cuál es el problema? *">
-                      <textarea value={form.ecabProblem} onChange={(e) => update('ecabProblem', e.target.value)} rows={3} />
-                    </Field>
-                    <Field label="2. ¿Cuál es la solución? *">
-                      <textarea value={form.ecabSolution} onChange={(e) => update('ecabSolution', e.target.value)} rows={3} />
-                    </Field>
-                    <Field label="3. ¿Qué riesgo tiene aplicar este cambio? *">
-                      <textarea value={form.ecabRisk} onChange={(e) => update('ecabRisk', e.target.value)} rows={3} />
-                    </Field>
-                    <Field label="4. ¿A quién afecta este cambio? *">
-                      <textarea value={form.ecabAffected} onChange={(e) => update('ecabAffected', e.target.value)} rows={3} />
-                    </Field>
-                    <Field label="6. Fecha/Hora validación post despliegue *">
-                      <input value={form.ecabPostValidationDate} onChange={(e) => update('ecabPostValidationDate', e.target.value)} placeholder="Ej: 09-06-2026 10:00" />
-                    </Field>
-                    <Field label="7. Validador *">
-                      <input value={form.ecabValidator} onChange={(e) => update('ecabValidator', e.target.value)} placeholder="Nombre del validador" />
-                    </Field>
-                    <Field label="8. Plan de validación en producción *">
-                      <textarea value={form.ecabProductionValidationPlan} onChange={(e) => update('ecabProductionValidationPlan', e.target.value)} rows={3} />
-                    </Field>
-                    <Field label="9. Sistemas afectados *">
-                      <textarea value={form.ecabAffectedSystems} onChange={(e) => update('ecabAffectedSystems', e.target.value)} rows={3} />
-                    </Field>
-                    <Field label="10. Link ticket productivo JIRA / ERFC *">
-                      <input value={form.ecabTicketUrl} onChange={(e) => update('ecabTicketUrl', e.target.value)} placeholder="https://..." />
-                    </Field>
+                  <Block title="Preguntas eCAB obligatorias">
+                    <div className="ecabNotice"><b>Flujo eCAB digital</b><span>Estas respuestas reemplazan el formato por Teams/correo. La evidencia oficial queda en el sistema.</span></div>
+                    <Field label="Motivo no puede esperar al siguiente CAB *"><textarea value={form.ecabUrgencyReason} onChange={(e) => update('ecabUrgencyReason', e.target.value)} rows={3} /></Field>
+                    <Field label="¿Cuál es el problema? *"><textarea value={form.ecabProblem} onChange={(e) => update('ecabProblem', e.target.value)} rows={3} /></Field>
+                    <Field label="¿Cuál es la solución? *"><textarea value={form.ecabSolution} onChange={(e) => update('ecabSolution', e.target.value)} rows={3} /></Field>
+                    <Field label="¿Qué riesgo tiene aplicar este cambio? *"><textarea value={form.ecabRisk} onChange={(e) => update('ecabRisk', e.target.value)} rows={3} /></Field>
+                    <Field label="¿A quién afecta este cambio? *"><textarea value={form.ecabAffected} onChange={(e) => update('ecabAffected', e.target.value)} rows={3} /></Field>
+                    <Field label="Fecha/Hora validación post despliegue *"><input value={form.ecabPostValidationDate} onChange={(e) => update('ecabPostValidationDate', e.target.value)} placeholder="Ej: 09-06-2026 10:00" /></Field>
+                    <Field label="Validador eCAB *"><input value={form.ecabValidator} onChange={(e) => update('ecabValidator', e.target.value)} placeholder="Nombre del validador" /></Field>
+                    <Field label="Plan de validación en producción *"><textarea value={form.ecabProductionValidationPlan} onChange={(e) => update('ecabProductionValidationPlan', e.target.value)} rows={3} /></Field>
+                    <Field label="Sistemas afectados *"><textarea value={form.ecabAffectedSystems} onChange={(e) => update('ecabAffectedSystems', e.target.value)} rows={3} /></Field>
+                    <Field label="Link ticket JIRA / ERFC *"><input value={form.ecabTicketUrl} onChange={(e) => update('ecabTicketUrl', e.target.value)} placeholder="https://..." /></Field>
                     <Field label="Regla de autorización gerencial">
                       <select value={form.ecabApprovalRule} onChange={(e) => update('ecabApprovalRule', e.target.value)}>
                         <option value="1_of_3">1 de 3 autorizadores</option>
@@ -518,43 +465,192 @@ export default function RdcLitePage() {
                     </Field>
                   </Block>
                 ) : null}
+              </>
+            )}
 
-                <Block title="5. Requerimientos de apoyo">
+            {/* ===== PASO 3: Requisitos Previos ===== */}
+            {step === 2 && (
+              <>
+                <Block title="Requisitos Previos para ejecutar el Cambio">
                   <div className="checks">
-                    <label><input type="checkbox" checked={form.requiresDba} onChange={(e) => update('requiresDba', e.target.checked)} /> Requiere DBA</label>
-                    <label><input type="checkbox" checked={form.requiresNetworks} onChange={(e) => update('requiresNetworks', e.target.checked)} /> Requiere Redes</label>
-                    <label><input type="checkbox" checked={form.requiresInfra} onChange={(e) => update('requiresInfra', e.target.checked)} /> Requiere Infraestructura</label>
-                    <label><input type="checkbox" checked={form.requiresMonitoring} onChange={(e) => update('requiresMonitoring', e.target.checked)} /> Requiere Monitoreo</label>
+                    <label><input type="checkbox" checked={form.requiresNetworks} onChange={(e) => update('requiresNetworks', e.target.checked)} /> Requisitos de Redes</label>
+                    <label><input type="checkbox" checked={form.requiresInfra} onChange={(e) => update('requiresInfra', e.target.checked)} /> Requisitos de Infraestructura</label>
+                    <label><input type="checkbox" checked={form.requiresDba} onChange={(e) => update('requiresDba', e.target.checked)} /> Requisitos de Base de datos (No críticas)</label>
+                    <label><input type="checkbox" checked={form.dbCriticalApplies} onChange={(e) => update('dbCriticalApplies', e.target.checked)} /> Revisión Base de datos Críticas</label>
                   </div>
-                  <Field label="Sistemas afectados adicionales">
-                    <textarea value={form.affectedSystemsText} onChange={(e) => update('affectedSystemsText', e.target.value)} rows={3} placeholder="Ej: POS, TMS Cloud, SmartVista. Detalle fino se completa en Plan PAP." />
+
+                  {form.dbCriticalApplies ? (
+                    <>
+                      <Field label="Base de datos impactada"><input value={form.dbCriticalName} onChange={(e) => update('dbCriticalName', e.target.value)} placeholder="Indicar la base de datos impactada" /></Field>
+                      <Field label="DBA Revisor"><input value={form.dbCriticalDba} onChange={(e) => update('dbCriticalDba', e.target.value)} placeholder="@ mencionar el DBA revisor" /></Field>
+                      <Field label="Resultado Revisión">
+                        <select value={form.dbCriticalResult} onChange={(e) => update('dbCriticalResult', e.target.value)}>
+                          <option value="">Selecciona</option>
+                          <option value="REVISADO OK">REVISADO OK</option>
+                          <option value="REVISADO NO OK">REVISADO NO OK</option>
+                          <option value="No Aplica">No Aplica</option>
+                        </select>
+                      </Field>
+                    </>
+                  ) : null}
+                </Block>
+
+                <Block title="Diagrama Técnico">
+                  <div className="checks">
+                    <label><input type="checkbox" checked={form.diagramApplies} onChange={(e) => update('diagramApplies', e.target.checked)} /> Aplica diagrama técnico</label>
+                  </div>
+                  {form.diagramApplies ? (
+                    <Field label="Link de diagrama"><input value={form.diagramLink} onChange={(e) => update('diagramLink', e.target.value)} placeholder="Adjuntar link de diagrama" /></Field>
+                  ) : null}
+                </Block>
+
+                <Block title="¿Requiere Monitoreo?">
+                  <div className="checks">
+                    <label><input type="checkbox" checked={form.requiresMonitoring} onChange={(e) => update('requiresMonitoring', e.target.checked)} /> Sí, el servicio es nuevo</label>
+                  </div>
+                  {form.requiresMonitoring ? (
+                    <Field label="Servicio que requiere ser monitoreado"><input value={form.monitoringDetail} onChange={(e) => update('monitoringDetail', e.target.value)} placeholder="Indicar el servicio" /></Field>
+                  ) : null}
+                </Block>
+
+                <Block title="¿Este cambio DEPRECA algún componente anterior?">
+                  <Field label="Estado de deprecación">
+                    <select value={form.deprecates} onChange={(e) => update('deprecates', e.target.value)}>{deprecatesOptions.map((o) => <option key={o}>{o}</option>)}</select>
                   </Field>
+                  {form.deprecates === 'Si depreca componente(s)' ? (
+                    <>
+                      <Field label="Componente a deprecar"><input value={form.deprecatesDetail} onChange={(e) => update('deprecatesDetail', e.target.value)} placeholder="Indicar nombre de componente a deprecar" /></Field>
+                      <Field label="¿Se realizó respaldo antes de eliminar?">
+                        <select value={form.backupBeforeDelete} onChange={(e) => update('backupBeforeDelete', e.target.value)}>
+                          <option value="">Selecciona</option>
+                          <option value="Si">Sí</option>
+                          <option value="No">No</option>
+                        </select>
+                      </Field>
+                    </>
+                  ) : null}
                 </Block>
               </>
             )}
 
-            {step === 2 && (
+            {/* ===== PASO 4: Clasificación y Negocio ===== */}
+            {step === 3 && (
               <>
-                <Block title="6. Responsables del cambio">
-                  <Field label="Presentador *"><UserAutocomplete value={form.presenter} placeholder="Buscar presentador en Jira" onChange={(v) => update('presenter', v)} /></Field>
-                  <Field label="Líder Técnico *"><UserAutocomplete value={form.technicalLead} placeholder="Buscar líder técnico en Jira" onChange={(v) => update('technicalLead', v)} /></Field>
-                  <Field label="Analista QA"><UserAutocomplete value={form.qaAnalyst} placeholder="Buscar analista QA en Jira" onChange={(v) => update('qaAnalyst', v)} /></Field>
-                  <Field label="Validador Negocio"><UserAutocomplete value={form.businessValidator} placeholder="Buscar validador en Jira" onChange={(v) => update('businessValidator', v)} /></Field>
+                <Block title="Cambio">
+                  <Field label="Tipo de Cambio"><select value={form.changeType} onChange={(e) => update('changeType', e.target.value)}>{changeTypeOptions.map((o) => <option key={o}>{o}</option>)}</select></Field>
+                  <Field label="Urgencia de Cambio"><select value={form.urgency} onChange={(e) => update('urgency', e.target.value)}>{urgencyOptions.map((o) => <option key={o}>{o}</option>)}</select></Field>
+                  <Field label="Impacto del Cambio"><select value={form.impact} onChange={(e) => update('impact', e.target.value)}>{impactOptions.map((o) => <option key={o}>{o}</option>)}</select></Field>
+                  <Field label="Prioridad del Cambio"><select value={form.priority} onChange={(e) => update('priority', e.target.value)}>{priorityOptions.map((o) => <option key={o}>{o}</option>)}</select></Field>
                 </Block>
 
-                <Block title="7. Plan general">
-                  <Field label="Plan de validación general">
-                    <textarea value={form.validationPlan} onChange={(e) => update('validationPlan', e.target.value)} rows={3} placeholder="Validación general esperada. El detalle operativo se completa en Plan PAP." />
-                  </Field>
-                  <Field label="RDC dependiente">
-                    <input value={form.dependentRdc} onChange={(e) => update('dependentRdc', e.target.value)} placeholder="No aplica / RDC relacionado" />
-                  </Field>
+                <Block title="Negocio">
+                  <Field label="Negocio Impactado"><select value={form.impactedBusiness} onChange={(e) => update('impactedBusiness', e.target.value)}>{businessOptions.map((o) => <option key={o}>{o}</option>)}</select></Field>
+                  <Field label="Ambiente"><select value={form.environment} onChange={(e) => update('environment', e.target.value)}>{environmentOptions.map((o) => <option key={o}>{o}</option>)}</select></Field>
                 </Block>
 
-                <Block title="8. Aprobadores CAB">
+                <Block title="Sistema(s) Relacionado(s)">
+                  <div className="systemsCatalog">
+                    {Object.entries(SYSTEMS_CATALOG).map(([group, products]) => (
+                      <details key={group} className="sysGroup">
+                        <summary><b>{group}</b> <small>{form.relatedSystems.filter((s) => products.includes(s)).length > 0 ? `(${form.relatedSystems.filter((s) => products.includes(s)).length} seleccionados)` : ''}</small></summary>
+                        <div className="sysProducts">
+                          {products.map((p) => (
+                            <label key={p} className={form.relatedSystems.includes(p) ? 'sysProd active' : 'sysProd'}>
+                              <input type="checkbox" checked={form.relatedSystems.includes(p)} onChange={() => toggleSystem(p)} />
+                              <span>{p}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </details>
+                    ))}
+                  </div>
+                </Block>
+
+                <Block title="Horario de Ejecución">
+                  <Field label="Restricción de horario"><select value={form.schedule} onChange={(e) => update('schedule', e.target.value)}>{scheduleOptions.map((o) => <option key={o}>{o}</option>)}</select></Field>
+                  {form.schedule === 'Con restricción' ? (
+                    <Field label="Día y hora coordinada con Deployment"><input value={form.scheduleDetail} onChange={(e) => update('scheduleDetail', e.target.value)} placeholder="Coordinado con Líder de Deployment previo a la entrega al CAB" /></Field>
+                  ) : null}
+                </Block>
+
+                <Block title="Asistido">
+                  <Field label="Modalidad"><select value={form.assisted} onChange={(e) => update('assisted', e.target.value)}>{assistedOptions.map((o) => <option key={o}>{o}</option>)}</select></Field>
+                  {form.assisted !== 'No Aplica' ? (
+                    <Field label="Desarrolladores / DBA que asistirán"><textarea value={form.assistedDetail} onChange={(e) => update('assistedDetail', e.target.value)} rows={3} placeholder="Indicar quién asistirá el paso a producción previa coordinación con Operaciones TI" /></Field>
+                  ) : null}
+                </Block>
+
+                <Block title="Dependencia con otro RDC">
+                  <Field label="Dependencia"><input value={form.dependentRdc} onChange={(e) => update('dependentRdc', e.target.value)} placeholder="No aplica / Indicar RDC's de los que depende" /></Field>
+                </Block>
+
+                <Block title="Programar Corte">
+                  <Field label="Impacto de corte programado"><select value={form.cutImpact} onChange={(e) => update('cutImpact', e.target.value)}>{cutImpactOptions.map((o) => <option key={o}>{o}</option>)}</select></Field>
+                  {form.cutImpact !== 'No aplica corte programado' ? (
+                    <Field label="Evidencia de comunicado a comercio(s)"><textarea value={form.cutEvidence} onChange={(e) => update('cutEvidence', e.target.value)} rows={2} placeholder="Adjuntar evidencia. Fecha y hora debe ser previamente coordinada con Deployment." /></Field>
+                  ) : null}
+                  {form.cutImpact !== 'No aplica corte programado' ? (
+                    <div className="cutWarning">IMPORTANTE: Comunicar a el/los comercios afectados con 72hrs de anticipación.</div>
+                  ) : null}
+                </Block>
+              </>
+            )}
+
+            {/* ===== PASO 5: Despliegue ===== */}
+            {step === 4 && (
+              <>
+                <Block title="Respaldos">
+                  <div className="checks">
+                    <label><input type="checkbox" checked={form.backupApp} onChange={(e) => update('backupApp', e.target.checked)} /> App-Jar-War (respaldar antes del paso)</label>
+                    <label><input type="checkbox" checked={form.backupDb} onChange={(e) => update('backupDb', e.target.checked)} /> Base de Datos-Esquema-Tabla-Funciones (respaldar DDL, Datos)</label>
+                  </div>
+                </Block>
+
+                <Block title="PIM - Componentes de Software">
+                  <div className="pimTable">
+                    {form.pimComponents.map((comp, i) => (
+                      <div className="pimRow" key={i}>
+                        <input value={comp.name} onChange={(e) => updatePim(i, 'name', e.target.value)} placeholder="Componente" />
+                        <input value={comp.version} onChange={(e) => updatePim(i, 'version', e.target.value)} placeholder="Versión" />
+                        <select value={comp.status} onChange={(e) => updatePim(i, 'status', e.target.value)}>{pimStatusOptions.map((o) => <option key={o}>{o}</option>)}</select>
+                        <input value={comp.jenkinsQa} onChange={(e) => updatePim(i, 'jenkinsQa', e.target.value)} placeholder="Jenkins QA" />
+                        <input value={comp.parameters} onChange={(e) => updatePim(i, 'parameters', e.target.value)} placeholder="Parámetros" />
+                        <button type="button" className="ghost small" onClick={() => removePim(i)}>✕</button>
+                      </div>
+                    ))}
+                    <button type="button" className="ghost" onClick={addPimComponent}>+ Agregar componente</button>
+                  </div>
+                </Block>
+
+                <Block title="Despliegue QA">
+                  <Field label="Historias a Certificar"><textarea value={form.certificationStories} onChange={(e) => update('certificationStories', e.target.value)} rows={3} placeholder="Solicitud de Certificación" /></Field>
+                  <Field label="Repositorios"><textarea value={form.repositories} onChange={(e) => update('repositories', e.target.value)} rows={3} placeholder="Ingresar enlace de GitLab/Bitbucket para consultar los ficheros" /></Field>
+                  <Field label="Plan de Despliegue en QA"><textarea value={form.deployPlanQa} onChange={(e) => update('deployPlanQa', e.target.value)} rows={4} placeholder="1. Paso uno&#10;2. Paso dos&#10;3. Paso tres" /></Field>
+                  <Field label="Rollback QA"><textarea value={form.rollbackQa} onChange={(e) => update('rollbackQa', e.target.value)} rows={3} placeholder="Agregar listado de tareas para la vuelta atrás" /></Field>
+                </Block>
+
+                <Block title="Despliegue Producción">
+                  <Field label="Plan Despliegue Producción"><textarea value={form.deployPlanProd} onChange={(e) => update('deployPlanProd', e.target.value)} rows={4} placeholder="1. Paso uno&#10;2. Paso dos&#10;3. Paso tres" /></Field>
+                  <Field label="Rollback Producción"><textarea value={form.rollbackProd} onChange={(e) => update('rollbackProd', e.target.value)} rows={3} placeholder="Describir plan de marcha atrás para recuperar la última configuración estable." /></Field>
+                </Block>
+
+                <Block title="Plan de Mitigación para CAB 2.0">
+                  <Field label="Plan de Mitigación"><textarea value={form.mitigationPlan} onChange={(e) => update('mitigationPlan', e.target.value)} rows={4} placeholder="1. (Indicar responsable a contactar si el despliegue falla)&#10;2. (Indicar posibles casos de falla y soluciones alternativas)" /></Field>
+                </Block>
+              </>
+            )}
+
+            {/* ===== PASO 6: Aprobadores y Revisión ===== */}
+            {step === 5 && (
+              <>
+                <Block title="Responsables">
+                  <Field label="Presentador *"><UserAutocomplete value={form.presenter} placeholder="Buscar presentador" onChange={(v) => update('presenter', v)} /></Field>
+                  <Field label="Analista QA"><UserAutocomplete value={form.qaAnalyst} placeholder="Buscar analista QA" onChange={(v) => update('qaAnalyst', v)} /></Field>
+                </Block>
+
+                <Block title="Aprobaciones">
                   <div className="approvalIntro">
-                    <p>Selecciona las áreas que deben aprobar este cambio. Al crear el RDC se generan aprobaciones pendientes con link y OTP.</p>
-                    <p><b>Nota:</b> el Plan PAP se completará después de la aprobación CAB.</p>
+                    <p>Selecciona las áreas que deben aprobar este cambio. Al crear el RDC se generan aprobaciones con link y OTP.</p>
                     {approvalRolesLoading ? <small>Cargando aprobadores configurados…</small> : null}
                   </div>
                   <div className="approvalRoles">
@@ -564,59 +660,36 @@ export default function RdcLitePage() {
                       return (
                         <label className={checked ? 'approvalRole active' : 'approvalRole'} key={role}>
                           <input type="checkbox" checked={checked} onChange={() => toggleApprovalRole(role)} />
-                          <span><b>{role}</b><small>{approver?.approver_name || 'Aprobador por definir'}</small></span>
+                          <span><b>{role}</b><small>{approver?.approver_name || 'Por definir'}</small></span>
                         </label>
                       );
                     })}
                   </div>
                 </Block>
-              </>
-            )}
 
-            {step === 3 && (
-              <>
                 <section className="review">
                   <div className="reviewHead">
                     <div>
                       <p className="kicker">Resumen antes de enviar</p>
-                      <h2>{form.title || 'RDC sin nombre'}</h2>
-                      <p>{form.description || form.requirementDescription || 'Sin descripción'}</p>
+                      <h2>{form.title || 'Sin nombre'}</h2>
+                      <p>{form.requirementDescription?.slice(0, 200) || 'Sin descripción'}</p>
                     </div>
                     <span>{form.impact} · {form.priority}</span>
                   </div>
-
                   <div className="reviewGrid">
-                    <div><b>Sistema</b><span>{form.system || 'No informado'}</span></div>
-                    <div><b>Célula</b><span>{form.cell || 'No informado'}</span></div>
+                    <div><b>Sistema</b><span>{form.system || '—'}</span></div>
+                    <div><b>Célula</b><span>{form.cell || '—'}</span></div>
                     <div><b>Categoría</b><span>{form.category}</span></div>
-                    <div><b>Fecha propuesta</b><span>{form.proposedDeployDate || 'Sin fecha'}</span></div>
-                    <div><b>Jira origen</b><span>{form.jiraOrigin || 'No informado'}</span></div>
-                    <div><b>Presentador</b><span>{form.presenter || 'No informado'}</span></div>
-                    <div><b>Líder técnico</b><span>{form.technicalLead || 'No informado'}</span></div>
+                    <div><b>Fecha</b><span>{form.proposedDeployDate || '—'}</span></div>
+                    <div><b>Líder Técnico</b><span>{form.technicalLead || '—'}</span></div>
+                    <div><b>Tipo</b><span>{form.changeType}</span></div>
+                    <div><b>Urgencia</b><span>{form.urgency}</span></div>
+                    <div><b>Ambiente</b><span>{form.environment}</span></div>
                   </div>
-
-                  {isEcab ? (
-                    <div className="ecabReview">
-                      <b>Resumen eCAB digital</b>
-                      <span><strong>Motivo:</strong> {form.ecabUrgencyReason || 'Pendiente'}</span>
-                      <span><strong>Problema:</strong> {form.ecabProblem || 'Pendiente'}</span>
-                      <span><strong>Solución:</strong> {form.ecabSolution || 'Pendiente'}</span>
-                      <span><strong>Validador:</strong> {form.ecabValidator || 'Pendiente'}</span>
-                      <span><strong>Regla:</strong> {form.ecabApprovalRule.replace('_', ' ')}</span>
-                    </div>
+                  {form.relatedSystems.length > 0 ? (
+                    <div className="reviewSystems"><b>Sistemas relacionados:</b> {form.relatedSystems.join(', ')}</div>
                   ) : null}
-
-                  <div className="papCallout">
-                    <b>{isEcab ? 'Después de aprobar eCAB' : 'Después de aprobar CAB'}</b>
-                    <span>{isEcab ? 'El sistema habilitará Plan PAP con el expediente eCAB como evidencia oficial.' : 'El detalle operativo del despliegue se generará en el módulo Plan PAP: actividades, responsables, horarios, estados y evidencias.'}</span>
-                  </div>
-
-                  <div className="selectedApprovers">
-                    <h3>Aprobadores seleccionados</h3>
-                    <div>
-                      {form.selectedApprovalRoles.map((role) => <span key={role}>{role}</span>)}
-                    </div>
-                  </div>
+                  <div className="selectedApprovers"><h3>Aprobadores</h3><div>{form.selectedApprovalRoles.map((r) => <span key={r}>{r}</span>)}</div></div>
                 </section>
               </>
             )}
@@ -626,11 +699,8 @@ export default function RdcLitePage() {
             <div className="wizNav">
               <button type="button" className="ghost" onClick={back} disabled={step === 0}>← Atrás</button>
               <span className="count">Paso {step + 1} de {STEPS.length}</span>
-              {step < STEPS.length - 1 ? (
-                <button type="button" onClick={next}>Siguiente →</button>
-              ) : (
-                <button type="button" onClick={createRdc} disabled={saving}>{saving ? 'Creando RDC…' : 'Crear RDC'}</button>
-              )}
+              {step < STEPS.length - 1 ? <button type="button" onClick={next}>Siguiente →</button> : null}
+              {step === STEPS.length - 1 ? <button type="button" onClick={createRdc} disabled={saving}>{saving ? 'Creando RDC…' : 'Crear RDC'}</button> : null}
             </div>
           </form>
         </>
@@ -642,20 +712,18 @@ export default function RdcLitePage() {
         .rdcLite .kicker { color: var(--green-d); font-size: 13px; font-weight: 900; letter-spacing: .16em; margin: 0 0 8px; text-transform: uppercase; }
         .rdcLite h1 { font-size: clamp(34px, 5vw, 54px); line-height: 1.02; letter-spacing: -.055em; color: var(--navy-d); margin: 0; }
         .rdcLite .sub { color: var(--ink-soft); margin: 10px 0 0; font-size: 16px; line-height: 1.45; max-width: 760px; }
-        .rdcLite .stepper { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 22px 0 24px; }
-        .rdcLite .stp { display: flex; align-items: center; gap: 10px; text-align: left; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 13px 12px; cursor: default; font: inherit; }
-        .rdcLite .stp b { width: 28px; height: 28px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: 999px; background: #eef4f8; color: var(--ink-soft); font-size: 13px; }
-        .rdcLite .stp span { font-size: 13px; font-weight: 900; color: var(--ink-soft); line-height: 1.15; }
+        .rdcLite .stepper { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin: 22px 0 24px; }
+        .rdcLite .stp { display: flex; align-items: center; gap: 8px; text-align: left; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 11px 10px; cursor: default; font: inherit; }
+        .rdcLite .stp b { width: 26px; height: 26px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: 999px; background: #eef4f8; color: var(--ink-soft); font-size: 12px; }
+        .rdcLite .stp span { font-size: 12px; font-weight: 800; color: var(--ink-soft); line-height: 1.15; }
         .rdcLite .stp.active { border-color: #9be7bf; background: var(--green-soft); }
         .rdcLite .stp.active b { background: var(--green); color: #fff; }
         .rdcLite .stp.active span { color: var(--navy-d); }
         .rdcLite .stp.done { cursor: pointer; }
         .rdcLite .stp.done b { background: var(--navy); color: #fff; }
         .rdcLite .form { background: #fff; border: 1px solid var(--line); border-radius: 22px; padding: 22px; display: grid; gap: 18px; box-shadow: 0 18px 45px rgba(7,59,93,.06); }
-        .rdcLite .notice, .rdcLite .papCallout { background: #ecfdf4; border: 1px solid #bbf7d0; color: #007d4f; border-radius: 16px; padding: 14px; display: grid; gap: 4px; }
-        .rdcLite .notice span, .rdcLite .papCallout span { color: #246b50; }
         .rdcLite .block, .rdcLite .review { background: #f8fbfd; border: 1px solid #e5eef3; border-radius: 18px; padding: 18px; }
-        .rdcLite .block h2 { margin: 0 0 14px; font-size: 19px; letter-spacing: -.02em; color: var(--navy-d); }
+        .rdcLite .block h2 { margin: 0 0 14px; font-size: 18px; letter-spacing: -.02em; color: var(--navy-d); }
         .rdcLite .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
         .rdcLite .field { display: grid; gap: 7px; }
         .rdcLite .field.wide { grid-column: 1 / -1; }
@@ -663,36 +731,52 @@ export default function RdcLitePage() {
         .rdcLite input, .rdcLite select, .rdcLite textarea { width: 100%; border: 1px solid #d9e7ef; background: #fff; border-radius: 12px; padding: 12px 13px; font: inherit; color: var(--ink); outline: none; min-height: 48px; }
         .rdcLite input:focus, .rdcLite select:focus, .rdcLite textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(0,193,110,.12); }
         .rdcLite textarea { resize: vertical; }
-        .rdcLite .checks { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-        .rdcLite .checks label { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #d9e7ef; border-radius: 12px; padding: 12px; }
+        .rdcLite .checks { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+        .rdcLite .checks label { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #d9e7ef; border-radius: 12px; padding: 12px; font-size: 13px; cursor: pointer; }
         .rdcLite .checks input { width: auto; min-height: auto; }
+        .rdcLite .ecabNotice { grid-column: 1 / -1; background: #ecfdf4; border: 1px solid #bbf7d0; color: #007d4f; border-radius: 14px; padding: 12px; display: grid; gap: 4px; }
+        .rdcLite .ecabNotice span { color: #246b50; }
+        .rdcLite .cutWarning { grid-column: 1 / -1; background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 12px; padding: 12px; font-weight: 800; font-size: 13px; }
+        .rdcLite .systemsCatalog { grid-column: 1 / -1; display: grid; gap: 8px; }
+        .rdcLite .sysGroup { background: #fff; border: 1px solid #e5eef3; border-radius: 14px; overflow: hidden; }
+        .rdcLite .sysGroup summary { padding: 12px 14px; cursor: pointer; font-weight: 800; color: var(--navy-d); display: flex; gap: 8px; align-items: center; }
+        .rdcLite .sysGroup summary small { color: var(--green-d); font-size: 11px; }
+        .rdcLite .sysProducts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; padding: 0 14px 12px; }
+        .rdcLite .sysProd { display: flex; gap: 8px; align-items: center; font-size: 12px; font-weight: 600; color: var(--ink-soft); padding: 6px 8px; border-radius: 8px; cursor: pointer; }
+        .rdcLite .sysProd.active { background: var(--green-soft); color: var(--green-d); }
+        .rdcLite .sysProd input { width: auto; min-height: auto; }
+        .rdcLite .pimTable { grid-column: 1 / -1; display: grid; gap: 10px; }
+        .rdcLite .pimRow { display: grid; grid-template-columns: 1.5fr 0.8fr 1fr 1fr 1fr auto; gap: 8px; align-items: center; }
+        .rdcLite .pimRow input, .rdcLite .pimRow select { min-height: 40px; padding: 8px 10px; font-size: 13px; }
+        .rdcLite .small { padding: 8px 12px; font-size: 12px; }
         .rdcLite .approvalIntro { grid-column: 1 / -1; color: var(--ink-soft); line-height: 1.45; }
         .rdcLite .approvalIntro p { margin: 0 0 8px; }
-        .rdcLite .approvalIntro small { color: var(--green-d); font-weight: 900; }
-        .rdcLite .approvalRoles { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-        .rdcLite .approvalRole { display: flex; gap: 12px; align-items: flex-start; background: #fff; border: 1px solid #d9e7ef; border-radius: 14px; padding: 14px; cursor: pointer; }
+        .rdcLite .approvalRoles { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+        .rdcLite .approvalRole { display: flex; gap: 12px; align-items: flex-start; background: #fff; border: 1px solid #d9e7ef; border-radius: 14px; padding: 12px; cursor: pointer; }
         .rdcLite .approvalRole.active { border-color: #9be7bf; background: #f0fff7; }
-        .rdcLite .approvalRole input { width: auto; min-height: auto; margin-top: 4px; }
-        .rdcLite .approvalRole b { display: block; color: var(--navy-d); }
-        .rdcLite .approvalRole small { display: block; color: var(--ink-soft); margin-top: 3px; font-weight: 700; }
+        .rdcLite .approvalRole input { width: auto; min-height: auto; margin-top: 3px; }
+        .rdcLite .approvalRole b { display: block; color: var(--navy-d); font-size: 13px; }
+        .rdcLite .approvalRole small { display: block; color: var(--ink-soft); margin-top: 2px; font-weight: 700; font-size: 11px; }
         .rdcLite .reviewHead { display: flex; justify-content: space-between; gap: 18px; }
-        .rdcLite .reviewHead h2 { margin: 0 0 8px; font-size: 30px; color: var(--navy-d); letter-spacing: -.04em; }
-        .rdcLite .reviewHead p { color: var(--ink-soft); margin: 0; line-height: 1.45; }
-        .rdcLite .reviewHead span { background: #fff7e6; color: #9a6700; border-radius: 999px; padding: 10px 13px; font-weight: 900; height: max-content; }
+        .rdcLite .reviewHead h2 { margin: 0 0 8px; font-size: 26px; color: var(--navy-d); letter-spacing: -.04em; }
+        .rdcLite .reviewHead p { color: var(--ink-soft); margin: 0; line-height: 1.45; max-width: 520px; }
+        .rdcLite .reviewHead span { background: #fff7e6; color: #9a6700; border-radius: 999px; padding: 10px 13px; font-weight: 900; font-size: 12px; height: max-content; white-space: nowrap; }
         .rdcLite .reviewGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 16px 0; }
-        .rdcLite .reviewGrid div { background: #fff; border: 1px solid #d9e7ef; border-radius: 14px; padding: 12px; }
+        .rdcLite .reviewGrid div { background: #fff; border: 1px solid #d9e7ef; border-radius: 12px; padding: 11px; }
         .rdcLite .reviewGrid b, .rdcLite .reviewGrid span { display: block; }
-        .rdcLite .reviewGrid b { color: var(--ink-soft); font-size: 12px; margin-bottom: 6px; }
-        .rdcLite .reviewGrid span { color: var(--navy-d); font-weight: 800; }
-        .rdcLite .selectedApprovers h3 { margin: 16px 0 8px; color: var(--navy-d); }
+        .rdcLite .reviewGrid b { color: var(--ink-soft); font-size: 11px; margin-bottom: 4px; }
+        .rdcLite .reviewGrid span { color: var(--navy-d); font-weight: 800; font-size: 13px; }
+        .rdcLite .reviewSystems { margin: 12px 0; font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
+        .rdcLite .reviewSystems b { color: var(--navy-d); }
+        .rdcLite .selectedApprovers h3 { margin: 14px 0 8px; color: var(--navy-d); font-size: 15px; }
         .rdcLite .selectedApprovers div { display: flex; flex-wrap: wrap; gap: 8px; }
-        .rdcLite .selectedApprovers span { background: #ecf7ff; color: #02568c; border-radius: 999px; padding: 8px 11px; font-weight: 900; font-size: 12px; }
+        .rdcLite .selectedApprovers span { background: #ecf7ff; color: #02568c; border-radius: 999px; padding: 7px 11px; font-weight: 900; font-size: 11px; }
         .rdcLite .err { background: #fff1f0; border: 1px solid #ffd0cb; color: #c0392b; padding: 12px 14px; border-radius: 12px; font-weight: 800; font-size: 14px; }
         .rdcLite .wizNav { display: flex; align-items: center; gap: 14px; }
         .rdcLite .count { color: var(--ink-soft); font-size: 13px; font-weight: 800; margin-right: auto; }
-        .rdcLite button { border: 0; background: var(--green); color: #fff; border-radius: 999px; padding: 13px 20px; font-weight: 900; cursor: pointer; }
+        .rdcLite button { border: 0; background: var(--green); color: #fff; border-radius: 999px; padding: 13px 20px; font-weight: 900; cursor: pointer; font: inherit; }
         .rdcLite button:disabled { opacity: .55; cursor: not-allowed; }
-        .rdcLite button.ghost, .rdcLite .ghostLink { background: #fff; color: var(--navy); border: 1px solid var(--line); padding: 13px 20px; border-radius: 999px; font-weight: 900; }
+        .rdcLite button.ghost, .rdcLite .ghostLink { background: #fff; color: var(--navy); border: 1px solid var(--line); padding: 13px 20px; border-radius: 999px; font-weight: 900; text-decoration: none; display: inline-flex; align-items: center; }
         .rdcLite .autocomplete { position: relative; }
         .rdcLite .suggestions { position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; right: 0; background: #fff; border: 1px solid #d9e7ef; border-radius: 14px; box-shadow: 0 18px 45px rgba(7,59,93,.14); overflow: hidden; }
         .rdcLite .suggestion { width: 100%; border: 0; border-radius: 0; background: #fff; color: var(--ink); display: flex; align-items: center; gap: 10px; padding: 11px 12px; text-align: left; cursor: pointer; font-weight: 700; }
@@ -705,13 +789,9 @@ export default function RdcLitePage() {
         .rdcLite .done h1 { margin: 18px 0 8px; }
         .rdcLite .done p { color: var(--ink-soft); line-height: 1.5; margin: 0 0 24px; }
         .rdcLite .doneActions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-        .rdcLite .doneActions .primary { background: var(--green); color: #fff; padding: 13px 20px; border-radius: 999px; font-weight: 900; }
-        @media (max-width: 960px) { .rdcLite .stepper { grid-template-columns: repeat(2, 1fr); } .rdcLite .reviewGrid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 760px) {
-          .rdcLite .stepper, .rdcLite .fields, .rdcLite .checks, .rdcLite .approvalRoles, .rdcLite .reviewGrid { grid-template-columns: 1fr; }
-          .rdcLite .wizNav, .rdcLite .reviewHead { flex-wrap: wrap; flex-direction: column; align-items: flex-start; }
-          .rdcLite .wizNav button { width: 100%; }
-        }
+        .rdcLite .doneActions .primary { background: var(--green); color: #fff; padding: 13px 20px; border-radius: 999px; font-weight: 900; text-decoration: none; }
+        @media (max-width: 960px) { .rdcLite .stepper { grid-template-columns: repeat(3, 1fr); } .rdcLite .reviewGrid { grid-template-columns: repeat(2, 1fr); } .rdcLite .pimRow { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 760px) { .rdcLite .stepper, .rdcLite .fields, .rdcLite .checks, .rdcLite .approvalRoles, .rdcLite .reviewGrid, .rdcLite .sysProducts { grid-template-columns: 1fr; } .rdcLite .wizNav { flex-wrap: wrap; flex-direction: column; align-items: stretch; } .rdcLite .pimRow { grid-template-columns: 1fr; } }
       `}</style>
     </main>
   );
@@ -730,57 +810,38 @@ function UserAutocomplete({ value, placeholder, onChange }: { value: string; pla
     if (timer.current) clearTimeout(timer.current);
     const trimmed = query.trim();
     if (trimmed.length < 2) { setUsers([]); setLoading(false); return; }
-
     timer.current = setTimeout(async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/jira/users?q=${encodeURIComponent(trimmed)}&query=${encodeURIComponent(trimmed)}&search=${encodeURIComponent(trimmed)}`, { cache: 'no-store' });
+        const response = await fetch(`/api/jira/users?q=${encodeURIComponent(trimmed)}`, { cache: 'no-store' });
         const data = await response.json();
-        const rawList = Array.isArray(data) ? data
-          : Array.isArray(data.users) ? data.users
-          : Array.isArray(data.results) ? data.results
-          : Array.isArray(data.values) ? data.values
-          : Array.isArray(data.data) ? data.data : [];
-        const list = rawList.map((item: any) => ({
-          accountId: item.accountId || item.id || item.account_id,
-          displayName: item.displayName || item.name || item.label || item.value || item.emailAddress || item.email,
-          emailAddress: item.emailAddress || item.email || item.mail,
-          avatarUrl: item.avatarUrl || item.avatarUrls?.['24x24'] || item.avatarUrls?.['32x32'] || item.avatarUrls?.['48x48'] || item.picture || '',
-        })).filter((item: JiraUser) => item.displayName);
-        setUsers(list);
+        const rawList = Array.isArray(data) ? data : Array.isArray(data.users) ? data.users : Array.isArray(data.results) ? data.results : [];
+        setUsers(rawList.map((item: any) => ({
+          accountId: item.accountId || item.id,
+          displayName: item.displayName || item.name || item.emailAddress,
+          emailAddress: item.emailAddress || item.email,
+          avatarUrl: item.avatarUrl || item.avatarUrls?.['24x24'] || '',
+        })).filter((u: JiraUser) => u.displayName));
         setOpen(true);
-      } catch {
-        setUsers([]); setOpen(true);
-      } finally {
-        setLoading(false);
-      }
+      } catch { setUsers([]); setOpen(true); }
+      finally { setLoading(false); }
     }, 300);
-
     return () => { if (timer.current) clearTimeout(timer.current); };
   }, [query]);
 
-  function selectUser(user: JiraUser) {
-    const name = user.displayName || user.emailAddress || '';
-    setQuery(name); onChange(name); setOpen(false);
-  }
+  function selectUser(user: JiraUser) { const name = user.displayName || ''; setQuery(name); onChange(name); setOpen(false); }
 
   return (
     <div className="autocomplete">
-      <input
-        value={query}
-        onChange={(event) => { setQuery(event.target.value); onChange(event.target.value); setOpen(true); }}
-        onFocus={() => { if (users.length > 0) setOpen(true); }}
-        onBlur={() => { setTimeout(() => setOpen(false), 160); }}
-        placeholder={placeholder}
-      />
+      <input value={query} onChange={(e) => { setQuery(e.target.value); onChange(e.target.value); setOpen(true); }} onFocus={() => { if (users.length) setOpen(true); }} onBlur={() => setTimeout(() => setOpen(false), 160)} placeholder={placeholder} />
       {open && query.trim().length >= 2 ? (
         <div className="suggestions">
-          {loading ? <div className="suggestionEmpty">Buscando usuarios…</div> : null}
-          {!loading && users.length === 0 ? <div className="suggestionEmpty">Sin resultados para “{query}”</div> : null}
-          {!loading && users.map((user) => (
-            <button type="button" className="suggestion" key={user.accountId || user.emailAddress || user.displayName} onMouseDown={(e) => e.preventDefault()} onClick={() => selectUser(user)}>
-              {user.avatarUrl ? <img src={user.avatarUrl} alt="" /> : null}
-              <span>{user.displayName || user.emailAddress}{user.emailAddress ? <small>{user.emailAddress}</small> : null}</span>
+          {loading ? <div className="suggestionEmpty">Buscando…</div> : null}
+          {!loading && users.length === 0 ? <div className="suggestionEmpty">Sin resultados</div> : null}
+          {!loading && users.map((u) => (
+            <button type="button" className="suggestion" key={u.accountId || u.emailAddress} onMouseDown={(e) => e.preventDefault()} onClick={() => selectUser(u)}>
+              {u.avatarUrl ? <img src={u.avatarUrl} alt="" /> : null}
+              <span>{u.displayName}{u.emailAddress ? <small>{u.emailAddress}</small> : null}</span>
             </button>
           ))}
         </div>
@@ -790,20 +851,10 @@ function UserAutocomplete({ value, placeholder, onChange }: { value: string; pla
 }
 
 function Block({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="block">
-      <h2>{title}</h2>
-      <div className="fields">{children}</div>
-    </section>
-  );
+  return (<section className="block"><h2>{title}</h2><div className="fields">{children}</div></section>);
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
-  const wide = ['Resumen', 'Descripción', 'Solución', 'Servicios', 'Usuarios', 'Consecuencia', 'Sistemas', 'Plan'].some((w) => label.includes(w));
-  return (
-    <div className={wide ? 'field wide' : 'field'}>
-      <label>{label}</label>
-      {children}
-    </div>
-  );
+  const wide = ['Descripción', 'Solución', 'Servicios', 'Usuarios', 'Consecuencia', 'Plan', 'Repositorios', 'Historias', 'Rollback', 'Mitigación', 'Componente', 'Motivo', 'problema', 'solución', 'riesgo', 'afecta', 'validación', 'Sistemas afectados'].some((w) => label.includes(w));
+  return (<div className={wide ? 'field wide' : 'field'}><label>{label}</label>{children}</div>);
 }
