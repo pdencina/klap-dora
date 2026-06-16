@@ -5,7 +5,7 @@ import { requireAnyRole } from '@/lib/auth';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const { user, deny } = await requireAnyRole(['approver', 'rm']);
+  const { user, deny } = await requireAnyRole(['approver', 'rm', 'deployment']);
   if (deny) return deny;
 
   const supabase = createSupabaseAdmin();
