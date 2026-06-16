@@ -162,7 +162,7 @@ export default function RdcPage() {
   function update(name: string, value: any) {
     setForm((c) => ({ ...c, [name]: value }));
 
-    // Al cambiar sistema o categoría, generar sugerencias IA
+    // Cuando cambia el sistema, generar sugerencias IA
     if (name === 'system' && value) {
       const sug = getCombinedSuggestions(value, form.category);
       if (sug && Object.keys(sug).length > 0) {
@@ -170,6 +170,10 @@ export default function RdcPage() {
         setSuggestionDismissed(false);
       } else {
         setSuggestion(null);
+      }
+      // Auto-generar prefijo del título
+      if (!form.title || form.title === suggestTitle(form.system, form.category)) {
+        setForm((c) => ({ ...c, title: suggestTitle(value, c.category) }));
       }
     }
     if (name === 'category' && form.system) {
@@ -179,6 +183,11 @@ export default function RdcPage() {
         setSuggestionDismissed(false);
       } else {
         setSuggestion(null);
+      }
+      // Auto-generar prefijo del título
+      const oldPrefix = suggestTitle(form.system, form.category);
+      if (!form.title || form.title === oldPrefix) {
+        setForm((c) => ({ ...c, title: suggestTitle(c.system, value) }));
       }
     }
   }
@@ -400,7 +409,7 @@ export default function RdcPage() {
               <>
                 <Block title="Detalles del Cambio">
                   <Field label="Nombre del cambio *">
-                    <input value={form.title} onChange={(e) => update('title', e.target.value)} placeholder="[Paso Prod][MANT] Ajuste servicio POS" />
+                    <input value={form.title} onChange={(e) => update('title', e.target.value)} placeholder="[Paso Prod][MANT] Descripción breve del cambio / JIRA-XXX" />
                   </Field>
                   <Field label="Solicitud de cambio (Jira)">
                     <input value={form.jiraOrigin} onChange={(e) => update('jiraOrigin', e.target.value)} placeholder="Indicar enlace de Jira" />

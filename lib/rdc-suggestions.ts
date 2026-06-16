@@ -267,17 +267,16 @@ export function getCombinedSuggestions(system: string, category: string): RdcSug
 
 /**
  * Genera un título sugerido basado en sistema y categoría.
+ * Formato: [Paso Prod][TIPO] Descripción del cambio / JIRA-XXX
  */
 export function suggestTitle(system: string, category: string): string {
-  const suggestion = getSuggestionsForSystem(system);
-  const prefix = suggestion?.titlePrefix || `[Paso Prod][${system.toUpperCase()}]`;
   const catTag = category === 'Mantención' ? 'MANT' :
     category === 'Proyecto' ? 'PROY' :
     category === 'Incidente' ? 'INC' :
-    category === 'Hotfix' ? 'HF' :
-    category === 'Recurrente' ? 'REC' : category.toUpperCase();
+    category === 'Hotfix' ? 'HOTFIX' :
+    category === 'Recurrente' ? 'MANT' : 'MANT';
 
-  return `${prefix}[${catTag}] `;
+  return `[Paso Prod][${catTag}] `;
 }
 
 /**
