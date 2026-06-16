@@ -828,8 +828,8 @@ export default function RdcPage() {
         .rdcLite .aiApply:hover { background: #047857 !important; }
         .rdcLite .titleComposite { display: flex; align-items: center; border: 1px solid #d9e7ef; background: #fff; border-radius: 12px; overflow: hidden; min-height: 48px; }
         .rdcLite .titleComposite:focus-within { border-color: var(--green); box-shadow: 0 0 0 3px rgba(0,193,110,.12); }
-        .rdcLite .titlePrefix { flex: none; padding: 10px 12px; background: #f0f9ff; border-right: 1px solid #d9e7ef; font-size: 12px; font-weight: 900; color: #065f46; white-space: nowrap; letter-spacing: -0.01em; }
-        .rdcLite .titleComposite input { border: 0 !important; box-shadow: none !important; min-height: auto; border-radius: 0; flex: 1; }
+        .rdcLite .titlePrefix { flex: none; padding: 12px 14px; background: #f0fdf4; border-right: 1px solid #d1fae5; font-size: 13px; font-weight: 900; color: #065f46; white-space: nowrap; }
+        .rdcLite .titleComposite input { border: 0 !important; box-shadow: none !important; min-height: auto; border-radius: 0; flex: 1; padding: 12px 14px; }
         .rdcLite .fieldHint { display: block; margin-top: 6px; font-size: 11px; color: #6b7280; font-weight: 600; }
         @media (max-width: 960px) { .rdcLite .stepper { grid-template-columns: repeat(3, 1fr); } .rdcLite .reviewGrid { grid-template-columns: repeat(2, 1fr); } .rdcLite .pimRow { grid-template-columns: 1fr 1fr; } }
         @media (max-width: 760px) { .rdcLite .stepper, .rdcLite .fields, .rdcLite .checks, .rdcLite .approvalRoles, .rdcLite .reviewGrid, .rdcLite .sysProducts { grid-template-columns: 1fr; } .rdcLite .wizNav { flex-wrap: wrap; flex-direction: column; align-items: stretch; } .rdcLite .pimRow { grid-template-columns: 1fr; } }
@@ -896,6 +896,6 @@ function Block({ title, children }: { title: string; children: ReactNode }) {
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
-  const wide = ['Descripción', 'Solución', 'Servicios', 'Usuarios', 'Consecuencia', 'Plan', 'Repositorios', 'Historias', 'Rollback', 'Mitigación', 'Componente', 'Motivo', 'problema', 'solución', 'riesgo', 'afecta', 'validación', 'Sistemas afectados'].some((w) => label.includes(w));
+  const wide = ['Nombre del cambio', 'Descripción', 'Solución', 'Servicios', 'Usuarios', 'Consecuencia', 'Plan', 'Repositorios', 'Historias', 'Rollback', 'Mitigación', 'Componente', 'Motivo', 'problema', 'solución', 'riesgo', 'afecta', 'validación', 'Sistemas afectados'].some((w) => label.includes(w));
   return (<div className={wide ? 'field wide' : 'field'}><label>{label}</label>{children}</div>);
 }
