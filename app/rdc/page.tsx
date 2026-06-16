@@ -29,7 +29,7 @@ type PimComponent = {
 // ===== Opciones del formulario =====
 const categoriaOptions = ['Mantención', 'Proyecto', 'Incidente', 'Hotfix', 'Recurrente'];
 const sistemaOptions = ['POS', 'Anticipo', 'Abono Ya', 'Bridge', 'H2H', 'BO', 'SmartVista', 'API', 'Middleware', 'Portal', 'App Klap', 'Data Analytics', 'Otro'];
-const celulaOptions = ['SmartVista', 'POS', 'Adquirencia', 'Adquirencia Clearing', 'Core', 'Boleta Electrónica y Multiservicios', 'Operaciones', 'QA', 'Infraestructura', 'Canales Presenciales', 'Otro'];
+const celulaOptions = ['Adquirencia Transaccional', 'Adquirencia Clearing', 'Adquirencia H2H', 'E-Commerce API', 'E-Commerce Checkout', 'Boleta Electrónica y Multiservicios', 'SmartVista', 'Desarrollo POS', 'Canales Presenciales', 'App Klap', 'Alimentación', 'APM', 'SVA', 'Facturación y Servicios Financieros', 'BO y Multiservicios Central', 'Multiservicios', 'Web Privada', 'Web Pública', 'Salud', 'Retail', 'Afiliación y Contrato', 'Redes', 'Ingeniería de Sistemas', 'Problemas', 'Mejora Continua', 'Incidentes', 'Clientes', 'Integraciones', 'Arquitectura', 'Ciberdefensa', 'Otro'];
 const impactOptions = ['Bajo', 'Medio', 'Alto', 'Crítico'];
 const priorityOptions = ['Baja', 'Media', 'Alta', 'Urgente'];
 const urgencyOptions = ['Normal', 'Hotfix', 'Recurrente', 'Emergencia'];
