@@ -25,6 +25,7 @@ export const APP_MODULES: AppModule[] = [
   { key: 'aprobaciones', label: 'Aprobaciones', path: '/approvals', icon: '✓', section: 'CONTROL', sort_order: 60 },
   { key: 'agenda_cab', label: 'Agenda CAB', path: '/cab', icon: '▣', section: 'CONTROL', sort_order: 70 },
   { key: 'ecab', label: 'eCAB', path: '/ecab', icon: '⚡', section: 'CONTROL', sort_order: 75 },
+  { key: 'control_center', label: 'Centro de Control', path: '/control', icon: '◈', section: 'CONTROL', sort_order: 76 },
   { key: 'plan_pap', label: 'Plan PAP', path: '/pap', icon: '□', section: 'EJECUCIÓN', sort_order: 80 },
   { key: 'deploy_center', label: 'Deploy Center', path: '/deploy', icon: '↗', section: 'EJECUCIÓN', sort_order: 90 },
   { key: 'cierre', label: 'Cierre', path: '/cierre', icon: '⚑', section: 'EJECUCIÓN', sort_order: 100 },
@@ -53,7 +54,7 @@ export const ROLE_DEFAULT_MODULES: Record<AppRole, string[]> = {
   client: ['inicio', 'nuevo_rdc', 'mis_cambios'],
   approver: ['inicio', 'mis_aprobaciones', 'ecab'],
   deployment: ['inicio', 'mis_aprobaciones', 'ecab', 'plan_pap', 'deploy_center', 'cierre'],
-  rm: ['inicio', 'nuevo_rdc', 'mis_cambios', 'release', 'aprobaciones', 'agenda_cab', 'ecab', 'plan_pap', 'deploy_center', 'cierre', 'dashboard_dora'],
+  rm: ['inicio', 'nuevo_rdc', 'mis_cambios', 'release', 'control_center', 'aprobaciones', 'agenda_cab', 'ecab', 'plan_pap', 'deploy_center', 'cierre', 'dashboard_dora'],
   super_admin: APP_MODULES.map((module) => module.key),
   read_only: ['inicio', 'mis_cambios', 'ecab', 'dashboard_dora'],
 };
