@@ -121,51 +121,6 @@ const statusLabel: Record<EcabStatus, string> = {
   cancelled: 'Cancelado',
 };
 
-const sampleEcabs: EcabRequest[] = [
-  {
-    id: 'demo-1',
-    title: 'Mantención servicio consulta de terminales',
-    system: 'Autoconfiguración POS Itaú',
-    cell: 'Adquirencia',
-    status: 'management_authorization',
-    urgency_reason: 'Compromiso con negocio por incrementales de afiliación y autoconfiguración.',
-    technical_lead: 'Bryan González',
-    validator: 'Nicolás Pantoja / Felipe Jara',
-    proposed_deploy_at: '08-06-2026',
-    post_validation_at: '09-06-2026',
-    affected_systems: 'Autoconfiguración POS Itaú / Order Manager / Activación POS / Consulta BO',
-    approvals: '0/3',
-    problem: 'Se requieren validaciones adicionales en consulta de terminales.',
-    solution: 'Añadir validaciones correspondientes en componente Java junto a salidas requeridas.',
-    risk: 'No existe riesgo mayor, piloto interno.',
-    impact: 'Usuarios internos y flujo operativo de autoconfiguración.',
-    production_validation_plan: 'Activaciones de equipos preconfigurados posterior al paso a producción.',
-    jira_or_erfc_url: 'CNLS-1849',
-    approval_rule: '2_of_3',
-  },
-  {
-    id: 'demo-2',
-    title: '[HOTFIX] Corrección reversas POS duplicadas',
-    system: 'POS · Adquirencia',
-    cell: 'POS',
-    status: 'ready_for_pap',
-    urgency_reason: 'Corrección requerida antes del siguiente CAB por impacto operativo.',
-    technical_lead: 'Pablo Encina',
-    validator: 'Ximena Cruz',
-    proposed_deploy_at: 'Hoy 22:00',
-    post_validation_at: 'Hoy 23:00',
-    affected_systems: 'POS / Clearing / Adquirencia',
-    approvals: '3/3',
-    problem: 'Reversas duplicadas en operación POS.',
-    solution: 'Aplicar hotfix de validación de duplicidad.',
-    risk: 'Riesgo controlado con rollback disponible.',
-    impact: 'Operación transaccional POS.',
-    production_validation_plan: 'Validar trx reversadas y cuadratura posterior.',
-    jira_or_erfc_url: 'PAP-DEMO-001',
-    approval_rule: '2_of_3',
-  },
-];
-
 const MANAGEMENT_AUTHORIZERS = [
   { name: 'Rafael Osorio', area: 'Gerencia', status: 'Pendiente' },
   { name: 'Julio Quiroz', area: 'Gerencia', status: 'Pendiente' },
@@ -269,8 +224,8 @@ function hasManagementApprovalCompleted(item: EcabRequest) {
 
 
 export default function EcabPage() {
-  const [ecabs, setEcabs] = useState<EcabRequest[]>(sampleEcabs);
-  const [selectedId, setSelectedId] = useState(sampleEcabs[0]?.id || '');
+  const [ecabs, setEcabs] = useState<EcabRequest[]>([]);
+  const [selectedId, setSelectedId] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -303,7 +258,7 @@ export default function EcabPage() {
           setSelectedId(data.ecabs[0].id);
         }
       } catch {
-        // Si la tabla/API aún no está lista, dejamos los datos demo para no romper la pantalla.
+        // Si la API falla, dejar vacío
       } finally {
         if (active) setLoading(false);
       }

@@ -76,104 +76,6 @@ type ControlChange = {
   papCreated: boolean;
 };
 
-const demoChanges: ControlChange[] = [
-  {
-    id: 'demo-ecab-1',
-    externalId: 'RDC-2026-045',
-    title: 'Corrección reversas POS duplicadas – HOTFIX',
-    type: 'eCAB',
-    status: 'rm_review',
-    system: 'POS, Pagos',
-    cell: 'TI Aplicaciones',
-    requester: 'María Salazar',
-    technicalLead: 'M. Salazar',
-    validator: 'Juan Pérez',
-    priority: 'Crítica',
-    impact: 'Alto',
-    risk: 'Alto',
-    proposedDate: '05/06/2026 09:15 a. m.',
-    sla: '- 2h 15m',
-    summary:
-      'Se requiere corrección inmediata por duplicidad de reversas en transacciones POS que está generando inconsistencias contables y reclamos operativos.',
-    approvals: [
-      { label: 'Revisión RM', actor: 'Release Manager', status: 'Pendiente', date: '05/06 09:15' },
-      { label: 'Autorización gerencial', actor: 'Rafael / Julio / Cristian', status: 'Pendiente' },
-    ],
-    timeline: [
-      { title: 'Solicitud creada', detail: 'RDC creado con información completa.', date: '05/06 09:15', done: true },
-      { title: 'Pendiente revisión RM', detail: 'En espera de evaluación del Release Manager.', active: true, done: false },
-      { title: 'Autorización eCAB', detail: 'Pendiente autorización gerencial.', done: false },
-      { title: 'Plan PAP', detail: 'Pendiente creación de plan.', done: false },
-      { title: 'Cierre', detail: 'Pendiente cierre digital.', done: false },
-    ],
-    evidenceCount: 3,
-    papCreated: false,
-  },
-  {
-    id: 'demo-cab-1',
-    externalId: 'RDC-2026-040',
-    title: 'Actualización motor de reglas de crédito',
-    type: 'CAB',
-    status: 'approval',
-    system: 'Core crédito',
-    cell: 'TI Desarrollo',
-    requester: 'J. Villanueva',
-    technicalLead: 'J. Villanueva',
-    validator: 'Felipe Jara',
-    priority: 'Alta',
-    impact: 'Medio',
-    risk: 'Medio',
-    proposedDate: '08/06/2026 22:00',
-    sla: '- 1d 2h',
-    summary: 'Cambio planificado con ventana de despliegue y validación funcional definida.',
-    approvals: [
-      { label: 'Arquitectura', actor: 'Equipo Arquitectura', status: 'Aprobado', date: '05/06 10:15' },
-      { label: 'Seguridad', actor: 'Equipo Seguridad', status: 'Pendiente' },
-      { label: 'Release', actor: 'Release Manager', status: 'Pendiente' },
-    ],
-    timeline: [
-      { title: 'Solicitud creada', detail: 'RDC registrado.', done: true },
-      { title: 'Revisión RM', detail: 'Solicitud validada.', done: true },
-      { title: 'Aprobación CAB', detail: 'En aprobación por áreas.', active: true, done: false },
-      { title: 'Plan PAP', detail: 'Pendiente evidencia CAB.', done: false },
-      { title: 'Cierre', detail: 'Pendiente.', done: false },
-    ],
-    evidenceCount: 1,
-    papCreated: false,
-  },
-  {
-    id: 'demo-ecab-2',
-    externalId: 'RDC-2026-043',
-    title: 'Ajuste de cálculo de comisiones en liquidación',
-    type: 'eCAB',
-    status: 'pap_created',
-    system: 'Liquidación',
-    cell: 'Negocio',
-    requester: 'C. Rojas',
-    technicalLead: 'C. Rojas',
-    validator: 'Juan Pérez',
-    priority: 'Alta',
-    impact: 'Alto',
-    risk: 'Medio',
-    proposedDate: '07/06/2026 23:00',
-    sla: 'Cumple',
-    summary: 'eCAB autorizado por gerencia y con Plan PAP creado para su ejecución controlada.',
-    approvals: [
-      { label: 'Revisión RM', actor: 'Pablo Encina', status: 'Aprobado', date: '06/06 10:15' },
-      { label: 'Autorización gerencial', actor: 'Rafael / Julio / Cristian', status: 'Aprobado', date: '06/06 10:40' },
-    ],
-    timeline: [
-      { title: 'Solicitud creada', detail: 'Solicitud eCAB registrada.', done: true },
-      { title: 'Revisión RM', detail: 'Aprobada por Release Manager.', done: true },
-      { title: 'Autorización eCAB', detail: 'Gerencia autorizó digitalmente.', done: true },
-      { title: 'Plan PAP', detail: 'Plan PAP creado.', active: true, done: true },
-      { title: 'Cierre', detail: 'Pendiente cierre digital.', done: false },
-    ],
-    evidenceCount: 5,
-    papCreated: true,
-  },
-];
-
 const statusLabel: Record<ProcessStatus, string> = {
   rm_review: 'Pendiente RM',
   observed: 'Observado',
@@ -379,8 +281,8 @@ function approvalRouteOf(item?: ControlChange | null) {
 
 export default function ControlCenterPage() {
   const router = useRouter();
-  const [changes, setChanges] = useState<ControlChange[]>(demoChanges);
-  const [selectedId, setSelectedId] = useState(demoChanges[0].id);
+  const [changes, setChanges] = useState<ControlChange[]>([]);
+  const [selectedId, setSelectedId] = useState('');
   const [filter, setFilter] = useState<'all' | ProcessStatus>('all');
   const [typeFilter, setTypeFilter] = useState<'all' | ChangeType>('all');
   const [query, setQuery] = useState('');
@@ -397,12 +299,11 @@ export default function ControlCenterPage() {
 
         if (response.ok && data?.ok && Array.isArray(data.ecabs) && data.ecabs.length) {
           const mapped = data.ecabs.map((item: EcabRequest) => buildEcabChange(item));
-          const merged = [...mapped, ...demoChanges.filter((item) => item.type === 'CAB')];
-          setChanges(merged);
-          setSelectedId(mapped[0]?.id || merged[0]?.id || demoChanges[0].id);
+          setChanges(mapped);
+          setSelectedId(mapped[0]?.id || '');
         }
       } catch {
-        // Mantiene fallback demo para no romper la vista si la API aún no está disponible.
+        // Si la API falla, dejar vacío
       }
     }
 

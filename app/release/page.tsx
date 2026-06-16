@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 const cards = [
   {
@@ -23,14 +24,41 @@ const cards = [
   },
 ];
 
-const pendientes = [
-  { area: 'DBA', n: 3 },
-  { area: 'Release Mgmt', n: 5 },
-  { area: 'Redes', n: 2 },
-  { area: 'Seguridad', n: 1 },
-];
+type PendingByArea = { area: string; n: number };
 
 export default function ReleaseHome() {
+  const [pendientes, setPendientes] = useState<PendingByArea[]>([]);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const response = await fetch('/api/approvals/list', { cache: 'no-store' });
+        const data = await response.json();
+        if (!response.ok || !data.ok) return;
+
+        // Contar aprobaciones pendientes por rol/área
+        const counts: Record<string, number> = {};
+        for (const change of (data.changes || [])) {
+          for (const approval of (change.approval_requests || [])) {
+            if (approval.status === 'PENDIENTE') {
+              const area = approval.approver_role || 'Sin área';
+              counts[area] = (counts[area] || 0) + 1;
+            }
+          }
+        }
+
+        setPendientes(
+          Object.entries(counts)
+            .map(([area, n]) => ({ area, n }))
+            .sort((a, b) => b.n - a.n)
+        );
+      } catch {
+        setPendientes([]);
+      }
+    }
+    load();
+  }, []);
+
   return (
     <main className="rel">
       <section className="hero">
@@ -57,12 +85,16 @@ export default function ReleaseHome() {
           <p>Identifica cuellos de botella por área antes de la ventana de implementación.</p>
         </div>
         <div className="stats">
-          {pendientes.map((p) => (
-            <div key={p.area}>
-              <b>{p.area}</b>
-              <span>{p.n} pendientes</span>
-            </div>
-          ))}
+          {pendientes.length === 0 ? (
+            <div><b>Sin pendientes</b><span>0 aprobaciones</span></div>
+          ) : (
+            pendientes.map((p) => (
+              <div key={p.area}>
+                <b>{p.area}</b>
+                <span>{p.n} pendiente{p.n !== 1 ? 's' : ''}</span>
+              </div>
+            ))
+          )}
         </div>
       </section>
 
