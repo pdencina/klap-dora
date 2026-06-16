@@ -171,10 +171,6 @@ export default function RdcPage() {
       } else {
         setSuggestion(null);
       }
-      // Auto-generar prefijo del título
-      if (!form.title || form.title === suggestTitle(form.system, form.category)) {
-        setForm((c) => ({ ...c, title: suggestTitle(value, c.category) }));
-      }
     }
     if (name === 'category' && form.system) {
       const sug = getCombinedSuggestions(form.system, value);
@@ -183,11 +179,6 @@ export default function RdcPage() {
         setSuggestionDismissed(false);
       } else {
         setSuggestion(null);
-      }
-      // Auto-generar prefijo del título
-      const oldPrefix = suggestTitle(form.system, form.category);
-      if (!form.title || form.title === oldPrefix) {
-        setForm((c) => ({ ...c, title: suggestTitle(c.system, value) }));
       }
     }
   }
@@ -305,7 +296,7 @@ export default function RdcPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: form.title,
+          title: suggestTitle(form.system || '', form.category) + form.title,
           description: form.requirementDescription,
           category: form.category,
           system: form.system,
@@ -409,7 +400,10 @@ export default function RdcPage() {
               <>
                 <Block title="Detalles del Cambio">
                   <Field label="Nombre del cambio *">
-                    <input value={form.title} onChange={(e) => update('title', e.target.value)} placeholder="[Paso Prod][MANT] Descripción breve del cambio / JIRA-XXX" />
+                    <div className="titleComposite">
+                      <span className="titlePrefix">{suggestTitle(form.system || '', form.category)}</span>
+                      <input value={form.title} onChange={(e) => update('title', e.target.value)} placeholder="Descripción breve del cambio" />
+                    </div>
                   </Field>
                   <Field label="Solicitud de cambio (Jira)">
                     <input value={form.jiraOrigin} onChange={(e) => update('jiraOrigin', e.target.value)} placeholder="Indicar enlace de Jira" />
@@ -702,7 +696,7 @@ export default function RdcPage() {
                   <div className="reviewHead">
                     <div>
                       <p className="kicker">Resumen antes de enviar</p>
-                      <h2>{form.title || 'Sin nombre'}</h2>
+                      <h2>{(suggestTitle(form.system || '', form.category) + form.title) || 'Sin nombre'}</h2>
                       <p>{form.requirementDescription?.slice(0, 200) || 'Sin descripción'}</p>
                     </div>
                     <span>{form.impact} · {form.priority}</span>
@@ -831,6 +825,10 @@ export default function RdcPage() {
         .rdcLite .aiSugActions { display: flex; gap: 10px; align-items: center; }
         .rdcLite .aiApply { background: #059669 !important; color: #fff !important; border: 0 !important; border-radius: 999px; padding: 10px 18px; font-weight: 900; font-size: 13px; cursor: pointer; }
         .rdcLite .aiApply:hover { background: #047857 !important; }
+        .rdcLite .titleComposite { display: flex; align-items: center; border: 1px solid #d9e7ef; background: #fff; border-radius: 12px; overflow: hidden; min-height: 48px; }
+        .rdcLite .titleComposite:focus-within { border-color: var(--green); box-shadow: 0 0 0 3px rgba(0,193,110,.12); }
+        .rdcLite .titlePrefix { flex: none; padding: 10px 12px; background: #f0f9ff; border-right: 1px solid #d9e7ef; font-size: 12px; font-weight: 900; color: #065f46; white-space: nowrap; letter-spacing: -0.01em; }
+        .rdcLite .titleComposite input { border: 0 !important; box-shadow: none !important; min-height: auto; border-radius: 0; flex: 1; }
         @media (max-width: 960px) { .rdcLite .stepper { grid-template-columns: repeat(3, 1fr); } .rdcLite .reviewGrid { grid-template-columns: repeat(2, 1fr); } .rdcLite .pimRow { grid-template-columns: 1fr 1fr; } }
         @media (max-width: 760px) { .rdcLite .stepper, .rdcLite .fields, .rdcLite .checks, .rdcLite .approvalRoles, .rdcLite .reviewGrid, .rdcLite .sysProducts { grid-template-columns: 1fr; } .rdcLite .wizNav { flex-wrap: wrap; flex-direction: column; align-items: stretch; } .rdcLite .pimRow { grid-template-columns: 1fr; } }
       `}</style>

@@ -267,16 +267,29 @@ export function getCombinedSuggestions(system: string, category: string): RdcSug
 
 /**
  * Genera un título sugerido basado en sistema y categoría.
- * Formato: [Paso Prod][TIPO] Descripción del cambio / JIRA-XXX
+ * Formatos reales extraídos de la planilla de cambios históricos:
+ * - [Paso Prod][MANT] ...
+ * - [Paso a Prod] MANT/...
+ * - [Paso a PreProd y Prod] MANT/...
+ * - [Paso Prod][PROY] ...
+ * - [Paso Prod][INC] ...
+ * - Paso a Prod: Hotfix / ...
  */
 export function suggestTitle(system: string, category: string): string {
-  const catTag = category === 'Mantención' ? 'MANT' :
-    category === 'Proyecto' ? 'PROY' :
-    category === 'Incidente' ? 'INC' :
-    category === 'Hotfix' ? 'HOTFIX' :
-    category === 'Recurrente' ? 'MANT' : 'MANT';
-
-  return `[Paso Prod][${catTag}] `;
+  switch (category) {
+    case 'Mantención':
+      return '[Paso Prod][MANT] ';
+    case 'Proyecto':
+      return '[Paso Prod][PROY] ';
+    case 'Incidente':
+      return '[Paso Prod][INC] ';
+    case 'Hotfix':
+      return 'Paso a Prod: Hotfix / ';
+    case 'Recurrente':
+      return '[Paso a Prod] MANT/';
+    default:
+      return '[Paso Prod][MANT] ';
+  }
 }
 
 /**
