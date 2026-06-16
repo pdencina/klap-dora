@@ -17,25 +17,6 @@ const ROLE_LABEL: Record<Role | AppRole, string> = {
   read_only: 'Solo Lectura',
 };
 
-const PROCESS_MODULES: AppModule[] = [
-  {
-    key: 'control_center',
-    label: 'Centro de Control',
-    path: '/control',
-    icon: '◈',
-    section: 'CONTROL',
-    sort_order: 45,
-  },
-  {
-    key: 'ecab',
-    label: 'eCAB',
-    path: '/ecab',
-    icon: '⚡',
-    section: 'CONTROL',
-    sort_order: 75,
-  },
-];
-
 const ROLE_VISIBLE_MODULE_KEYS: Record<AppRole, string[]> = {
   client: ['inicio', 'nuevo_rdc', 'mis_cambios'],
   read_only: ['inicio', 'mis_cambios'],
@@ -113,7 +94,7 @@ function isRouteActive(currentPath: string, href: string) {
 function sortModules(items: AppModule[]) {
   const unique = new Map<string, AppModule>();
 
-  for (const item of [...items, ...PROCESS_MODULES]) {
+  for (const item of items) {
     const key = item.path || item.key;
     if (!unique.has(key)) unique.set(key, item);
   }
@@ -129,10 +110,10 @@ function sortModules(items: AppModule[]) {
   });
 }
 
-function moduleCatalogWithProcess(items: AppModule[]) {
+function moduleCatalog(items: AppModule[]) {
   const catalog = new Map<string, AppModule>();
 
-  for (const item of [...APP_MODULES, ...PROCESS_MODULES, ...items]) {
+  for (const item of [...APP_MODULES, ...items]) {
     if (!catalog.has(item.key)) catalog.set(item.key, item);
   }
 
@@ -142,7 +123,7 @@ function moduleCatalogWithProcess(items: AppModule[]) {
 function modulesForProcessRole(items: AppModule[], role: Role | AppRole) {
   const normalizedRole = normalizeAppRole(role);
   const allowedKeys = ROLE_VISIBLE_MODULE_KEYS[normalizedRole] || ROLE_VISIBLE_MODULE_KEYS.client;
-  const catalog = moduleCatalogWithProcess(items);
+  const catalog = moduleCatalog(items);
 
   return sortModules(
     allowedKeys
@@ -179,10 +160,10 @@ export default function TopNav({ role, email }: { role: Role; email: string }) {
 
         if (apiModules.length) {
           // La API ya devuelve los módulos filtrados por permisos custom del usuario.
-          // Solo necesitamos agregarlos al catálogo y ordenarlos.
-          const catalog = moduleCatalogWithProcess(apiModules);
+          // Solo necesitamos enriquecerlos con metadata del catálogo y ordenarlos.
+          const cat = moduleCatalog(apiModules);
           const resolved = apiModules
-            .map((m: AppModule) => catalog.get(m.key) || m)
+            .map((m: AppModule) => cat.get(m.key) || m)
             .filter(Boolean) as AppModule[];
           setModules(sortModules(resolved));
         } else {
