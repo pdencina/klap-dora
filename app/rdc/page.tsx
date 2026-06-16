@@ -402,8 +402,9 @@ export default function RdcPage() {
                   <Field label="Nombre del cambio *">
                     <div className="titleComposite">
                       <span className="titlePrefix">{suggestTitle(form.system || '', form.category)}</span>
-                      <input value={form.title} onChange={(e) => update('title', e.target.value)} placeholder="Descripción breve del cambio" />
+                      <input value={form.title} onChange={(e) => update('title', e.target.value)} placeholder={form.category === 'Hotfix' ? 'Descripción del incidente / JIRA-XXX' : form.category === 'Incidente' ? 'Descripción del incidente / JIRA-XXX' : form.category === 'Proyecto' ? 'Nombre del proyecto / JIRA-XXX' : 'Descripción breve del cambio / JIRA-XXX'} />
                     </div>
+                    <small className="fieldHint">Escribe solo la descripción. El prefijo se genera automáticamente según la categoría.</small>
                   </Field>
                   <Field label="Solicitud de cambio (Jira)">
                     <input value={form.jiraOrigin} onChange={(e) => update('jiraOrigin', e.target.value)} placeholder="Indicar enlace de Jira" />
@@ -829,6 +830,7 @@ export default function RdcPage() {
         .rdcLite .titleComposite:focus-within { border-color: var(--green); box-shadow: 0 0 0 3px rgba(0,193,110,.12); }
         .rdcLite .titlePrefix { flex: none; padding: 10px 12px; background: #f0f9ff; border-right: 1px solid #d9e7ef; font-size: 12px; font-weight: 900; color: #065f46; white-space: nowrap; letter-spacing: -0.01em; }
         .rdcLite .titleComposite input { border: 0 !important; box-shadow: none !important; min-height: auto; border-radius: 0; flex: 1; }
+        .rdcLite .fieldHint { display: block; margin-top: 6px; font-size: 11px; color: #6b7280; font-weight: 600; }
         @media (max-width: 960px) { .rdcLite .stepper { grid-template-columns: repeat(3, 1fr); } .rdcLite .reviewGrid { grid-template-columns: repeat(2, 1fr); } .rdcLite .pimRow { grid-template-columns: 1fr 1fr; } }
         @media (max-width: 760px) { .rdcLite .stepper, .rdcLite .fields, .rdcLite .checks, .rdcLite .approvalRoles, .rdcLite .reviewGrid, .rdcLite .sysProducts { grid-template-columns: 1fr; } .rdcLite .wizNav { flex-wrap: wrap; flex-direction: column; align-items: stretch; } .rdcLite .pimRow { grid-template-columns: 1fr; } }
       `}</style>
