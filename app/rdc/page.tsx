@@ -28,7 +28,7 @@ type PimComponent = {
 
 // ===== Opciones del formulario =====
 const categoriaOptions = ['Mantención', 'Proyecto', 'Incidente', 'Hotfix', 'Recurrente'];
-const sistemaOptions = ['POS', 'Anticipo', 'Abono Ya', 'Bridge', 'H2H', 'BO', 'SmartVista', 'API', 'Middleware', 'Portal', 'App Klap', 'Data Analytics', 'Otro'];
+const sistemaOptions = ['POS Tradicional Ingenico', 'POS Tradicional Verifone', 'SmartPago', 'POS Integrado Android', 'App Klap (TTP)', 'API Tarjetas (E-Commerce)', 'API H2H', 'API Transit', 'Checkout / Link de Pago', 'Boleta Electrónica', 'SmartVista', 'Web Privada (Portal Comercios)', 'Web Pública (klap.cl)', 'Backoffice', 'Multiservicios (PDC/Recargas/JDA)', 'Alimentación (Pluxee/Edenred/Amipass)', 'Clearing (Visa/Mastercard/Amex)', 'Anticipo Klap / Abono Ya', 'R2 Crédito Emprende', 'Cuota Comercio', 'Data Analytics (Redshift/S3)', 'Redes', 'Infraestructura / Ingeniería', 'Afiliación y Contrato', 'IMED', 'Otro'];
 const celulaOptions = ['Adquirencia Transaccional', 'Adquirencia Clearing', 'Adquirencia H2H', 'E-Commerce API', 'E-Commerce Checkout', 'Boleta Electrónica y Multiservicios', 'SmartVista', 'Desarrollo POS', 'Canales Presenciales', 'App Klap', 'Alimentación', 'APM', 'SVA', 'Facturación y Servicios Financieros', 'BO y Multiservicios Central', 'Multiservicios', 'Web Privada', 'Web Pública', 'Salud', 'Retail', 'Afiliación y Contrato', 'Redes', 'Ingeniería de Sistemas', 'Problemas', 'Mejora Continua', 'Incidentes', 'Clientes', 'Integraciones', 'Arquitectura', 'Ciberdefensa', 'Otro'];
 const impactOptions = ['Bajo', 'Medio', 'Alto', 'Crítico'];
 const priorityOptions = ['Baja', 'Media', 'Alta', 'Urgente'];
