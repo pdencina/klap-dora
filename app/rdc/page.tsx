@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { getCombinedSuggestions, suggestTitle, type RdcSuggestion } from '@/lib/rdc-suggestions';
 
 type ApprovalRole = {
   id: string;
@@ -155,8 +156,61 @@ export default function RdcPage() {
     selectedApprovalRoles: ['Dueño Cambio', 'QA', 'DBA', 'Deployment'] as string[],
   });
 
+  const [suggestion, setSuggestion] = useState<RdcSuggestion | null>(null);
+  const [suggestionDismissed, setSuggestionDismissed] = useState(false);
+
   function update(name: string, value: any) {
     setForm((c) => ({ ...c, [name]: value }));
+
+    // Al cambiar sistema o categoría, generar sugerencias IA
+    if (name === 'system' && value) {
+      const sug = getCombinedSuggestions(value, form.category);
+      if (sug && Object.keys(sug).length > 0) {
+        setSuggestion(sug);
+        setSuggestionDismissed(false);
+      } else {
+        setSuggestion(null);
+      }
+    }
+    if (name === 'category' && form.system) {
+      const sug = getCombinedSuggestions(form.system, value);
+      if (sug && Object.keys(sug).length > 0) {
+        setSuggestion(sug);
+        setSuggestionDismissed(false);
+      } else {
+        setSuggestion(null);
+      }
+    }
+  }
+
+  function applySuggestions() {
+    if (!suggestion) return;
+    setForm((c) => ({
+      ...c,
+      ...(suggestion.cell && !c.cell ? { cell: suggestion.cell } : {}),
+      ...(suggestion.changeType ? { changeType: suggestion.changeType } : {}),
+      ...(suggestion.impactedBusiness ? { impactedBusiness: suggestion.impactedBusiness } : {}),
+      ...(suggestion.environment ? { environment: suggestion.environment } : {}),
+      ...(suggestion.impact ? { impact: suggestion.impact } : {}),
+      ...(suggestion.priority ? { priority: suggestion.priority } : {}),
+      ...(suggestion.urgency ? { urgency: suggestion.urgency } : {}),
+      ...(suggestion.affectedServices && !c.affectedServices ? { affectedServices: suggestion.affectedServices } : {}),
+      ...(suggestion.relatedSystems && suggestion.relatedSystems.length > 0 ? { relatedSystems: [...new Set([...c.relatedSystems, ...suggestion.relatedSystems])] } : {}),
+      ...(suggestion.selectedApprovalRoles ? { selectedApprovalRoles: suggestion.selectedApprovalRoles } : {}),
+      ...(suggestion.assisted ? { assisted: suggestion.assisted } : {}),
+      ...(suggestion.schedule ? { schedule: suggestion.schedule } : {}),
+      ...(suggestion.cutImpact ? { cutImpact: suggestion.cutImpact } : {}),
+      ...(suggestion.requiresDba !== undefined ? { requiresDba: suggestion.requiresDba } : {}),
+      ...(suggestion.requiresNetworks !== undefined ? { requiresNetworks: suggestion.requiresNetworks } : {}),
+      ...(suggestion.requiresInfra !== undefined ? { requiresInfra: suggestion.requiresInfra } : {}),
+      ...(suggestion.requiresMonitoring !== undefined ? { requiresMonitoring: suggestion.requiresMonitoring } : {}),
+      ...(!c.title.trim() ? { title: suggestTitle(c.system, c.category) } : {}),
+    }));
+    setSuggestionDismissed(true);
+  }
+
+  function dismissSuggestions() {
+    setSuggestionDismissed(true);
   }
 
   // Cargar roles de aprobación
@@ -360,6 +414,30 @@ export default function RdcPage() {
                       {sistemaOptions.map((o) => <option key={o}>{o}</option>)}
                     </select>
                   </Field>
+
+                  {/* Banner de sugerencias IA */}
+                  {suggestion && !suggestionDismissed && form.system && (
+                    <div className="aiSuggestion">
+                      <div className="aiSugHead">
+                        <span className="aiIcon">✨</span>
+                        <div>
+                          <b>Autocompletado inteligente</b>
+                          <p>Basado en RDCs anteriores de <strong>{form.system}</strong>, se sugieren valores frecuentes para célula, tipo, impacto, aprobadores y más.</p>
+                        </div>
+                      </div>
+                      <div className="aiSugPreview">
+                        {suggestion.cell && <span><b>Célula:</b> {suggestion.cell}</span>}
+                        {suggestion.impact && <span><b>Impacto:</b> {suggestion.impact}</span>}
+                        {suggestion.changeType && <span><b>Tipo:</b> {suggestion.changeType}</span>}
+                        {suggestion.urgency && <span><b>Urgencia:</b> {suggestion.urgency}</span>}
+                        {suggestion.assisted && <span><b>Asistido:</b> {suggestion.assisted}</span>}
+                      </div>
+                      <div className="aiSugActions">
+                        <button type="button" className="aiApply" onClick={applySuggestions}>Aplicar sugerencias</button>
+                        <button type="button" className="ghost small" onClick={dismissSuggestions}>No, gracias</button>
+                      </div>
+                    </div>
+                  )}
                   <Field label="Célula">
                     <select value={form.cell} onChange={(e) => update('cell', e.target.value)}>
                       <option value="">Selecciona</option>
@@ -732,6 +810,18 @@ export default function RdcPage() {
         .rdcLite .done p { color: var(--ink-soft); line-height: 1.5; margin: 0 0 24px; }
         .rdcLite .doneActions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
         .rdcLite .doneActions .primary { background: var(--green); color: #fff; padding: 13px 20px; border-radius: 999px; font-weight: 900; text-decoration: none; }
+        .rdcLite .aiSuggestion { grid-column: 1 / -1; background: linear-gradient(135deg, #f0f9ff 0%, #ecfdf5 100%); border: 1px solid #a7f3d0; border-radius: 16px; padding: 18px; animation: aiFadeIn .3s ease; }
+        @keyframes aiFadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        .rdcLite .aiSugHead { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; }
+        .rdcLite .aiSugHead .aiIcon { font-size: 22px; flex: none; }
+        .rdcLite .aiSugHead b { display: block; color: var(--navy-d); font-size: 14px; margin-bottom: 4px; }
+        .rdcLite .aiSugHead p { margin: 0; color: var(--ink-soft); font-size: 13px; line-height: 1.4; }
+        .rdcLite .aiSugPreview { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+        .rdcLite .aiSugPreview span { background: #fff; border: 1px solid #d1fae5; border-radius: 999px; padding: 6px 12px; font-size: 12px; color: #065f46; font-weight: 700; }
+        .rdcLite .aiSugPreview span b { color: #6b7280; font-weight: 600; margin-right: 4px; font-size: 11px; }
+        .rdcLite .aiSugActions { display: flex; gap: 10px; align-items: center; }
+        .rdcLite .aiApply { background: #059669 !important; color: #fff !important; border: 0 !important; border-radius: 999px; padding: 10px 18px; font-weight: 900; font-size: 13px; cursor: pointer; }
+        .rdcLite .aiApply:hover { background: #047857 !important; }
         @media (max-width: 960px) { .rdcLite .stepper { grid-template-columns: repeat(3, 1fr); } .rdcLite .reviewGrid { grid-template-columns: repeat(2, 1fr); } .rdcLite .pimRow { grid-template-columns: 1fr 1fr; } }
         @media (max-width: 760px) { .rdcLite .stepper, .rdcLite .fields, .rdcLite .checks, .rdcLite .approvalRoles, .rdcLite .reviewGrid, .rdcLite .sysProducts { grid-template-columns: 1fr; } .rdcLite .wizNav { flex-wrap: wrap; flex-direction: column; align-items: stretch; } .rdcLite .pimRow { grid-template-columns: 1fr; } }
       `}</style>
