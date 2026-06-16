@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdmin } from '@/lib/supabase-admin';
 import { requireUser, roleOf } from '@/lib/auth';
+import { notifyRdcCreated, notifyApprovalPending } from '@/lib/notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -192,6 +193,42 @@ export async function POST(req: Request) {
       await supabase.from('rdc').delete().eq('id', rdc.id);
       return NextResponse.json({ ok: false, error: approvalsError.message }, { status: 500 });
     }
+
+    // === Notificaciones por email (no bloquean la respuesta) ===
+    const notifyPromises: Promise<any>[] = [];
+
+    // Notificar al creador
+    if (user?.email) {
+      notifyPromises.push(
+        notifyRdcCreated({
+          rdcTitle: rdc.title,
+          rdcId: rdc.id,
+          creatorEmail: user.email,
+          creatorName: rdc.presenter || user.email.split('@')[0],
+          system: rdc.system || '',
+          category: rdc.category || '',
+        })
+      );
+    }
+
+    // Notificar a cada aprobador
+    for (const approval of (approvals || [])) {
+      if (approval.approver_email) {
+        notifyPromises.push(
+          notifyApprovalPending({
+            rdcTitle: rdc.title,
+            rdcId: rdc.id,
+            approverEmail: approval.approver_email,
+            approverName: approval.approver_name || approval.approver_role,
+            approverRole: approval.approver_role,
+            approvalToken: approval.approval_token || approval.id,
+          })
+        );
+      }
+    }
+
+    // Ejecutar en background sin bloquear respuesta
+    Promise.allSettled(notifyPromises).catch(() => {});
 
     return NextResponse.json({ ok: true, rdc, details, approvals, traceabilityWarnings });
   } catch (error: any) {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdmin } from '@/lib/supabase-admin';
 import { computeRdcStatus } from '@/lib/rdc-status';
+import { notifyApprovalDecision, notifyRdcFullyApproved, notifyRdcRejected } from '@/lib/notifications';
 
 export const dynamic = 'force-dynamic';
 const VALID_ACTIONS = new Set(['APROBADO', 'OBSERVADO', 'RECHAZADO']);
@@ -57,6 +58,52 @@ export async function POST(req: Request) {
 
     const { error: rdcError } = await supabase.from('rdc').update({ status: nextStatus, updated_at: now }).eq('id', approval.rdc_id);
     if (rdcError) return NextResponse.json({ ok: false, error: rdcError.message }, { status: 500 });
+
+    // === Notificaciones por email ===
+    const notifyPromises: Promise<any>[] = [];
+
+    // Buscar datos del RDC para notificar al creador
+    const { data: rdc } = await supabase.from('rdc').select('title, created_by').eq('id', approval.rdc_id).single();
+
+    if (rdc?.created_by) {
+      notifyPromises.push(
+        notifyApprovalDecision({
+          rdcTitle: rdc.title || 'RDC',
+          rdcId: approval.rdc_id,
+          creatorEmail: rdc.created_by,
+          approverName: approval.approved_by_name || approval.approver_name || '',
+          approverRole: approval.approver_role || '',
+          decision: action as 'APROBADO' | 'OBSERVADO' | 'RECHAZADO',
+          comment: comment || undefined,
+        })
+      );
+    }
+
+    // Si quedó completamente aprobado, notificar
+    if (nextStatus === 'APROBADO_PARA_EJECUCION' && rdc?.created_by) {
+      notifyPromises.push(
+        notifyRdcFullyApproved({
+          rdcTitle: rdc.title || 'RDC',
+          rdcId: approval.rdc_id,
+          recipients: [rdc.created_by],
+        })
+      );
+    }
+
+    // Si fue rechazado, notificar
+    if (nextStatus === 'RECHAZADO' && rdc?.created_by) {
+      notifyPromises.push(
+        notifyRdcRejected({
+          rdcTitle: rdc.title || 'RDC',
+          rdcId: approval.rdc_id,
+          recipients: [rdc.created_by],
+          rejectedBy: approval.approved_by_name || approval.approver_name || approval.approver_role || '',
+          comment: comment || undefined,
+        })
+      );
+    }
+
+    Promise.allSettled(notifyPromises).catch(() => {});
 
     return NextResponse.json({ ok: true, approval, rdcStatus: nextStatus });
   } catch (error: any) {
