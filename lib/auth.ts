@@ -183,3 +183,79 @@ export async function requireAnyRole(allowed: Role[]) {
   }
   return { user: null, deny: NextResponse.json({ ok: false, error: 'No tienes permiso para esta acción' }, { status: 403 }) };
 }
+
+/**
+ * Verifica si el usuario tiene acceso a un módulo específico.
+ * Consulta permisos custom de la BD. Si no tiene custom, usa defaults del rol.
+ * Esto unifica la visibilidad del sidebar con el acceso real a la API.
+ */
+export async function requireModuleAccess(moduleKey: string) {
+  const { user, deny } = await requireUser();
+  if (deny) return { user: null, deny };
+
+  const role = await getEffectiveAppRole(user);
+
+  // Super admin siempre pasa
+  if (role === 'super_admin') {
+    return { user, deny: null as NextResponse | null, role };
+  }
+
+  const email = normalizeEmail(user?.email);
+  if (!email) {
+    return { user: null, deny: NextResponse.json({ ok: false, error: 'No tienes permiso para este módulo' }, { status: 403 }) };
+  }
+
+  try {
+    const supabase = createSupabaseAdmin();
+
+    const { data: appUser, error: userError } = await supabase
+      .from('app_users')
+      .select('id, role, is_active')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (userError && isTableMissing(userError)) {
+      // Sin tabla, usar defaults del rol
+      const { ROLE_DEFAULT_MODULES } = await import('./permissions');
+      const defaults = ROLE_DEFAULT_MODULES[role] || [];
+      if (defaults.includes(moduleKey)) return { user, deny: null as NextResponse | null, role };
+      return { user: null, deny: NextResponse.json({ ok: false, error: 'No tienes permiso para este módulo' }, { status: 403 }) };
+    }
+
+    if (userError || !appUser || appUser.is_active === false) {
+      // Sin usuario en BD, usar defaults del rol
+      const { ROLE_DEFAULT_MODULES } = await import('./permissions');
+      const defaults = ROLE_DEFAULT_MODULES[role] || [];
+      if (defaults.includes(moduleKey)) return { user, deny: null as NextResponse | null, role };
+      return { user: null, deny: NextResponse.json({ ok: false, error: 'No tienes permiso para este módulo' }, { status: 403 }) };
+    }
+
+    // Verificar permisos custom
+    const { data: modulePerms } = await supabase
+      .from('user_module_permissions')
+      .select('module_key, can_view')
+      .eq('user_id', appUser.id);
+
+    const customRows = Array.isArray(modulePerms) ? modulePerms : [];
+
+    if (customRows.length > 0) {
+      // Tiene custom: solo esos aplican
+      const hasAccess = customRows.some((row) => row.module_key === moduleKey && row.can_view === true);
+      if (hasAccess) return { user, deny: null as NextResponse | null, role };
+      return { user: null, deny: NextResponse.json({ ok: false, error: 'No tienes permiso para este módulo' }, { status: 403 }) };
+    }
+
+    // Sin custom: usar defaults del rol
+    const { ROLE_DEFAULT_MODULES } = await import('./permissions');
+    const defaults = ROLE_DEFAULT_MODULES[role] || [];
+    if (defaults.includes(moduleKey)) return { user, deny: null as NextResponse | null, role };
+
+    return { user: null, deny: NextResponse.json({ ok: false, error: 'No tienes permiso para este módulo' }, { status: 403 }) };
+  } catch {
+    // En caso de error, fallback a defaults del rol
+    const { ROLE_DEFAULT_MODULES } = await import('./permissions');
+    const defaults = ROLE_DEFAULT_MODULES[role] || [];
+    if (defaults.includes(moduleKey)) return { user, deny: null as NextResponse | null, role };
+    return { user: null, deny: NextResponse.json({ ok: false, error: 'No tienes permiso para este módulo' }, { status: 403 }) };
+  }
+}

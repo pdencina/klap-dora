@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdmin } from '@/lib/supabase-admin';
-import { requireAnyRole } from '@/lib/auth';
+import { requireModuleAccess } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +16,7 @@ type StepInput = {
 };
 
 export async function GET(req: Request) {
-  const { deny } = await requireAnyRole(['rm', 'deployment']);
+  const { deny } = await requireModuleAccess('plan_pap');
   if (deny) return deny;
 
   const { searchParams } = new URL(req.url);
@@ -42,7 +42,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const { user, deny } = await requireAnyRole(['rm', 'deployment']);
+  const { user, deny } = await requireModuleAccess('plan_pap');
   if (deny) return deny;
 
   const body = await req.json();

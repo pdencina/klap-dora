@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireRM } from '@/lib/auth';
+import { requireModuleAccess } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -166,7 +166,7 @@ async function fetchJiraIssues() {
 
 export async function GET(request: Request) {
   try {
-    const { deny } = await requireRM();
+    const { deny } = await requireModuleAccess('dashboard_dora');
     if (deny) return deny;
 
     const { issues, cfInicio, cfDeploy, cfResultado, cfTipo, cfCelula, cfSistema } = await fetchJiraIssues();

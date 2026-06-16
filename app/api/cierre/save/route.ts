@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdmin } from '@/lib/supabase-admin';
-import { requireActionPermission } from '@/lib/auth';
+import { requireModuleAccess } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +12,7 @@ function mapRdcStatus(result: string, hadRollback: boolean, hadIncident: boolean
 }
 
 export async function POST(req: Request) {
-  const { user, deny } = await requireActionPermission('close_change');
+  const { user, deny } = await requireModuleAccess('cierre');
   if (deny) return deny;
 
   const body = await req.json();

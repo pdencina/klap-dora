@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdmin } from '@/lib/supabase-admin';
-import { requireAnyRole } from '@/lib/auth';
+import { requireModuleAccess } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const { user, deny } = await requireAnyRole(['approver', 'rm', 'deployment']);
+  const { user, deny } = await requireModuleAccess('mis_aprobaciones');
   if (deny) return deny;
 
   const supabase = createSupabaseAdmin();
