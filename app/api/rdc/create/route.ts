@@ -246,7 +246,7 @@ function buildJiraMappedFields(body: any) {
  * Crea el issue en Jira PAP inmediatamente al registrar el RDC.
  * Si falla (env no configurado, Jira caído, campo inválido), no bloquea la creación del RDC.
  */
-async function createJiraPapImmediate(rdc: any, body: any): Promise<{ jiraKey?: string; jiraError?: string }> {
+async function createJiraPapImmediate(rdc: any, body: any): Promise<{ jiraKey?: string; jiraError?: string; firstAttemptError?: any; createdWithFallback?: boolean; mappedFieldKeys?: string[] }> {
   try {
     const auth = buildJiraAuth();
     const base = (getJiraEnv('JIRA_BASE') || getJiraEnv('JIRA_BASE_URL') || '').replace(/\/$/, '');
