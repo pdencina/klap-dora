@@ -8,6 +8,15 @@ import {
   normalizeCategory,
   normalizeSeverity,
 } from '@/lib/jira-pap-field-map';
+import {
+  JIRA_SISTEMA_OPTIONS,
+  JIRA_CATEGORIA_OPTIONS,
+  JIRA_CELULA_OPTIONS,
+  JIRA_TIPO_CAMBIO_OPTIONS,
+  JIRA_PRIORIDAD_OPTIONS,
+  JIRA_SEVERIDAD_OPTIONS,
+  resolveJiraValue,
+} from '@/lib/jira-field-values';
 
 export const dynamic = 'force-dynamic';
 
@@ -147,16 +156,40 @@ function buildMappedFields(rdc: any, details: RdcDetails) {
   const formData = details.form_data || {};
   const fields: any = {};
 
+  // === Campos SELECT ===
   addSelectField(fields, PAP_FIELDS.sistemaProducto, rdc.system);
   addSelectField(fields, PAP_FIELDS.categoriaCambio, normalizeCategory(rdc.category));
   addSelectField(fields, PAP_FIELDS.gradoSeveridad, normalizeSeverity(details.impact || details.priority));
+  addSelectField(fields, PAP_FIELDS.celula, rdc.cell);
+  addSelectField(fields, PAP_FIELDS.tipoCambio, formData?.classification?.changeType);
+  addSelectField(fields, PAP_FIELDS.prioridad, details.priority);
 
+  // === Campos DATE ===
+  if (PAP_FIELDS.fechaDeploy && rdc.proposed_deploy_date) {
+    fields[PAP_FIELDS.fechaDeploy] = rdc.proposed_deploy_date;
+  }
+  if (PAP_FIELDS.fechaInicio) {
+    fields[PAP_FIELDS.fechaInicio] = new Date().toISOString().slice(0, 10);
+  }
+
+  // === Campos TEXTAREA (ADF) ===
   addAdfField(fields, PAP_FIELDS.razonCambio, details.requirement_description || rdc.description);
   addAdfField(fields, PAP_FIELDS.solucionRequerimiento, details.implemented_solution);
   addAdfField(fields, PAP_FIELDS.consecuencias, details.consequence_not_implementing);
   addAdfField(fields, PAP_FIELDS.planValidacion, details.validation_plan || getFormValue(formData, 'deployment.qaPlan'));
   addAdfField(fields, PAP_FIELDS.planDespliegue, details.deployment_plan || getFormValue(formData, 'deployment.productionPlan'));
+  addAdfField(fields, PAP_FIELDS.planRemediacion, details.rollback_plan || getFormValue(formData, 'deployment.rollback'));
 
+  // Listado de componentes
+  if (PAP_FIELDS.listadoComponentes && Array.isArray(formData?.pimComponents)) {
+    const comps = formData.pimComponents
+      .filter((p: any) => p.name)
+      .map((p: any) => `${p.name} v${p.version} (${p.status})`)
+      .join('\n');
+    if (comps) fields[PAP_FIELDS.listadoComponentes] = adfText(comps);
+  }
+
+  // RDC link
   const rdcUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || ''}/rdc/${rdc.id}`;
   if (PAP_FIELDS.adjuntarRdcDeployment && rdcUrl.startsWith('http')) {
     fields[PAP_FIELDS.adjuntarRdcDeployment] = adfText(`RDC digital Klap DORA:\n${rdcUrl}`);

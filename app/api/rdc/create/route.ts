@@ -3,6 +3,15 @@ import { createSupabaseAdmin } from '@/lib/supabase-admin';
 import { requireUser, roleOf } from '@/lib/auth';
 import { notifyRdcCreated, notifyApprovalPending } from '@/lib/notifications';
 import { PAP_FIELDS, adfText, jiraSelect, normalizeCategory, normalizeSeverity } from '@/lib/jira-pap-field-map';
+import {
+  JIRA_SISTEMA_OPTIONS,
+  JIRA_CATEGORIA_OPTIONS,
+  JIRA_CELULA_OPTIONS,
+  JIRA_TIPO_CAMBIO_OPTIONS,
+  JIRA_PRIORIDAD_OPTIONS,
+  JIRA_SEVERIDAD_OPTIONS,
+  resolveJiraValue,
+} from '@/lib/jira-field-values';
 
 export const dynamic = 'force-dynamic';
 
@@ -165,19 +174,32 @@ function buildJiraMappedFields(body: any) {
   const system = body?.system;
   const category = body?.category;
   const impact = body?.impact;
+  const formData = body?.formData || {};
 
-  if (PAP_FIELDS.sistemaProducto && system) {
-    const sel = jiraSelect(system);
-    if (sel) fields[PAP_FIELDS.sistemaProducto] = sel;
+  // Helper: solo agrega el campo si hay un valor resuelto válido
+  function addResolvedSelect(fieldId: string | undefined, fieldKey: string, rdcValue: string | undefined, options: string[]) {
+    if (!fieldId || !rdcValue) return;
+    const resolved = resolveJiraValue(fieldKey, rdcValue, options);
+    if (resolved) fields[fieldId] = { value: resolved };
   }
-  if (PAP_FIELDS.categoriaCambio && category) {
-    const sel = jiraSelect(normalizeCategory(category));
-    if (sel) fields[PAP_FIELDS.categoriaCambio] = sel;
+
+  // === Campos SELECT con resolución inteligente ===
+  addResolvedSelect(PAP_FIELDS.sistemaProducto, 'sistema', system, JIRA_SISTEMA_OPTIONS);
+  addResolvedSelect(PAP_FIELDS.categoriaCambio, 'categoria', normalizeCategory(category), JIRA_CATEGORIA_OPTIONS);
+  addResolvedSelect(PAP_FIELDS.celula, 'celula', body?.cell, JIRA_CELULA_OPTIONS);
+  addResolvedSelect(PAP_FIELDS.tipoCambio, 'tipoCambio', formData?.classification?.changeType, JIRA_TIPO_CAMBIO_OPTIONS);
+  addResolvedSelect(PAP_FIELDS.prioridad, 'prioridad', body?.priority, JIRA_PRIORIDAD_OPTIONS);
+  addResolvedSelect(PAP_FIELDS.gradoSeveridad, 'severidad', normalizeSeverity(impact), JIRA_SEVERIDAD_OPTIONS);
+
+  // === Campos DATE ===
+  if (PAP_FIELDS.fechaDeploy && body?.proposedDeployDate) {
+    fields[PAP_FIELDS.fechaDeploy] = body.proposedDeployDate; // formato yyyy-MM-dd
   }
-  if (PAP_FIELDS.gradoSeveridad && impact) {
-    const sel = jiraSelect(normalizeSeverity(impact));
-    if (sel) fields[PAP_FIELDS.gradoSeveridad] = sel;
+  if (PAP_FIELDS.fechaInicio && body?.proposedDeployDate) {
+    fields[PAP_FIELDS.fechaInicio] = new Date().toISOString().slice(0, 10);
   }
+
+  // === Campos TEXTAREA (ADF) ===
   if (PAP_FIELDS.razonCambio && body?.requirementDescription) {
     fields[PAP_FIELDS.razonCambio] = adfText(body.requirementDescription);
   }
@@ -190,8 +212,31 @@ function buildJiraMappedFields(body: any) {
   if (PAP_FIELDS.planValidacion && body?.validationPlan) {
     fields[PAP_FIELDS.planValidacion] = adfText(body.validationPlan);
   }
-  if (PAP_FIELDS.planDespliegue && body?.formData?.deployPlanProd) {
-    fields[PAP_FIELDS.planDespliegue] = adfText(body.formData.deployPlanProd);
+  if (PAP_FIELDS.planDespliegue && formData?.deployPlanProd) {
+    fields[PAP_FIELDS.planDespliegue] = adfText(formData.deployPlanProd);
+  }
+  if (PAP_FIELDS.planRemediacion && formData?.rollbackProd) {
+    fields[PAP_FIELDS.planRemediacion] = adfText(formData.rollbackProd);
+  }
+
+  // Listado de componentes PIM
+  if (PAP_FIELDS.listadoComponentes && Array.isArray(formData?.pimComponents)) {
+    const comps = formData.pimComponents
+      .filter((p: any) => p.name)
+      .map((p: any) => `${p.name} v${p.version} (${p.status})`)
+      .join('\n');
+    if (comps) fields[PAP_FIELDS.listadoComponentes] = adfText(comps);
+  }
+
+  // RDC link
+  const rdcUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || ''}/rdc/${body?._rdcId || ''}`;
+  if (PAP_FIELDS.adjuntarRdcDeployment && rdcUrl.startsWith('http')) {
+    fields[PAP_FIELDS.adjuntarRdcDeployment] = adfText(`RDC digital Klap DORA:\n${rdcUrl}`);
+  }
+
+  // Calendario de cambios URL
+  if (PAP_FIELDS.calendarioCambios && process.env.JIRA_CALENDARIO_CAMBIOS_URL) {
+    fields[PAP_FIELDS.calendarioCambios] = process.env.JIRA_CALENDARIO_CAMBIOS_URL;
   }
 
   return fields;
@@ -215,7 +260,7 @@ async function createJiraPapImmediate(rdc: any, body: any): Promise<{ jiraKey?: 
 
     const descriptionText = buildJiraDescription(rdc, body);
     const shouldMap = getJiraEnv('JIRA_ENABLE_PAP_FIELD_MAPPING') !== 'false';
-    const mappedFields = shouldMap ? buildJiraMappedFields(body) : {};
+    const mappedFields = shouldMap ? buildJiraMappedFields({ ...body, _rdcId: rdc.id }) : {};
 
     const baseFields: any = {
       project: { key: projectKey },
