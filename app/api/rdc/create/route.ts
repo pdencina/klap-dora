@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createSupabaseAdmin } from '@/lib/supabase-admin';
 import { requireUser, roleOf } from '@/lib/auth';
 import { notifyRdcCreated, notifyApprovalPending } from '@/lib/notifications';
+import { PAP_FIELDS, adfText, jiraSelect, normalizeCategory, normalizeSeverity } from '@/lib/jira-pap-field-map';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,6 +68,190 @@ async function insertTraceabilitySafely(supabase: any, rdcId: string, body: any,
   return warnings;
 }
 
+
+// ===== Integración inmediata con Jira PAP =====
+
+function getJiraEnv(name: string): string | null {
+  return process.env[name] || null;
+}
+
+function buildJiraAuth(): string | null {
+  const email = getJiraEnv('JIRA_EMAIL') || getJiraEnv('JIRA_USER');
+  const token = getJiraEnv('JIRA_TOKEN') || getJiraEnv('JIRA_API_TOKEN');
+  if (!email || !token) return null;
+  return `Basic ${Buffer.from(`${email}:${token}`).toString('base64')}`;
+}
+
+function buildJiraDescription(rdc: any, body: any) {
+  const formData = body?.formData || {};
+  const rdcUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || ''}/rdc/${rdc.id}`;
+
+  const lines = [
+    'RDC creado automáticamente desde Release Management Portal',
+    '',
+    `Sistema / Producto: ${body?.system || 'Sin sistema'}`,
+    `Célula: ${body?.cell || 'Sin célula'}`,
+    `Categoría: ${body?.category || 'Sin categoría'}`,
+    `Jira Origen: ${body?.jiraOrigin || 'No informado'}`,
+    `Líder Técnico: ${body?.technicalLead || 'No informado'}`,
+    `Fecha Propuesta Deploy: ${body?.proposedDeployDate || 'No informada'}`,
+    '',
+    '--- Descripción del Requerimiento ---',
+    body?.requirementDescription || 'Sin descripción',
+    '',
+    '--- Solución Implementada ---',
+    body?.implementedSolution || 'No informada',
+    '',
+    '--- Servicios Afectados ---',
+    body?.affectedServices || 'No informado',
+    '',
+    '--- Usuarios Afectados ---',
+    body?.affectedUsers || 'No informado',
+    '',
+    '--- Consecuencias si no se aprueba ---',
+    body?.consequenceNotImplementing || 'No informado',
+    '',
+    '--- Plan de Validación ---',
+    body?.validationPlan || 'No informado',
+    '',
+    '--- Clasificación ---',
+    `Tipo de Cambio: ${formData?.classification?.changeType || body?.changeType || 'Software'}`,
+    `Impacto: ${body?.impact || 'Medio'}`,
+    `Prioridad: ${body?.priority || 'Media'}`,
+    `Urgencia: ${formData?.classification?.urgency || 'Normal'}`,
+    `Negocio Impactado: ${formData?.business?.impactedBusiness || 'No informado'}`,
+    `Ambiente: ${formData?.business?.environment || 'Producción'}`,
+    '',
+    '--- Requisitos Previos ---',
+    `Requiere DBA: ${body?.requiresDba ? 'Sí' : 'No'}`,
+    `Requiere Redes: ${body?.requiresNetworks ? 'Sí' : 'No'}`,
+    `Requiere Infraestructura: ${body?.requiresInfra ? 'Sí' : 'No'}`,
+    `Requiere Monitoreo: ${body?.requiresMonitoring ? 'Sí' : 'No'}`,
+    '',
+    '--- Despliegue ---',
+    `Horario: ${formData?.schedule || 'Sin restricción'}`,
+    `Asistido: ${formData?.assisted || 'No Aplica'}`,
+    `Impacto Corte: ${formData?.cutImpact || 'No aplica'}`,
+    `Plan Despliegue QA: ${formData?.deployPlanQa || 'No informado'}`,
+    `Plan Despliegue Prod: ${formData?.deployPlanProd || 'No informado'}`,
+    `Rollback QA: ${formData?.rollbackQa || 'No informado'}`,
+    `Rollback Prod: ${formData?.rollbackProd || 'No informado'}`,
+    `Plan Mitigación: ${formData?.mitigationPlan || 'No informado'}`,
+    '',
+    '--- Sistemas Relacionados ---',
+    ...(Array.isArray(formData?.relatedSystems) && formData.relatedSystems.length > 0
+      ? formData.relatedSystems.map((s: string) => `• ${s}`)
+      : ['No informado']),
+    '',
+    '--- Componentes PIM ---',
+    ...(Array.isArray(formData?.pimComponents) && formData.pimComponents.length > 0
+      ? formData.pimComponents.filter((p: any) => p.name).map((p: any) => `• ${p.name} v${p.version} (${p.status})`)
+      : ['Sin componentes']),
+    '',
+    '--- Aprobadores ---',
+    ...(Array.isArray(body?.selectedApprovalRoles)
+      ? body.selectedApprovalRoles.map((r: string) => `• ${r}`)
+      : ['Default']),
+    '',
+    '--- Links ---',
+    rdcUrl.startsWith('http') ? `RDC Portal: ${rdcUrl}` : 'RDC: URL no configurada',
+  ];
+
+  return lines.join('\n');
+}
+
+function buildJiraMappedFields(body: any) {
+  const fields: any = {};
+  const system = body?.system;
+  const category = body?.category;
+  const impact = body?.impact;
+
+  if (PAP_FIELDS.sistemaProducto && system) {
+    const sel = jiraSelect(system);
+    if (sel) fields[PAP_FIELDS.sistemaProducto] = sel;
+  }
+  if (PAP_FIELDS.categoriaCambio && category) {
+    const sel = jiraSelect(normalizeCategory(category));
+    if (sel) fields[PAP_FIELDS.categoriaCambio] = sel;
+  }
+  if (PAP_FIELDS.gradoSeveridad && impact) {
+    const sel = jiraSelect(normalizeSeverity(impact));
+    if (sel) fields[PAP_FIELDS.gradoSeveridad] = sel;
+  }
+  if (PAP_FIELDS.razonCambio && body?.requirementDescription) {
+    fields[PAP_FIELDS.razonCambio] = adfText(body.requirementDescription);
+  }
+  if (PAP_FIELDS.solucionRequerimiento && body?.implementedSolution) {
+    fields[PAP_FIELDS.solucionRequerimiento] = adfText(body.implementedSolution);
+  }
+  if (PAP_FIELDS.consecuencias && body?.consequenceNotImplementing) {
+    fields[PAP_FIELDS.consecuencias] = adfText(body.consequenceNotImplementing);
+  }
+  if (PAP_FIELDS.planValidacion && body?.validationPlan) {
+    fields[PAP_FIELDS.planValidacion] = adfText(body.validationPlan);
+  }
+  if (PAP_FIELDS.planDespliegue && body?.formData?.deployPlanProd) {
+    fields[PAP_FIELDS.planDespliegue] = adfText(body.formData.deployPlanProd);
+  }
+
+  return fields;
+}
+
+/**
+ * Crea el issue en Jira PAP inmediatamente al registrar el RDC.
+ * Si falla (env no configurado, Jira caído, campo inválido), no bloquea la creación del RDC.
+ */
+async function createJiraPapImmediate(rdc: any, body: any): Promise<{ jiraKey?: string; jiraError?: string }> {
+  try {
+    const auth = buildJiraAuth();
+    const base = (getJiraEnv('JIRA_BASE') || getJiraEnv('JIRA_BASE_URL') || '').replace(/\/$/, '');
+
+    if (!auth || !base) {
+      return { jiraError: 'Jira no configurado (JIRA_EMAIL/JIRA_TOKEN/JIRA_BASE)' };
+    }
+
+    const projectKey = getJiraEnv('JIRA_PROJECT_KEY') || getJiraEnv('JIRA_PROJECT') || 'PAP';
+    const issueType = getJiraEnv('JIRA_ISSUE_TYPE') || 'Tarea';
+
+    const descriptionText = buildJiraDescription(rdc, body);
+    const shouldMap = getJiraEnv('JIRA_ENABLE_PAP_FIELD_MAPPING') !== 'false';
+    const mappedFields = shouldMap ? buildJiraMappedFields(body) : {};
+
+    const baseFields: any = {
+      project: { key: projectKey },
+      summary: rdc.title,
+      description: adfText(descriptionText),
+      issuetype: { name: issueType },
+    };
+
+    // Primer intento con custom fields
+    let response = await fetch(`${base}/rest/api/3/issue`, {
+      method: 'POST',
+      headers: { Authorization: auth, Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields: { ...baseFields, ...mappedFields } }),
+    });
+
+    let data = await response.json().catch(() => null);
+
+    // Si falla por campos custom, reintentar solo con base
+    if (!response.ok && Object.keys(mappedFields).length > 0 && response.status >= 400 && response.status < 500) {
+      response = await fetch(`${base}/rest/api/3/issue`, {
+        method: 'POST',
+        headers: { Authorization: auth, Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields: baseFields }),
+      });
+      data = await response.json().catch(() => null);
+    }
+
+    if (!response.ok) {
+      return { jiraError: `Jira ${response.status}: ${JSON.stringify(data?.errors || data?.errorMessages || 'Error desconocido')}` };
+    }
+
+    return { jiraKey: data?.key };
+  } catch (err: any) {
+    return { jiraError: err?.message || 'Error conectando con Jira' };
+  }
+}
 
 export async function POST(req: Request) {
   try {
@@ -194,6 +379,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: approvalsError.message }, { status: 500 });
     }
 
+    // === Crear issue en Jira PAP inmediatamente ===
+    let jiraKey: string | undefined;
+    let jiraError: string | undefined;
+
+    const jiraResult = await createJiraPapImmediate(rdc, body);
+    jiraKey = jiraResult.jiraKey;
+    jiraError = jiraResult.jiraError;
+
+    // Si se creó exitosamente, guardar la jira_key en el RDC
+    if (jiraKey) {
+      await supabase
+        .from('rdc')
+        .update({ jira_key: jiraKey, jira_created_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq('id', rdc.id);
+    }
+
     // === Notificaciones por email (no bloquean la respuesta) ===
     const notifyPromises: Promise<any>[] = [];
 
@@ -230,7 +431,15 @@ export async function POST(req: Request) {
     // Ejecutar en background sin bloquear respuesta
     Promise.allSettled(notifyPromises).catch(() => {});
 
-    return NextResponse.json({ ok: true, rdc, details, approvals, traceabilityWarnings });
+    return NextResponse.json({
+      ok: true,
+      rdc: { ...rdc, jira_key: jiraKey },
+      details,
+      approvals,
+      traceabilityWarnings,
+      jiraKey: jiraKey || null,
+      jiraError: jiraError || null,
+    });
   } catch (error: any) {
     return NextResponse.json(
       { ok: false, error: error?.message || 'Error creando RDC' },

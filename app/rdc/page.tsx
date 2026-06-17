@@ -82,6 +82,8 @@ export default function RdcPage() {
   const [saving, setSaving] = useState(false);
   const [created, setCreated] = useState(false);
   const [createdRdcId, setCreatedRdcId] = useState('');
+  const [createdJiraKey, setCreatedJiraKey] = useState('');
+  const [jiraWarning, setJiraWarning] = useState('');
   const [approvalRoles, setApprovalRoles] = useState<Record<string, ApprovalRole[]>>({});
   const [approvalRolesLoading, setApprovalRolesLoading] = useState(false);
 
@@ -356,6 +358,8 @@ export default function RdcPage() {
       if (!response.ok || !data.ok) throw new Error(data.error || 'No fue posible crear el RDC');
 
       setCreatedRdcId(data.rdc?.id || '');
+      setCreatedJiraKey(data.jiraKey || '');
+      setJiraWarning(data.jiraError || '');
       setCreated(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) { setStepError(err?.message || 'Error creando RDC'); }
@@ -370,8 +374,21 @@ export default function RdcPage() {
           <span className="check">✓</span>
           <h1>RDC registrado</h1>
           <p>RDC registrado y enviado al flujo CAB.</p>
+          {createdJiraKey && (
+            <div className="jiraSuccess">
+              <span className="jiraIcon">🎫</span>
+              <p>Ticket Jira creado: <a href={`https://multicaja-cloud.atlassian.net/browse/${createdJiraKey}`} target="_blank" rel="noopener noreferrer"><strong>{createdJiraKey}</strong></a></p>
+            </div>
+          )}
+          {jiraWarning && !createdJiraKey && (
+            <div className="jiraWarn">
+              <span>⚠️</span>
+              <p>No se pudo crear ticket en Jira: {jiraWarning}. Puedes crearlo manualmente desde el detalle del RDC.</p>
+            </div>
+          )}
           <div className="doneActions">
             {createdRdcId ? <a className="primary" href={`/rdc/${createdRdcId}`}>Abrir RDC →</a> : null}
+            {createdJiraKey && <a className="primary" href={`https://multicaja-cloud.atlassian.net/browse/${createdJiraKey}`} target="_blank" rel="noopener noreferrer">Ver en Jira →</a>}
             <a className="ghostLink" href="/mis-cambios">Ver en Mis Cambios</a>
             <button type="button" className="ghost" onClick={() => window.location.reload()}>Registrar otro</button>
           </div>
@@ -814,6 +831,12 @@ export default function RdcPage() {
         .rdcLite .done p { color: var(--ink-soft); line-height: 1.5; margin: 0 0 24px; }
         .rdcLite .doneActions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
         .rdcLite .doneActions .primary { background: var(--green); color: #fff; padding: 13px 20px; border-radius: 999px; font-weight: 900; text-decoration: none; }
+        .rdcLite .jiraSuccess { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 14px; padding: 14px 18px; display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+        .rdcLite .jiraSuccess .jiraIcon { font-size: 22px; flex: none; }
+        .rdcLite .jiraSuccess p { margin: 0; color: #0369a1; font-size: 14px; font-weight: 700; }
+        .rdcLite .jiraSuccess a { color: #0284c7; text-decoration: underline; }
+        .rdcLite .jiraWarn { background: #fffbeb; border: 1px solid #fde68a; border-radius: 14px; padding: 14px 18px; display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+        .rdcLite .jiraWarn p { margin: 0; color: #92400e; font-size: 13px; font-weight: 600; line-height: 1.4; }
         .rdcLite .aiSuggestion { grid-column: 1 / -1; background: linear-gradient(135deg, #f0f9ff 0%, #ecfdf5 100%); border: 1px solid #a7f3d0; border-radius: 16px; padding: 18px; animation: aiFadeIn .3s ease; }
         @keyframes aiFadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
         .rdcLite .aiSugHead { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; }
