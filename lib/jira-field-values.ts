@@ -1,21 +1,47 @@
 /**
  * Mapeo de valores del formulario RDC → valores válidos en Jira.
+ * Generado tras sincronizar opciones con scripts/jira-sync-options.js
+ * Fecha: 2026-06-17
  *
- * Cuando se ejecute `node scripts/jira-field-options.js` con credenciales,
- * este archivo se regenerará con las opciones reales de Jira.
- * Mientras tanto, estos son los valores conocidos del XML del issue PAP-5913.
- *
- * Si un valor del RDC no está en este mapeo, se envía tal cual a Jira.
- * Si Jira lo rechaza, el fallback sin custom fields garantiza la creación del issue.
+ * Las opciones ahora coinciden 1:1 con el formulario RDC.
  */
 
 /**
  * Opciones válidas en Jira para "Sistema / Producto" (customfield_12332)
- * Extraídas del XML: "Anticipo" aparece como ejemplo. Completar con script.
  */
 export const JIRA_SISTEMA_OPTIONS: string[] = [
+  'POS',
   'Anticipo',
-  // Ejecuta scripts/jira-field-options.js para obtener la lista completa
+  'Abono Ya',
+  'Bridge',
+  'H2H',
+  'BO',
+  'Contabilidad',
+  'POS Tradicional Ingenico',
+  'POS Tradicional Verifone',
+  'SmartPago',
+  'POS Integrado Android',
+  'App Klap (TTP)',
+  'API Tarjetas (E-Commerce)',
+  'API H2H',
+  'API Transit',
+  'Checkout / Link de Pago',
+  'Boleta Electrónica',
+  'SmartVista',
+  'Web Privada (Portal Comercios)',
+  'Web Pública (klap.cl)',
+  'Backoffice',
+  'Multiservicios (PDC/Recargas/JDA)',
+  'Alimentación (Pluxee/Edenred/Amipass)',
+  'Clearing (Visa/Mastercard/Amex)',
+  'Anticipo Klap / Abono Ya',
+  'R2 Crédito Emprende',
+  'Cuota Comercio',
+  'Data Analytics (Redshift/S3)',
+  'Redes',
+  'Infraestructura / Ingeniería',
+  'Afiliación y Contrato',
+  'IMED',
 ];
 
 /**
@@ -32,42 +58,75 @@ export const JIRA_CATEGORIA_OPTIONS: string[] = [
 
 /**
  * Opciones válidas en Jira para "Célula" (customfield_12330)
- * Del XML: "SVBO" aparece. También existe customfield_10139 con "Adquirencia H2H".
  */
 export const JIRA_CELULA_OPTIONS: string[] = [
+  'SVA',
   'SVBO',
+  'SVXP',
+  'CNLS',
+  'H2H',
+  'TRX',
+  'ESV',
+  'Adquirencia Transaccional',
+  'Adquirencia Clearing',
   'Adquirencia H2H',
-  // Ejecuta scripts/jira-field-options.js para obtener la lista completa
+  'E-Commerce API',
+  'E-Commerce Checkout',
+  'Boleta Electrónica y Multiservicios',
+  'SmartVista',
+  'Desarrollo POS',
+  'Canales Presenciales',
+  'App Klap',
+  'Alimentación',
+  'APM',
+  'Facturación y Servicios Financieros',
+  'BO y Multiservicios Central',
+  'Multiservicios',
+  'Web Privada',
+  'Web Pública',
+  'Salud',
+  'Retail',
+  'Afiliación y Contrato',
+  'Redes',
+  'Ingeniería de Sistemas',
+  'Clientes',
+  'Integraciones',
+  'Arquitectura',
+  'Ciberdefensa',
 ];
 
 /**
  * Opciones válidas en Jira para "Tipo de Cambio" (customfield_12331)
- * Del XML: "Recurrente" aparece como ejemplo.
  */
 export const JIRA_TIPO_CAMBIO_OPTIONS: string[] = [
+  'Normal',
   'Recurrente',
+  'Hotfix',
+  'ECAB',
+  'Urgente',
   'Software',
   'Infraestructura',
   'Redes',
+  'Sistema Operativo / Utilidades',
   'Base de Datos',
+  'Procedimiento',
   'Seguridad',
-  // Ejecuta scripts/jira-field-options.js para obtener la lista completa
+  'Datos',
 ];
 
 /**
  * Opciones válidas en Jira para "Prioridad" (customfield_12333)
- * Del XML: "Media" aparece.
  */
 export const JIRA_PRIORIDAD_OPTIONS: string[] = [
   'Baja',
   'Media',
   'Alta',
+  'Crítica',
   'Urgente',
 ];
 
 /**
  * Opciones válidas en Jira para "Grado Severidad" (customfield_10059)
- * Del XML: "Medio" aparece.
  */
 export const JIRA_SEVERIDAD_OPTIONS: string[] = [
   'Bajo',
@@ -78,7 +137,6 @@ export const JIRA_SEVERIDAD_OPTIONS: string[] = [
 
 /**
  * Busca la mejor coincidencia de un valor RDC en las opciones de Jira.
- * Usa coincidencia exacta primero, luego case-insensitive, luego sin tildes, luego parcial.
  */
 export function matchJiraOption(rdcValue: string, jiraOptions: string[]): string | null {
   if (!rdcValue || !jiraOptions.length) return null;
@@ -108,38 +166,30 @@ export function matchJiraOption(rdcValue: string, jiraOptions: string[]): string
 
 /**
  * Mapeo manual para valores que difieren entre RDC y Jira.
- * Clave: valor en el formulario RDC → Valor: valor exacto en Jira.
- * Se completa después de ejecutar scripts/jira-field-options.js y comparar.
  */
 export const MANUAL_MAPPINGS: Record<string, Record<string, string>> = {
   sistema: {
-    // Ej: 'POS Tradicional Ingenico' → 'POS Ingenico' (si en Jira se llama así)
-    // 'Anticipo Klap / Abono Ya' → 'Anticipo' (el XML muestra "Anticipo")
-    'Anticipo Klap / Abono Ya': 'Anticipo',
+    // Ahora coinciden 1:1, no necesita mapeo manual
   },
   celula: {
-    // Completar tras ejecutar el script
+    // Ahora coinciden 1:1, no necesita mapeo manual
   },
   categoria: {
     'Mantención': 'Mantencion',
   },
   tipoCambio: {
-    'Sistema Operativo / Utilidades': 'Sistema Operativo',
+    // Coinciden directamente
   },
   prioridad: {
-    // Los valores parecen coincidir directamente
+    // Coinciden directamente
   },
   severidad: {
-    'Crítico': 'Crítico',
+    // Coinciden directamente
   },
 };
 
 /**
  * Resuelve el valor final a enviar a Jira para un campo select.
- * 1. Busca en mapeo manual
- * 2. Busca coincidencia en opciones de Jira
- * 3. Devuelve el valor tal cual si hay opciones vacías (se prueba suerte)
- * 4. Devuelve null si definitivamente no hay match
  */
 export function resolveJiraValue(fieldKey: string, rdcValue: string, jiraOptions: string[]): string | null {
   if (!rdcValue) return null;
@@ -148,7 +198,7 @@ export function resolveJiraValue(fieldKey: string, rdcValue: string, jiraOptions
   const manual = MANUAL_MAPPINGS[fieldKey]?.[rdcValue];
   if (manual) return manual;
 
-  // 2. Si no hay opciones cargadas, enviar tal cual (mejor suerte con Jira)
+  // 2. Si no hay opciones cargadas, enviar tal cual
   if (!jiraOptions.length) return rdcValue;
 
   // 3. Match automático inteligente

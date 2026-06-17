@@ -359,7 +359,12 @@ export default function RdcPage() {
 
       setCreatedRdcId(data.rdc?.id || '');
       setCreatedJiraKey(data.jiraKey || '');
-      setJiraWarning(data.jiraError || '');
+      if (data.jiraDiagnostics?.createdWithFallback && data.jiraDiagnostics?.firstAttemptError) {
+        const errDetail = JSON.stringify(data.jiraDiagnostics.firstAttemptError?.errors || data.jiraDiagnostics.firstAttemptError);
+        setJiraWarning(`Custom fields rechazados por Jira (se usó fallback): ${errDetail}`);
+      } else {
+        setJiraWarning(data.jiraError || '');
+      }
       setCreated(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) { setStepError(err?.message || 'Error creando RDC'); }
@@ -380,10 +385,16 @@ export default function RdcPage() {
               <p>Ticket Jira creado: <a href={`https://multicaja-cloud.atlassian.net/browse/${createdJiraKey}`} target="_blank" rel="noopener noreferrer"><strong>{createdJiraKey}</strong></a></p>
             </div>
           )}
-          {jiraWarning && !createdJiraKey && (
+          {jiraWarning && (
             <div className="jiraWarn">
               <span>⚠️</span>
-              <p>No se pudo crear ticket en Jira: {jiraWarning}. Puedes crearlo manualmente desde el detalle del RDC.</p>
+              <p>{jiraWarning}</p>
+            </div>
+          )}
+          {!createdJiraKey && !jiraWarning && (
+            <div className="jiraWarn">
+              <span>⚠️</span>
+              <p>No se pudo crear ticket en Jira. Puedes crearlo manualmente desde el detalle del RDC.</p>
             </div>
           )}
           <div className="doneActions">

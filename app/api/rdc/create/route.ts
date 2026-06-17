@@ -277,22 +277,26 @@ async function createJiraPapImmediate(rdc: any, body: any): Promise<{ jiraKey?: 
     });
 
     let data = await response.json().catch(() => null);
+    let firstAttemptError: any = null;
+    let createdWithFallback = false;
 
     // Si falla por campos custom, reintentar solo con base
     if (!response.ok && Object.keys(mappedFields).length > 0 && response.status >= 400 && response.status < 500) {
+      firstAttemptError = { status: response.status, errors: data?.errors, errorMessages: data?.errorMessages };
       response = await fetch(`${base}/rest/api/3/issue`, {
         method: 'POST',
         headers: { Authorization: auth, Accept: 'application/json', 'Content-Type': 'application/json' },
         body: JSON.stringify({ fields: baseFields }),
       });
       data = await response.json().catch(() => null);
+      createdWithFallback = true;
     }
 
     if (!response.ok) {
       return { jiraError: `Jira ${response.status}: ${JSON.stringify(data?.errors || data?.errorMessages || 'Error desconocido')}` };
     }
 
-    return { jiraKey: data?.key };
+    return { jiraKey: data?.key, firstAttemptError, createdWithFallback, mappedFieldKeys: Object.keys(mappedFields) };
   } catch (err: any) {
     return { jiraError: err?.message || 'Error conectando con Jira' };
   }
@@ -432,6 +436,13 @@ export async function POST(req: Request) {
     jiraKey = jiraResult.jiraKey;
     jiraError = jiraResult.jiraError;
 
+    // Diagnósticos de Jira para troubleshooting
+    const jiraDiagnostics = {
+      firstAttemptError: (jiraResult as any).firstAttemptError || null,
+      createdWithFallback: (jiraResult as any).createdWithFallback || false,
+      mappedFieldKeys: (jiraResult as any).mappedFieldKeys || [],
+    };
+
     // Si se creó exitosamente, guardar la jira_key en el RDC
     if (jiraKey) {
       await supabase
@@ -484,6 +495,7 @@ export async function POST(req: Request) {
       traceabilityWarnings,
       jiraKey: jiraKey || null,
       jiraError: jiraError || null,
+      jiraDiagnostics,
     });
   } catch (error: any) {
     return NextResponse.json(
