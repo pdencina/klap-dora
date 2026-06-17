@@ -3,22 +3,61 @@
  * 
  * Esto permite homologar los valores del formulario RDC con los que acepta Jira.
  * 
- * USO:
+ * USO (con variables de entorno):
+ *   set JIRA_BASE=https://multicaja-cloud.atlassian.net
+ *   set JIRA_EMAIL=tu-email@klap.cl
+ *   set JIRA_TOKEN=tu-api-token
  *   node scripts/jira-field-options.js
  * 
- * Requiere en .env:
- *   JIRA_BASE=https://multicaja-cloud.atlassian.net
- *   JIRA_EMAIL=tu-email@klap.cl
- *   JIRA_TOKEN=tu-api-token
+ * O con argumentos:
+ *   node scripts/jira-field-options.js --base https://multicaja-cloud.atlassian.net --email tu@klap.cl --token XXXXX
  * 
  * SALIDA:
  *   Muestra las opciones de cada campo select y genera un archivo
  *   lib/jira-field-values.ts con el mapeo RDC → Jira listo para usar.
  */
 
-require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
+
+// Intentar leer .env manualmente si existe
+function loadEnvFile() {
+  const envPaths = ['.env', '.env.local', '.env.production.local'];
+  for (const envPath of envPaths) {
+    const fullPath = path.join(__dirname, '..', envPath);
+    if (fs.existsSync(fullPath)) {
+      const content = fs.readFileSync(fullPath, 'utf8');
+      for (const line of content.split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eqIdx = trimmed.indexOf('=');
+        if (eqIdx === -1) continue;
+        const key = trimmed.slice(0, eqIdx).trim();
+        let value = trimmed.slice(eqIdx + 1).trim();
+        // Quitar comillas
+        if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+          value = value.slice(1, -1);
+        }
+        if (!process.env[key]) process.env[key] = value;
+      }
+      console.log(`   📄 Leído: ${envPath}`);
+      return;
+    }
+  }
+}
+
+// Parsear argumentos --base, --email, --token
+function parseArgs() {
+  const args = process.argv.slice(2);
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--base' && args[i + 1]) process.env.JIRA_BASE = args[++i];
+    if (args[i] === '--email' && args[i + 1]) process.env.JIRA_EMAIL = args[++i];
+    if (args[i] === '--token' && args[i + 1]) process.env.JIRA_TOKEN = args[++i];
+  }
+}
+
+loadEnvFile();
+parseArgs();
 
 const base = (process.env.JIRA_BASE || process.env.JIRA_BASE_URL || '').replace(/\/$/, '');
 const email = process.env.JIRA_EMAIL || process.env.JIRA_USER || '';

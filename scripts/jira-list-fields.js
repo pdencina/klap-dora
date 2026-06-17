@@ -3,17 +3,49 @@
  * 
  * USO:
  *   node scripts/jira-list-fields.js
- * 
- * Requiere las variables de entorno:
- *   JIRA_BASE=https://multicaja-cloud.atlassian.net
- *   JIRA_EMAIL=tu-email@klap.cl
- *   JIRA_TOKEN=tu-api-token
- * 
- * O puedes pasar un issue key para ver los campos con valores:
  *   node scripts/jira-list-fields.js PAP-5913
+ * 
+ * Las credenciales se leen del .env / .env.local o se pasan como args:
+ *   node scripts/jira-list-fields.js --base https://multicaja-cloud.atlassian.net --email tu@klap.cl --token XXXXX
  */
 
-require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
+
+function loadEnvFile() {
+  const envPaths = ['.env', '.env.local', '.env.production.local'];
+  for (const envPath of envPaths) {
+    const fullPath = path.join(__dirname, '..', envPath);
+    if (fs.existsSync(fullPath)) {
+      const content = fs.readFileSync(fullPath, 'utf8');
+      for (const line of content.split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eqIdx = trimmed.indexOf('=');
+        if (eqIdx === -1) continue;
+        const key = trimmed.slice(0, eqIdx).trim();
+        let value = trimmed.slice(eqIdx + 1).trim();
+        if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+          value = value.slice(1, -1);
+        }
+        if (!process.env[key]) process.env[key] = value;
+      }
+      return;
+    }
+  }
+}
+
+function parseArgs() {
+  const args = process.argv.slice(2);
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--base' && args[i + 1]) process.env.JIRA_BASE = args[++i];
+    if (args[i] === '--email' && args[i + 1]) process.env.JIRA_EMAIL = args[++i];
+    if (args[i] === '--token' && args[i + 1]) process.env.JIRA_TOKEN = args[++i];
+  }
+}
+
+loadEnvFile();
+parseArgs();
 
 const base = (process.env.JIRA_BASE || process.env.JIRA_BASE_URL || '').replace(/\/$/, '');
 const email = process.env.JIRA_EMAIL || process.env.JIRA_USER || '';
