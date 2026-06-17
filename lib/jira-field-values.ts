@@ -184,7 +184,11 @@ export const MANUAL_MAPPINGS: Record<string, Record<string, string>> = {
     // Coinciden directamente
   },
   severidad: {
-    // Coinciden directamente
+    'Media': 'Medio',
+    'Alta': 'Alto',
+    'Baja': 'Bajo',
+    'Urgente': 'Crítico',
+    'Crítico': 'Crítico',
   },
 };
 

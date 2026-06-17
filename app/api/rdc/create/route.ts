@@ -189,7 +189,7 @@ function buildJiraMappedFields(body: any) {
   addResolvedSelect(PAP_FIELDS.celula, 'celula', body?.cell, JIRA_CELULA_OPTIONS);
   addResolvedSelect(PAP_FIELDS.tipoCambio, 'tipoCambio', formData?.classification?.changeType, JIRA_TIPO_CAMBIO_OPTIONS);
   addResolvedSelect(PAP_FIELDS.prioridad, 'prioridad', body?.priority, JIRA_PRIORIDAD_OPTIONS);
-  addResolvedSelect(PAP_FIELDS.gradoSeveridad, 'severidad', normalizeSeverity(impact), JIRA_SEVERIDAD_OPTIONS);
+  addResolvedSelect(PAP_FIELDS.gradoSeveridad, 'severidad', impact || 'Medio', JIRA_SEVERIDAD_OPTIONS);
 
   // === Campos DATE ===
   if (PAP_FIELDS.fechaDeploy && body?.proposedDeployDate) {
