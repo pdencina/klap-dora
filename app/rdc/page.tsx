@@ -162,6 +162,10 @@ export default function RdcPage() {
   const [suggestionDismissed, setSuggestionDismissed] = useState(false);
 
   function update(name: string, value: any) {
+    // Formateo automático de teléfono chileno
+    if (name === 'technicalLeadPhone') {
+      value = formatChileanPhone(value);
+    }
     setForm((c) => ({ ...c, [name]: value }));
 
     // Cuando cambia el sistema, generar sugerencias IA
@@ -183,6 +187,39 @@ export default function RdcPage() {
         setSuggestion(null);
       }
     }
+  }
+
+  /** Formatea número de teléfono al formato +56 9 XXXX XXXX */
+  function formatChileanPhone(input: string): string {
+    // Quitar todo lo que no sea dígito o +
+    const digits = input.replace(/[^\d+]/g, '');
+    // Si empieza con +56, formatear
+    if (digits.startsWith('+569') && digits.length <= 12) {
+      const num = digits.slice(3); // quita +56
+      if (num.length <= 1) return '+56 ' + num;
+      if (num.length <= 5) return '+56 ' + num.slice(0, 1) + ' ' + num.slice(1);
+      return '+56 ' + num.slice(0, 1) + ' ' + num.slice(1, 5) + ' ' + num.slice(5, 9);
+    }
+    if (digits.startsWith('+56') && digits.length <= 12) {
+      const num = digits.slice(3);
+      if (num.length <= 1) return '+56 ' + num;
+      if (num.length <= 5) return '+56 ' + num.slice(0, 1) + ' ' + num.slice(1);
+      return '+56 ' + num.slice(0, 1) + ' ' + num.slice(1, 5) + ' ' + num.slice(5, 9);
+    }
+    // Si escribe 9XXXXXXXX sin prefijo
+    if (digits.startsWith('9') && digits.length >= 2 && !digits.startsWith('+')) {
+      if (digits.length <= 1) return '+56 ' + digits;
+      if (digits.length <= 5) return '+56 ' + digits.slice(0, 1) + ' ' + digits.slice(1);
+      return '+56 ' + digits.slice(0, 1) + ' ' + digits.slice(1, 5) + ' ' + digits.slice(5, 9);
+    }
+    // Si escribe 569XXXXXXXX
+    if (digits.startsWith('569') && !digits.startsWith('+')) {
+      const num = digits.slice(2);
+      if (num.length <= 1) return '+56 ' + num;
+      if (num.length <= 5) return '+56 ' + num.slice(0, 1) + ' ' + num.slice(1);
+      return '+56 ' + num.slice(0, 1) + ' ' + num.slice(1, 5) + ' ' + num.slice(5, 9);
+    }
+    return input;
   }
 
   function applySuggestions() {
@@ -262,15 +299,31 @@ export default function RdcPage() {
     if (s === 0) {
       if (!form.title.trim()) return 'El nombre del cambio es obligatorio.';
       if (!form.system) return 'Selecciona el sistema / producto.';
+      if (!form.cell) return 'Selecciona la célula responsable.';
       if (!form.technicalLead.trim()) return 'Indica el líder técnico.';
-      if (!form.proposedDeployDate) return 'Indica la fecha propuesta.';
+      if (!form.technicalLeadPhone.trim()) return 'Indica el teléfono del líder técnico.';
+      if (form.technicalLeadPhone.replace(/[^\d]/g, '').length < 9) return 'El teléfono debe tener al menos 9 dígitos.';
+      if (!form.proposedDeployDate) return 'Indica la fecha propuesta de paso a producción.';
+      // Validar que la fecha no sea en el pasado
+      const today = new Date().toISOString().slice(0, 10);
+      if (form.proposedDeployDate < today) return 'La fecha propuesta no puede ser anterior a hoy.';
     }
     if (s === 1) {
       if (!form.requirementDescription.trim()) return 'Describe el requerimiento.';
       if (!form.implementedSolution.trim()) return 'Indica la solución implementada.';
+      if (!form.affectedServices.trim()) return 'Indica los servicios afectados por el cambio.';
+    }
+    if (s === 3) {
+      if (!form.changeType) return 'Selecciona el tipo de cambio.';
+      if (!form.impact) return 'Selecciona el impacto del cambio.';
+      if (!form.environment) return 'Selecciona el ambiente.';
+    }
+    if (s === 4) {
+      if (!form.deployPlanProd.trim()) return 'Indica el plan de despliegue en producción.';
+      if (!form.rollbackProd.trim()) return 'Indica el plan de rollback en producción.';
     }
     if (s === 5) {
-      if (!form.presenter.trim()) return 'Indica el presentador.';
+      if (!form.presenter.trim()) return 'Indica el presentador del cambio.';
       if (!form.selectedApprovalRoles.length) return 'Selecciona al menos un área aprobadora.';
     }
     return '';
@@ -288,7 +341,7 @@ export default function RdcPage() {
   function goTo(s: number) { if (s <= step) { setStepError(''); setStep(s); } }
 
   async function createRdc() {
-    for (let s = 0; s < STEPS.length - 1; s++) {
+    for (let s = 0; s <= 5; s++) {
       const e = validateStep(s);
       if (e) { setStep(s); setStepError(e); return; }
     }
@@ -470,7 +523,7 @@ export default function RdcPage() {
                       </div>
                     </div>
                   )}
-                  <Field label="Célula">
+                  <Field label="Célula *">
                     <select value={form.cell} onChange={(e) => update('cell', e.target.value)}>
                       <option value="">Selecciona</option>
                       {celulaOptions.map((o) => <option key={o}>{o}</option>)}
@@ -482,7 +535,7 @@ export default function RdcPage() {
                   <Field label="Líder Técnico *">
                     <UserAutocomplete value={form.technicalLead} placeholder="Nombre del responsable del cambio" onChange={(v) => update('technicalLead', v)} />
                   </Field>
-                  <Field label="Teléfono Líder Técnico">
+                  <Field label="Teléfono Líder Técnico *">
                     <input value={form.technicalLeadPhone} onChange={(e) => update('technicalLeadPhone', e.target.value)} placeholder="+56 9 XXXX XXXX" />
                   </Field>
                   <Field label="Fecha propuesta paso a producción *">
@@ -502,7 +555,7 @@ export default function RdcPage() {
                   <Field label="Solución del requerimiento *">
                     <textarea value={form.implementedSolution} onChange={(e) => update('implementedSolution', e.target.value)} rows={4} placeholder="¿Cuál es el resultado deseado del cambio? Indicar que es lo que se espera lograr." />
                   </Field>
-                  <Field label="Servicios afectados">
+                  <Field label="Servicios afectados *">
                     <textarea value={form.affectedServices} onChange={(e) => update('affectedServices', e.target.value)} rows={3} placeholder="Enumere los servicios a los que afecta la solicitud del cambio." />
                   </Field>
                   <Field label="Usuarios afectados">
@@ -684,8 +737,8 @@ export default function RdcPage() {
                 </Block>
 
                 <Block title="Despliegue Producción">
-                  <Field label="Plan Despliegue Producción"><textarea value={form.deployPlanProd} onChange={(e) => update('deployPlanProd', e.target.value)} rows={4} placeholder="1. Paso uno&#10;2. Paso dos&#10;3. Paso tres" /></Field>
-                  <Field label="Rollback Producción"><textarea value={form.rollbackProd} onChange={(e) => update('rollbackProd', e.target.value)} rows={3} placeholder="Describir plan de marcha atrás para recuperar la última configuración estable." /></Field>
+                  <Field label="Plan Despliegue Producción *"><textarea value={form.deployPlanProd} onChange={(e) => update('deployPlanProd', e.target.value)} rows={4} placeholder="1. Paso uno&#10;2. Paso dos&#10;3. Paso tres" /></Field>
+                  <Field label="Rollback Producción *"><textarea value={form.rollbackProd} onChange={(e) => update('rollbackProd', e.target.value)} rows={3} placeholder="Describir plan de marcha atrás para recuperar la última configuración estable." /></Field>
                 </Block>
 
                 <Block title="Plan de Mitigación para CAB 2.0">
