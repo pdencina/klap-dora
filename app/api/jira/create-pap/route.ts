@@ -156,13 +156,19 @@ function buildMappedFields(rdc: any, details: RdcDetails) {
   const formData = details.form_data || {};
   const fields: any = {};
 
-  // === Campos SELECT ===
-  addSelectField(fields, PAP_FIELDS.sistemaProducto, rdc.system);
-  addSelectField(fields, PAP_FIELDS.categoriaCambio, normalizeCategory(rdc.category));
-  addSelectField(fields, PAP_FIELDS.gradoSeveridad, normalizeSeverity(details.impact || details.priority));
-  addSelectField(fields, PAP_FIELDS.celula, rdc.cell);
-  addSelectField(fields, PAP_FIELDS.tipoCambio, formData?.classification?.changeType);
-  addSelectField(fields, PAP_FIELDS.prioridad, details.priority);
+  function addResolvedSelect(fieldId: string | undefined, fieldKey: string, rdcValue: string | undefined | null, options: string[]) {
+    if (!fieldId || !rdcValue) return;
+    const resolved = resolveJiraValue(fieldKey, rdcValue, options);
+    if (resolved) fields[fieldId] = { value: resolved };
+  }
+
+  // === Campos SELECT con resolución inteligente ===
+  addResolvedSelect(PAP_FIELDS.sistemaProducto, 'sistema', rdc.system, JIRA_SISTEMA_OPTIONS);
+  addResolvedSelect(PAP_FIELDS.categoriaCambio, 'categoria', normalizeCategory(rdc.category), JIRA_CATEGORIA_OPTIONS);
+  addResolvedSelect(PAP_FIELDS.celula, 'celula', rdc.cell, JIRA_CELULA_OPTIONS);
+  addResolvedSelect(PAP_FIELDS.tipoCambio, 'tipoCambio', formData?.classification?.changeType, JIRA_TIPO_CAMBIO_OPTIONS);
+  addResolvedSelect(PAP_FIELDS.prioridad, 'prioridad', details.priority, JIRA_PRIORIDAD_OPTIONS);
+  addResolvedSelect(PAP_FIELDS.gradoSeveridad, 'severidad', normalizeSeverity(details.impact || details.priority), JIRA_SEVERIDAD_OPTIONS);
 
   // === Campos DATE ===
   if (PAP_FIELDS.fechaDeploy && rdc.proposed_deploy_date) {
