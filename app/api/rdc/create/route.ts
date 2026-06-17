@@ -302,6 +302,43 @@ async function createJiraPapImmediate(rdc: any, body: any): Promise<{ jiraKey?: 
   }
 }
 
+/**
+ * Después de crear el issue, intenta actualizar campos que Jira pudo haber ignorado en la creación
+ * (por restricciones de pantalla). El PUT suele aceptar campos que el POST no.
+ */
+async function updateJiraIssueFields(issueKey: string, body: any): Promise<void> {
+  try {
+    const auth = buildJiraAuth();
+    const base = (getJiraEnv('JIRA_BASE') || getJiraEnv('JIRA_BASE_URL') || '').replace(/\/$/, '');
+    if (!auth || !base || !issueKey) return;
+
+    const formData = body?.formData || {};
+    const fields: any = {};
+
+    // Campos que pueden fallar en creación pero funcionar en update
+    if (PAP_FIELDS.celula && body?.cell) {
+      const resolved = resolveJiraValue('celula', body.cell, JIRA_CELULA_OPTIONS);
+      if (resolved) fields[PAP_FIELDS.celula] = { value: resolved };
+    }
+    if (PAP_FIELDS.fechaDeploy && body?.proposedDeployDate) {
+      fields[PAP_FIELDS.fechaDeploy] = body.proposedDeployDate;
+    }
+    if (PAP_FIELDS.fechaInicio) {
+      fields[PAP_FIELDS.fechaInicio] = new Date().toISOString().slice(0, 10);
+    }
+
+    if (Object.keys(fields).length === 0) return;
+
+    await fetch(`${base}/rest/api/3/issue/${issueKey}`, {
+      method: 'PUT',
+      headers: { Authorization: auth, Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields }),
+    });
+  } catch {
+    // No bloquea, es un best-effort
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const { user, deny } = await requireUser();
@@ -449,6 +486,9 @@ export async function POST(req: Request) {
         .from('rdc')
         .update({ jira_key: jiraKey, jira_created_at: new Date().toISOString(), updated_at: new Date().toISOString() })
         .eq('id', rdc.id);
+
+      // Intentar actualizar campos que pudieron ser ignorados en la creación
+      await updateJiraIssueFields(jiraKey, body);
     }
 
     // === Notificaciones por email (no bloquean la respuesta) ===
