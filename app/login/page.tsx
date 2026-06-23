@@ -34,6 +34,7 @@ export default function LoginPage() {
 
   return (
     <main className="login">
+      <div className="login-bg" aria-hidden="true" />
       <form className="card" onSubmit={submit}>
         <div className="brand"><span className="k">k</span>lap <em>Release</em></div>
         <h1>Inicia sesión</h1>
@@ -51,23 +52,28 @@ export default function LoginPage() {
         {error ? <div className="err">{error}</div> : null}
 
         <button type="submit" disabled={loading}>{loading ? 'Ingresando…' : 'Ingresar'}</button>
+        <p className="footer-text">Release Management Portal v2.0</p>
       </form>
 
       <style jsx global>{`
         body { background: var(--bg); }
-        .login { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
-        .login .card { width: 100%; max-width: 400px; background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 34px; box-shadow: 0 24px 60px -28px rgba(7,59,93,.3); display: grid; gap: 14px; }
-        .login .brand { font-weight: 800; font-size: 24px; letter-spacing: -.04em; color: var(--navy); }
+        .login { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; position: relative; overflow: hidden; }
+        .login-bg { position: absolute; inset: 0; background: linear-gradient(135deg, #013356 0%, #02568c 40%, #007a5e 100%); opacity: 0.03; pointer-events: none; }
+        .login-bg::before { content: ''; position: absolute; top: -50%; right: -30%; width: 80vw; height: 80vw; border-radius: 50%; background: radial-gradient(circle, rgba(0,193,110,0.08) 0%, transparent 70%); }
+        .login .card { position: relative; width: 100%; max-width: 420px; background: #fff; border: 1px solid var(--line); border-radius: 24px; padding: 40px 36px; box-shadow: 0 24px 80px -20px rgba(7,59,93,.15), 0 8px 20px rgba(7,59,93,.06); display: grid; gap: 16px; }
+        .login .brand { font-weight: 800; font-size: 26px; letter-spacing: -.04em; color: var(--navy); }
         .login .brand .k { color: var(--green); }
-        .login .brand em { font-style: normal; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); margin-left: 6px; }
-        .login h1 { margin: 6px 0 0; font-size: 28px; letter-spacing: -.02em; color: var(--navy-d); }
-        .login .sub { margin: 0 0 8px; color: var(--ink-soft); }
-        .login label { display: grid; gap: 6px; font-size: 13px; font-weight: 700; color: #315873; }
-        .login input { border: 1px solid #d9e7ef; border-radius: 12px; padding: 12px 13px; font: inherit; color: var(--ink); outline: none; min-height: 48px; }
-        .login input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(0,193,110,.12); }
-        .login .err { background: #fff1f0; border: 1px solid #ffd0cb; color: #c0392b; padding: 11px 13px; border-radius: 12px; font-weight: 700; font-size: 13px; }
-        .login button { margin-top: 4px; border: 0; background: var(--green); color: #fff; border-radius: 999px; padding: 13px 18px; font-weight: 800; cursor: pointer; }
-        .login button:disabled { opacity: .55; cursor: not-allowed; }
+        .login .brand em { font-style: normal; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); margin-left: 8px; background: var(--bg); padding: 4px 8px; border-radius: 6px; }
+        .login h1 { margin: 8px 0 0; font-size: 30px; letter-spacing: -.03em; color: var(--navy-d); }
+        .login .sub { margin: 0 0 8px; color: var(--ink-soft); font-size: 15px; line-height: 1.4; }
+        .login label { display: grid; gap: 7px; font-size: 13px; font-weight: 700; color: #315873; }
+        .login input { border: 1.5px solid #d9e7ef; border-radius: 12px; padding: 13px 14px; font: inherit; font-size: 15px; color: var(--ink); outline: none; min-height: 50px; transition: border-color 0.2s, box-shadow 0.2s; }
+        .login input:focus { border-color: var(--green); box-shadow: 0 0 0 4px rgba(0,193,110,.1); }
+        .login .err { background: #fff1f0; border: 1px solid #ffd0cb; color: #c0392b; padding: 12px 14px; border-radius: 12px; font-weight: 700; font-size: 13px; }
+        .login button { margin-top: 6px; border: 0; background: linear-gradient(135deg, var(--green) 0%, var(--green-d) 100%); color: #fff; border-radius: 999px; padding: 14px 20px; font-weight: 800; font-size: 15px; cursor: pointer; box-shadow: 0 4px 16px rgba(0,193,110,.35); transition: transform 0.15s, box-shadow 0.15s; }
+        .login button:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,193,110,.45); }
+        .login button:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
+        .login .footer-text { text-align: center; color: var(--ink-soft); font-size: 12px; margin: 4px 0 0; opacity: 0.7; }
       `}</style>
     </main>
   );

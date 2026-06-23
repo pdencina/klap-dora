@@ -120,34 +120,35 @@ export default function MisCambiosPage() {
       )}
 
       <style jsx global>{`
-        .mine { max-width: 920px; margin: 0 auto; padding: 32px 6vw 64px; }
-        .mine .kicker { color: var(--green-d); font-size: 13px; font-weight: 800; letter-spacing: .16em; margin: 0 0 8px; }
-        .mine h1 { font-size: clamp(30px, 4vw, 44px); line-height: 1.05; letter-spacing: -.03em; color: var(--navy-d); margin: 0; }
-        .mine .sub { color: var(--ink-soft); margin: 10px 0 0; font-size: 16px; }
+        .mine { max-width: 960px; margin: 0 auto; padding: 36px 5vw 64px; }
+        .mine .kicker { color: var(--green-d); font-size: 12px; font-weight: 900; letter-spacing: .18em; margin: 0 0 8px; text-transform: uppercase; }
+        .mine h1 { font-size: clamp(28px, 3.5vw, 42px); line-height: 1.08; letter-spacing: -.04em; color: var(--navy-d); margin: 0; }
+        .mine .sub { color: var(--ink-soft); margin: 10px 0 0; font-size: 15px; line-height: 1.5; }
 
-        .mine .state { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 40px; text-align: center; color: var(--ink-soft); margin-top: 22px; }
-        .mine .state.err { color: #c0392b; }
+        .mine .state { background: #fff; border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 44px; text-align: center; color: var(--ink-soft); margin-top: 22px; box-shadow: var(--shadow-sm); }
+        .mine .state.err { color: #b42318; background: #fff5f5; border-color: #fecaca; }
         .mine .state.empty .cta { display: inline-block; margin-top: 12px; color: var(--green-d); font-weight: 800; }
 
         .mine .list { display: grid; gap: 12px; margin-top: 22px; }
-        .mine .card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; }
+        .mine .card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius-md); padding: 20px 22px; box-shadow: var(--shadow-sm); transition: all .2s; }
+        .mine .card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
         .mine .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-        .mine .top h3 { margin: 0; font-size: 17px; color: var(--navy-d); letter-spacing: -.01em; }
+        .mine .top h3 { margin: 0; font-size: 16px; color: var(--navy-d); letter-spacing: -.01em; font-weight: 800; }
         .mine .meta { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 16px; }
-        .mine .meta span { font-size: 11px; font-weight: 700; color: var(--ink-soft); background: var(--bg); border-radius: 999px; padding: 3px 9px; }
+        .mine .meta span { font-size: 11px; font-weight: 700; color: var(--ink-soft); background: var(--bg); border-radius: var(--radius-pill); padding: 4px 10px; }
         .mine .meta .date { background: transparent; color: var(--ink-soft); padding-left: 0; }
         .mine .foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
         .mine .prog { flex: 1; min-width: 200px; }
-        .mine .prog .bar { height: 7px; background: #eef4f8; border-radius: 999px; overflow: hidden; }
-        .mine .prog .bar i { display: block; height: 100%; background: var(--green); border-radius: 999px; transition: width .5s ease; }
-        .mine .prog span { display: block; margin-top: 6px; font-size: 12px; color: var(--ink-soft); font-weight: 600; }
-        .mine .badge { font-size: 11px; font-weight: 700; padding: 5px 11px; border-radius: 999px; white-space: nowrap; }
-        .mine .badge.pending { background: #fdf2e0; color: var(--amber); }
+        .mine .prog .bar { height: 6px; background: #e5eef3; border-radius: 999px; overflow: hidden; }
+        .mine .prog .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--green), var(--green-d)); border-radius: 999px; transition: width .5s ease; }
+        .mine .prog span { display: block; margin-top: 6px; font-size: 12px; color: var(--ink-soft); font-weight: 700; }
+        .mine .badge { font-size: 11px; font-weight: 800; padding: 5px 11px; border-radius: var(--radius-pill); white-space: nowrap; }
+        .mine .badge.pending { background: #fffbeb; color: #92630c; }
         .mine .badge.ok { background: var(--green-soft); color: var(--green-d); }
-        .mine .badge.watch { background: #eef4f8; color: var(--navy); }
-        .mine .badge.bad { background: #fff1f0; color: #c0392b; }
+        .mine .badge.watch { background: #ecf7ff; color: var(--navy); }
+        .mine .badge.bad { background: #fff5f5; color: #b42318; }
         .mine .jira { font-size: 13px; font-weight: 800; color: var(--navy); }
-        .mine .nopap { font-size: 12px; color: #b45309; font-weight: 700; background: #fffbeb; padding: 4px 10px; border-radius: 999px; }
+        .mine .nopap { font-size: 12px; color: #b45309; font-weight: 800; background: #fffbeb; padding: 4px 10px; border-radius: var(--radius-pill); }
       `}</style>
     </main>
   );

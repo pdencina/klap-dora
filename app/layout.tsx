@@ -1,4 +1,5 @@
 import './globals.css';
+import './shared.css';
 import type { ReactNode } from 'react';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import TopNav from './components/TopNav';

@@ -1,0 +1,329 @@
+/* ═══════════════════════════════════════════════════════════════════
+   KLAP RELEASE PORTAL — Shared Component Styles
+   Importado en layout.tsx para disponibilidad global.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ===== Page Container ===== */
+.page {
+  min-height: 100vh;
+  padding: 32px 5vw 70px;
+  position: relative;
+}
+
+.page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--green) 0%, var(--green-d) 50%, var(--navy) 100%);
+}
+
+.page-header {
+  max-width: 1320px;
+  margin: 0 auto 28px;
+}
+
+.page-header .kicker {
+  margin: 0 0 8px;
+  color: var(--green-d);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: clamp(28px, 3.5vw, 44px);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  color: var(--navy-d);
+}
+
+.page-header .lead {
+  color: var(--ink-soft);
+  font-size: 17px;
+  line-height: 1.5;
+  max-width: 65ch;
+  margin: 12px 0 0;
+}
+
+/* ===== Cards ===== */
+.k-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--duration) var(--ease), transform var(--duration) var(--ease);
+}
+
+.k-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.k-card-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ===== Buttons ===== */
+.k-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 12px 22px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all var(--duration) var(--ease);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.k-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.k-btn-primary {
+  background: var(--green);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 193, 110, 0.3);
+}
+
+.k-btn-primary:hover:not(:disabled) {
+  background: var(--green-d);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 193, 110, 0.4);
+}
+
+.k-btn-secondary {
+  background: #fff;
+  color: var(--navy);
+  border: 1px solid var(--line);
+}
+
+.k-btn-secondary:hover:not(:disabled) {
+  background: var(--bg);
+  border-color: var(--navy);
+}
+
+.k-btn-ghost {
+  background: transparent;
+  color: var(--ink-soft);
+  padding: 8px 14px;
+}
+
+.k-btn-ghost:hover:not(:disabled) {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+/* ===== Badges / Chips ===== */
+.k-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.k-badge-green {
+  background: var(--green-soft);
+  color: var(--green-d);
+}
+
+.k-badge-amber {
+  background: #fff8eb;
+  color: #92630c;
+}
+
+.k-badge-red {
+  background: var(--red-soft);
+  color: #b42318;
+}
+
+.k-badge-blue {
+  background: #ecf7ff;
+  color: var(--navy);
+}
+
+.k-badge-neutral {
+  background: var(--bg);
+  color: var(--ink-soft);
+}
+
+/* ===== Tables ===== */
+.k-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-sm);
+}
+
+.k-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.k-table th {
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  padding: 14px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.k-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--ink);
+}
+
+.k-table tr:last-child td {
+  border-bottom: none;
+}
+
+.k-table tr:hover td {
+  background: #f8fbfd;
+}
+
+/* ===== Inputs ===== */
+.k-input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  background: #fff;
+  outline: none;
+  transition: border-color var(--duration) var(--ease), box-shadow var(--duration) var(--ease);
+}
+
+.k-input:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(0, 193, 110, 0.1);
+}
+
+.k-input::placeholder {
+  color: #9bb4c4;
+}
+
+.k-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235d7890' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 38px;
+}
+
+/* ===== Empty State ===== */
+.k-empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--ink-soft);
+}
+
+.k-empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.4;
+}
+
+.k-empty h3 {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: 18px;
+}
+
+.k-empty p {
+  margin: 0;
+  max-width: 40ch;
+  margin-inline: auto;
+}
+
+/* ===== Metrics Grid ===== */
+.k-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.k-metric {
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  box-shadow: var(--shadow-sm);
+}
+
+.k-metric-label {
+  color: var(--ink-soft);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  font-weight: 800;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.k-metric-value {
+  font-size: 36px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: var(--navy-d);
+  line-height: 1;
+}
+
+.k-metric-note {
+  color: var(--ink-soft);
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+/* ===== Skeleton loading ===== */
+@keyframes k-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.k-skeleton {
+  background: linear-gradient(90deg, var(--bg) 25%, #e8f0f5 50%, var(--bg) 75%);
+  background-size: 200% 100%;
+  animation: k-shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+/* ===== Responsive utilities ===== */
+@media (max-width: 768px) {
+  .page {
+    padding: 24px 16px 50px;
+  }
+
+  .k-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .page-header h1 {
+    font-size: 28px;
+  }
+}

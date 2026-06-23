@@ -204,36 +204,42 @@ export default function HomePage() {
       </section>
 
       <style jsx>{`
-        .home { max-width: 1100px; margin: 0 auto; padding: 40px 6vw 64px; }
-        .kicker { color: var(--green-d); font-size: 13px; font-weight: 800; letter-spacing: 0.16em; margin: 0 0 12px; }
-        h1 { font-size: clamp(32px, 4.5vw, 52px); line-height: 1.05; letter-spacing: -0.03em; color: var(--navy-d); margin: 0; }
-        .lead { color: var(--ink-soft); font-size: 18px; line-height: 1.5; max-width: 65ch; margin: 16px 0 0; }
-        .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 32px; }
+        .home { max-width: 1100px; margin: 0 auto; padding: 44px 6vw 64px; }
+        .kicker { color: var(--green-d); font-size: 12px; font-weight: 900; letter-spacing: 0.18em; margin: 0 0 12px; text-transform: uppercase; }
+        h1 { font-size: clamp(32px, 4.5vw, 48px); line-height: 1.08; letter-spacing: -0.04em; color: var(--navy-d); margin: 0; }
+        .lead { color: var(--ink-soft); font-size: 17px; line-height: 1.55; max-width: 60ch; margin: 16px 0 0; }
+        .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 34px; }
         .cards.single { grid-template-columns: minmax(0, 540px); }
-        .card { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 26px; display: flex; flex-direction: column; min-height: 180px; transition: 0.18s ease; }
-        .card:hover { transform: translateY(-3px); box-shadow: 0 18px 40px -20px rgba(7, 59, 93, 0.25); }
-        .card h2 { margin: 0 0 8px; font-size: 24px; letter-spacing: -0.02em; color: var(--navy-d); }
-        .card p { color: var(--ink-soft); line-height: 1.5; margin: 0 0 20px; }
-        .card strong { margin-top: auto; color: var(--green-d); font-weight: 700; }
-        .flow { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 24px; margin-top: 22px; }
-        .flow h2 { margin: 0 0 16px; font-size: 18px; color: var(--navy-d); }
+        .card { background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 28px; display: flex; flex-direction: column; min-height: 180px; transition: all 0.22s cubic-bezier(0.4,0,0.2,1); position: relative; overflow: hidden; }
+        .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--green), var(--green-d)); opacity: 0; transition: opacity 0.22s; }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 20px 50px -18px rgba(7, 59, 93, 0.2); }
+        .card:hover::before { opacity: 1; }
+        .card h2 { margin: 0 0 10px; font-size: 22px; letter-spacing: -0.02em; color: var(--navy-d); }
+        .card p { color: var(--ink-soft); line-height: 1.55; margin: 0 0 20px; font-size: 14px; }
+        .card strong { margin-top: auto; color: var(--green-d); font-weight: 800; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; }
+        .flow { background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 26px; margin-top: 24px; }
+        .flow h2 { margin: 0 0 18px; font-size: 17px; color: var(--navy-d); font-weight: 800; }
         .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-        .steps div { background: var(--bg); border-radius: 12px; padding: 14px; display: grid; gap: 6px; }
-        .steps b { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 999px; background: var(--green-soft); color: var(--green-d); font-size: 13px; }
-        .steps span { font-weight: 600; color: var(--ink); font-size: 13px; }
-        .welcomeBackdrop { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(1, 51, 86, .35); backdrop-filter: blur(8px); }
-        .welcomeCard { position: relative; width: min(680px, 100%); background: #fff; border: 1px solid var(--line); border-radius: 24px; padding: 34px; box-shadow: 0 30px 90px rgba(7, 59, 93, .24); }
-        .welcomeClose { position: absolute; top: 16px; right: 16px; width: 34px; height: 34px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--ink-soft); font-size: 24px; cursor: pointer; }
-        .welcomeBadge { display: inline-flex; background: var(--green-soft); color: var(--green-d); border-radius: 999px; padding: 8px 12px; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
-        .welcomeCard h2 { margin: 16px 0 10px; color: var(--navy-d); font-size: clamp(28px, 4vw, 40px); letter-spacing: -.04em; line-height: 1; }
-        .welcomeCard p { color: var(--ink-soft); line-height: 1.55; margin: 0; font-size: 16px; }
-        .welcomeGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 22px 0; }
-        .welcomeGrid div { background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 13px; }
-        .welcomeGrid b { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: var(--green); color: white; border-radius: 999px; font-size: 13px; margin-bottom: 8px; }
-        .welcomeGrid span { color: var(--ink); font-size: 13px; font-weight: 700; }
+        .steps div { background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 8px; transition: border-color 0.2s; }
+        .steps div:hover { border-color: var(--green); }
+        .steps b { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 999px; background: var(--green-soft); color: var(--green-d); font-size: 13px; font-weight: 900; }
+        .steps span { font-weight: 700; color: var(--ink); font-size: 13px; }
+        .welcomeBackdrop { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(1, 51, 86, .4); backdrop-filter: blur(10px); }
+        .welcomeCard { position: relative; width: min(680px, 100%); background: #fff; border: 1px solid var(--line); border-radius: 24px; padding: 38px; box-shadow: 0 32px 100px rgba(7, 59, 93, .25); }
+        .welcomeClose { position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--ink-soft); font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+        .welcomeClose:hover { background: var(--red-soft); color: var(--red); border-color: #ffd6d2; }
+        .welcomeBadge { display: inline-flex; background: var(--green-soft); color: var(--green-d); border-radius: 999px; padding: 8px 14px; font-size: 11px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+        .welcomeCard h2 { margin: 18px 0 12px; color: var(--navy-d); font-size: clamp(26px, 3.5vw, 36px); letter-spacing: -.04em; line-height: 1.05; }
+        .welcomeCard p { color: var(--ink-soft); line-height: 1.55; margin: 0; font-size: 15px; }
+        .welcomeGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 24px 0; }
+        .welcomeGrid div { background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+        .welcomeGrid b { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--green), var(--green-d)); color: white; border-radius: 999px; font-size: 13px; margin-bottom: 10px; box-shadow: 0 3px 8px rgba(0,193,110,.3); }
+        .welcomeGrid span { color: var(--ink); font-size: 13px; font-weight: 800; }
         .welcomeActions { display: flex; gap: 10px; flex-wrap: wrap; }
-        .welcomeActions a, .welcomeActions button { border: 0; background: var(--green); color: white; border-radius: 999px; padding: 12px 16px; font-weight: 800; font: inherit; cursor: pointer; }
-        .welcomeActions button { background: #fff; color: var(--navy); border: 1px solid var(--line); }
+        .welcomeActions a, .welcomeActions button { border: 0; background: linear-gradient(135deg, var(--green), var(--green-d)); color: white; border-radius: 999px; padding: 12px 18px; font-weight: 800; font: inherit; font-size: 14px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,193,110,.3); transition: all 0.15s; }
+        .welcomeActions a:hover, .welcomeActions button[type="button"]:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,193,110,.4); }
+        .welcomeActions button { background: #fff; color: var(--navy); border: 1px solid var(--line); box-shadow: none; }
+        .welcomeActions button:hover { background: var(--bg); }
         @media (max-width: 760px) { .cards, .steps, .welcomeGrid { grid-template-columns: 1fr; } .welcomeCard { padding: 26px; } }
       `}</style>
     </main>
